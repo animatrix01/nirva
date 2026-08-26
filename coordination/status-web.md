@@ -11,14 +11,15 @@ Phase 1 — Skeleton
 - 2026-08-26: Scaffolded Next.js 16 App Router app in `apps/web/` (TypeScript, Tailwind v4, src dir, `@/*` alias). `src/app/*`, `package.json`.
 - 2026-08-26: Installed + wired shadcn/ui (radix/nova preset): button, card, input, label, badge, select, table, separator, tabs, dialog, sonner under `src/components/ui/`; `src/lib/utils.ts`; `components.json`.
 - 2026-08-26: Vitest + Testing Library setup: `vitest.config.ts`, `vitest.setup.ts`, scripts `lint`/`typecheck`/`test` in `package.json`. Landing page replaced with NIRVA entry (`src/app/page.tsx`) + smoke test (`src/app/page.test.tsx`). Self-check green.
+- 2026-08-26: Frozen-contract layer: types `src/lib/types.ts` (§c.1 shapes + §c.2 envelope with the nine event types); API client `src/lib/api.ts` (login/me/jobs CRUD, bearer auth, typed ApiError `{detail,field}`); SSE client `src/lib/sse.ts` with reconnect + resync via Last-Event-ID semantics; `/mocks` folder (`src/mocks/db.ts|router.ts|sse.ts`) implementing §c.1 routes and a scripted §c.2 stream covering completed / awaiting_approval / failed / blocked_injection scenarios; contract tests `src/mocks/router.test.ts`, `src/mocks/sse.test.ts`. 12 tests green.
 
 ## In Progress
 
-- Typed API client against frozen contracts (§c.1) + `/mocks` handlers (API lane not started — mocking rule active).
+- Login screen + role display (Phase 1 UI order per charter).
 
 ## Blocked (reason + which lane must act)
 
-- Nothing blocked; real API absent so all HTTP/SSE goes through mocks until status-api.md reports endpoints live.
+- Nothing blocked; real API absent so all HTTP/SSE goes through mocks until status-api.md reports endpoints live. Mock toggle: env `NEXT_PUBLIC_MOCK=0` + `NEXT_PUBLIC_API_BASE` switches to live fetch/EventSource.
 
 ## Handoff Notes
 
