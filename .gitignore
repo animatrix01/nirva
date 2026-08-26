@@ -1,0 +1,15 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+models/
+data/raw/
+dist/
+.next/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+coverage/
+*.log
