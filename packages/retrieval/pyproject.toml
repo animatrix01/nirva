@@ -1,0 +1,40 @@
+[project]
+name = "nirva-retrieval"
+version = "0.1.0"
+description = "NIRVA retrieval lane: ingestion, chunking, local embeddings, Qdrant hybrid search"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13",
+]
+
+[project.optional-dependencies]
+parse = ["docling>=2"]
+store = ["qdrant-client>=1.12"]
+dev = [
+    "ruff>=0.16",
+    "mypy>=2.3",
+    "pytest>=9.1",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["nirva_retrieval"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
