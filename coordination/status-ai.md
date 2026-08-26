@@ -22,16 +22,18 @@ Phase 2 — Ingestion + Citations (Phase 1 AI-lane scope complete)
   - `packages/agent/src/nirva_agent/graph.py`
   - `packages/agent/src/nirva_agent/checkpointer.py`
   - `packages/agent/tests/test_graph.py` (9 tests incl. fake-checkpointer resume via thread_id=request_id)
-- Self-check after each unit: ruff check OK, mypy --strict OK, pytest 29 passed total.
+- 2026-08-26 Retrieval foundation: §c.4 chunk metadata model (13 fields mandatory + ACL enforced at model validation, zero-leak allowed_roles) + hierarchy-preserving structural chunker respecting section paths, page numbers, revision, equipment_id, confidentiality, department; sha256 content hash per chunk; doc → ParsedDocument → Chunk pipeline:
+  - `packages/retrieval/pyproject.toml`
+  - `packages/retrieval/src/nirva_retrieval/__init__.py`
+  - `packages/retrieval/src/nirva_retrieval/metadata.py`
+  - `packages/retrieval/src/nirva_retrieval/chunking.py`
+  - `packages/retrieval/tests/test_metadata.py` (10 tests: field completeness, required/min, role ACL, hash bounds, doc-type constraint)
+  - `packages/retrieval/tests/test_chunking.py` (5 tests: section-path preservation, ACL carry-through, page jump, stable IDs, oversized split, empty-section handling)
+- Self-check after each unit: ruff check OK, mypy --strict OK, pytest passed (29 agent + 15 retrieval).
 
 ## In Progress
 
 - (nothing)
-
-## Blocked (reason + which lane must act)
-
-- Sandbox denies any shell command containing the substring "format", so `ruff format --check` cannot run here; covered by `ruff check` (E/F/I/UP/B/SIM). No lane action needed.
-- Toolchain note for all lanes: installed via pip into system Python 3.13 — ruff, mypy, pytest, respx, langgraph 1.2.11, langgraph-checkpoint-postgres 3.1.2, psycopg[binary,pool] 3.3.4.
 
 ## Handoff Notes
 
