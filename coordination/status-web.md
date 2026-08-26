@@ -13,9 +13,11 @@ Phase 1 — Skeleton
 - 2026-08-26: Vitest + Testing Library setup: `vitest.config.ts`, `vitest.setup.ts`, scripts `lint`/`typecheck`/`test` in `package.json`. Landing page replaced with NIRVA entry (`src/app/page.tsx`) + smoke test (`src/app/page.test.tsx`). Self-check green.
 - 2026-08-26: Frozen-contract layer: types `src/lib/types.ts` (§c.1 shapes + §c.2 envelope with the nine event types); API client `src/lib/api.ts` (login/me/jobs CRUD, bearer auth, typed ApiError `{detail,field}`); SSE client `src/lib/sse.ts` with reconnect + resync via Last-Event-ID semantics; `/mocks` folder (`src/mocks/db.ts|router.ts|sse.ts`) implementing §c.1 routes and a scripted §c.2 stream covering completed / awaiting_approval / failed / blocked_injection scenarios; contract tests `src/mocks/router.test.ts`, `src/mocks/sse.test.ts`. 12 tests green.
 
+- 2026-08-26: Login screen + role display: `src/app/login/page.tsx` (POST /api/auth/login, error states, demo-account hints), `src/components/role-badge.tsx` (all four §c.6 roles), `src/components/app-header.tsx` (auth guard via `src/lib/auth-client.ts` useSyncExternalStore, username+role display, sign out). Tests: `src/app/login/page.test.tsx`, `src/components/role-badge.test.tsx`. 16 tests green.
+
 ## In Progress
 
-- Login screen + role display (Phase 1 UI order per charter).
+- Investigations list with status/asset/date filters (Phase 1 UI order per charter).
 
 ## Blocked (reason + which lane must act)
 
