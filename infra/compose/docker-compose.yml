@@ -1,0 +1,167 @@
+# NIRVA — Docker Compose (INFRA lane owns this file)
+#
+# Usage:
+#   cp .env.example .env   # then fill JWT_SECRET
+#   docker compose -f infra/compose/docker-compose.yml up -d --build
+#
+# All six services are always-on so a plain `docker compose up` yields the full
+# Phase 1 stack (see coordination/INTEGRATION-CHECKLIST.md).
+#
+# ---------------------------------------------------------------------------
+# DEMO PROFILE (egress-denied) — intentionally COMMENTED OUT for dev.
+# For the air-gapped demo, an operator uncomments the `demo` profile block and
+# runs:  docker compose --profile demo up
+# The demo override makes every external-facing port loopback-only, puts all
+# services on ONE internal network with no default route (internal: true),
+# and relies on locally cached images + pre-pulled Ollama models.
+#
+#   x-demo-egress-denied: &demo-egress-denied
+#     networks: [nirva-internal]
+#     dns: 127.0.0.1          # blackhole DNS -> any accidental lookup fails fast
+#
+# networks:
+#   nirva-internal:
+#     name: nirva-demo-internal
+#     internal: true          # no outbound internet route at all
+#     driver: bridge
+#
+# Every service additionally gains under the demo profile:
+#     profiles: ["demo"]
+#     logging: { driver: "local" }   # no remote log drivers allowed
+# and otel-collector's exporter is swapped from file/local-only (never any
+# cloud backend — see infra/compose/otel-collector-config.yaml).
+# ---------------------------------------------------------------------------
+
+name: nirva
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nirva-postgres
+    environment:
+      POSTGRES_USER: nirva
+      POSTGRES_PASSWORD: nirva        # compose-local constant matching .env.example DATABASE_URL; not an app env var (COMMON §c.7)
+      POSTGRES_DB: nirva
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nirva -d nirva"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: nirva-qdrant
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/readyz | grep -q ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.5.7
+    container_name: nirva-ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  otel-collector:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.113.0
+    container_name: nirva-otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml:ro
+      - otel-data:/var/lib/otelcol
+    ports:
+      - "127.0.0.1:4317:4317"   # OTLP gRPC
+      - "127.0.0.1:4318:4318"   # OTLP http
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:13133/ | grep -q OK"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile        # owned by API lane
+    container_name: nirva-api
+    env_file:
+      - ../../.env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - nirva-storage:/data/nirva-storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      otel-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health',timeout=3).status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile        # owned by WEB lane
+    container_name: nirva-web
+    env_file:
+      - ../../.env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  qdrant-data:
+  ollama-models:
+  otel-data:
+  nirva-storage:
+
+networks:
+  default:
+    name: nirva-dev

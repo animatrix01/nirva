@@ -1,0 +1,41 @@
+# NIRVA Model Registry (INFRA lane owns this file)
+#
+# All models run LOCALLY via the Ollama-compatible gateway (dev) or vLLM
+# (prod). Engine swap is env config only (MODEL_BASE_URL), never code.
+#
+# Checksum policy: after the FIRST successful `ollama pull` on the target
+# machine, record the manifest digest + blob sha256 below and re-verify on
+# every subsequent bootstrap (`scripts/bootstrap-offline.sh --verify-models`).
+# A model whose checksum does not match MUST NOT be served.
+
+registry:
+  - model_name: qwen2.5:7b-instruct-q4_K_M
+    purpose: generation          # primary text model (planner, composer, review)
+    quantization: q4_K_M
+    profile: dev                 # default; requires ~6GB VRAM free
+    min_vram_gb: 8
+    checksum_sha256: PENDING_FIRST_PULL_VERIFY
+  - model_name: qwen2.5:3b-instruct-q4_K_M
+    purpose: generation          # FALLBACK text model on constrained hosts
+    quantization: q4_K_M
+    profile: dev-fallback        # use when host has <= 6GB VRAM
+    min_vram_gb: 3
+    fallback_for: qwen2.5:7b-instruct-q4_K_M
+    checksum_sha256: PENDING_FIRST_PULL_VERIFY
+  - model_name: qwen2.5vl:3b
+    purpose: vision              # Phase 4 image-inspection node -> OBSERVATIONS only
+    quantization: q4_0
+    profile: dev
+    min_vram_gb: 4
+    checksum_sha256: PENDING_FIRST_PULL_VERIFY
+  - model_name: bge-m3
+    purpose: embedding           # dense embeddings for Qdrant hybrid retrieval
+    quantization: fp16
+    profile: dev
+    min_vram_gb: 2
+    checksum_sha256: PENDING_FIRST_PULL_VERIFY
+
+selection_rules:
+  - "If host VRAM <= 6 GB, bootstrap pins qwen2.5:3b as MODEL_TEXT_MODEL and records the substitution in docs/runbook.md."
+  - "Vision + embedding models are required before Phase 2/4 exit conditions can be verified."
+  - "checksum_sha256 values are filled by scripts/bootstrap-offline.sh after first pull; serving an unverified model is forbidden."
