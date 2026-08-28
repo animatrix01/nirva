@@ -317,6 +317,280 @@ apps/api/app/routers/documents.py
 /admin/system
 ```
 
+### shadcn/ui AI Elements component set
+
+Use [AI Elements](https://elements.ai-sdk.dev/) because it follows shadcn/ui conventions,
+adds components as source code inside the application, and supports the exact interaction
+states needed in the NIRVA demo. Install only the primitives used by the investigation
+workspace:
+
+```bash
+cd apps/web
+npx ai-elements@latest add conversation message sources tool chain-of-thought reasoning confirmation task
+```
+
+The UI must use the existing FastAPI REST and SSE contracts. Do not introduce a second chat
+backend or make the frontend depend on Vercel AI Gateway. AI Elements is the presentation
+layer; Ollama, LangGraph, Qdrant, and FastAPI remain the execution layer.
+
+| AI Element | NIRVA use |
+|---|---|
+| `Conversation` | Scrollable investigation activity and report stream |
+| `Message` | Engineer objective and final agent response |
+| `MessageResponse` | Safe streamed Markdown rendering for findings |
+| `Sources` / `Source` | Collapsible citation list linked to local evidence |
+| `ChainOfThought` | LangGraph workflow stages derived from SSE events |
+| `Reasoning` | Optional concise investigation summary, never private chain-of-thought |
+| `Tool` | Search, asset-history, inventory, and work-order invocation states |
+| `Confirmation` | Supervisor approval or rejection of a consequential action |
+| `Task` | Bounded investigation plan and completed-step progress |
+
+Do not install canvas, generative UI, model selector, web search, attachments, or voice
+components for the internal round unless the golden workflow is already stable.
+
+### Investigation workspace composition
+
+Build the detail route as an operational workspace rather than a general chat screen:
+
+```text
++------------------------------------------------------------------+
+| Header: P-204 / Running / Local model / Offline                   |
++---------------------------+--------------------------------------+
+| Main investigation        | Evidence and control                 |
+|                           |                                      |
+| Objective message         | Sources                              |
+| Workflow progress         | Selected passage                     |
+| Tool calls                | Document metadata                    |
+| Approval interrupt        | Contradiction comparison             |
+| Markdown findings         | Audit summary                        |
++---------------------------+--------------------------------------+
+```
+
+Desktop layout:
+
+- Main investigation column: approximately 65% width.
+- Evidence/control column: approximately 35% width.
+- Both columns scroll independently below a stable header.
+- The selected citation stays visible while the judge reads the associated claim.
+
+Mobile layout:
+
+- Render the evidence panel as a full-height sheet.
+- Keep status and approval actions visible without horizontal scrolling.
+- Do not attempt to preserve the two-column desktop layout at narrow widths.
+
+### SSE event to component mapping
+
+The frontend should maintain one normalized activity array ordered by `seq`. Replayed events
+with an existing sequence number must be ignored.
+
+| SSE event | Component | Visible behavior |
+|---|---|---|
+| `node_started` | `ChainOfThoughtStep` | Stage becomes active and shows its start time |
+| `node_finished` | `ChainOfThoughtStep` | Stage becomes complete and shows duration |
+| `evidence_added` | `Sources` | Citation count updates; new source becomes inspectable |
+| `tool_called` | `Tool` | Tool name, safe inputs, running/completed state, and result |
+| `contradiction_found` | Custom evidence comparison | Conflicting passages appear side by side |
+| `awaiting_approval` | `Confirmation` | Workflow pauses and supervisor actions become available |
+| `blocked_injection` | Alert inside workflow | Suspicious document instruction is identified and isolated |
+| `completed` | `MessageResponse` | Final Markdown report is rendered and workflow closes |
+| `failed` | Error state | Failed stage, recovery guidance, and retry control are shown |
+
+`payload_ref` is the opaque key for heavier content. Add an authenticated artifact endpoint
+such as:
+
+```text
+GET /api/jobs/{job_id}/artifacts/{payload_ref}
+```
+
+The artifact response should be a discriminated union so the UI never guesses payload shape:
+
+```ts
+type JobArtifact =
+  | { kind: "evidence"; evidence: EvidenceReference[] }
+  | { kind: "tool"; tool: ToolActivity }
+  | { kind: "contradiction"; contradiction: Contradiction }
+  | { kind: "approval"; approval: ApprovalRequest }
+  | { kind: "report"; report: FinalReport }
+  | { kind: "security"; event: SecurityEvent };
+```
+
+Fetch each unique `payload_ref` once and cache it by reference. The SSE handler should update
+lightweight activity state immediately and load artifact details asynchronously so a large
+tool result cannot block later events.
+
+### Workflow and reasoning display
+
+The workflow view should make the agent's bounded process understandable without presenting
+raw chain-of-thought. Use the `ChainOfThought` component as a progress visualization with
+deterministic labels:
+
+1. Validate request and permissions.
+2. Plan bounded investigation.
+3. Retrieve authorized evidence.
+4. Inspect maintenance and inventory data.
+5. Compare conflicting records.
+6. Review safety constraints.
+7. Compose cited findings.
+8. Await or apply human decision.
+
+Allowed details:
+
+- Node name and status.
+- Start time and duration.
+- Number of authorized chunks retrieved.
+- Tools called and their sanitized arguments.
+- Sources accepted or rejected.
+- Assumptions, gaps, risk flags, and contradiction summaries.
+- Approval state and responsible human role.
+
+Never display:
+
+- Hidden model tokens or private chain-of-thought.
+- System prompts.
+- Secrets, tokens, connection strings, or filesystem paths.
+- Full restricted documents in a tool result.
+- Evidence excluded by the current user's ACL.
+
+If the `Reasoning` primitive is used, label it `Investigation summary`, not `Internal
+reasoning`, and populate it from structured graph state. It should contain short statements
+such as `Retrieved five authorized maintenance records` or `Two records disagree on coupling
+alignment`.
+
+### Tool-call presentation
+
+Render every tool call with the AI Elements `Tool` compound component:
+
+```text
+Tool
+  ToolHeader: name + status
+  ToolContent
+    ToolInput: sanitized structured arguments
+    ToolOutput: concise result, error, or denial
+```
+
+Map NIRVA states to the component states:
+
+| NIRVA state | AI Elements tool state |
+|---|---|
+| Arguments being prepared | `input-streaming` |
+| Tool authorized and running | `input-available` |
+| Human decision required | `approval-requested` |
+| Supervisor decision received | `approval-responded` |
+| Successful result | `output-available` |
+| Execution failure | `output-error` |
+| RBAC or policy rejection | `output-denied` |
+
+For the internal demo, show these calls:
+
+1. `search_documents` with equipment ID and document-type filters.
+2. `get_asset_history` with `P-204`.
+3. `check_inventory` with the required seal-kit part number.
+4. `propose_work_order` with risk and evidence references.
+
+Tool output must be a compact operational summary. Large JSON or complete document text
+should remain behind a details control.
+
+### Citation and evidence experience
+
+Use `Sources`, `SourcesTrigger`, `SourcesContent`, and `Source` directly below the Markdown
+report. Each citation must use the frozen citation contract:
+
+```text
+[Document title, revision, page/section, chunk_id]
+```
+
+Clicking a source must:
+
+1. Select the source in the evidence panel.
+2. Open the correct locally stored document.
+3. Jump to the recorded page or section.
+4. Highlight the retrieved passage.
+5. Display revision, effective date, confidentiality, and content hash.
+
+Use local authenticated links such as:
+
+```text
+/api/documents/{document_id}/content?page=7&chunk_id=chk-P204-0004
+```
+
+Do not use fake external URLs for industrial sources. If a source artifact is unavailable,
+render it as unavailable and treat citation validation as failed.
+
+### Markdown response rendering
+
+Render `final_report.findings` through `MessageResponse`. Support:
+
+- Headings.
+- Paragraphs.
+- Ordered and unordered lists.
+- Tables for evidence comparison.
+- Bold and inline code.
+- Fenced code only when displaying a query or structured diagnostic.
+- Inline citation markers that select the corresponding local source.
+
+Sanitize Markdown and disable raw HTML. External links, if any exist in synthetic manuals,
+must open safely with `rel="noreferrer"`. Do not allow images, iframes, scripts, arbitrary HTML,
+or remote content to load from retrieved Markdown.
+
+Use a predictable report structure:
+
+```markdown
+## Finding
+
+## Supporting Evidence
+
+## Contradiction Requiring Verification
+
+## Assumptions And Gaps
+
+## Recommended Action
+```
+
+The report renderer should handle partial streamed Markdown without causing large layout
+shifts. Keep the content width readable and do not place the report inside another decorative
+card.
+
+### Approval experience
+
+Use the `Confirmation` component only for an actual pending approval artifact. It must show:
+
+- Proposed action.
+- Equipment ID.
+- Risk level.
+- Sanitized parameters.
+- Supporting citation links.
+- Requesting user.
+- Approving role requirement.
+- Approve and reject commands.
+
+The engineer sees a read-only waiting state. Only the authenticated supervisor sees enabled
+decision controls. After a decision, the same component shows the decision, actor, comment,
+timestamp, and work-order ID when applicable.
+
+### Component files and ownership
+
+Keep downloaded AI Elements source under:
+
+```text
+apps/web/src/components/ai-elements/
+```
+
+Add NIRVA-specific composition under:
+
+```text
+apps/web/src/components/investigation/investigation-workspace.tsx
+apps/web/src/components/investigation/workflow-activity.tsx
+apps/web/src/components/investigation/report-view.tsx
+apps/web/src/components/investigation/evidence-panel.tsx
+apps/web/src/components/investigation/tool-activity.tsx
+apps/web/src/components/investigation/approval-request.tsx
+apps/web/src/components/investigation/contradiction-view.tsx
+```
+
+Do not edit the generic AI Elements primitives to contain NIRVA business logic. Compose them
+inside the investigation components so they remain replaceable and independently testable.
+
 ### Investigation detail layout
 
 - Compact header with status, equipment ID, creator, and timestamp.
@@ -340,6 +614,11 @@ apps/api/app/routers/documents.py
 - The frontend uses the real API by default.
 - Refreshing a running/completed investigation restores its state.
 - Clicking a citation opens the exact stored source passage.
+- Markdown findings render safely during and after streaming.
+- Tool calls show running, completed, denied, and failed states.
+- Workflow progress is reconstructed correctly from SSE replay.
+- No private chain-of-thought, system prompt, or restricted evidence is rendered.
+- Only a supervisor can interact with the approval confirmation.
 - SSE reconnect resumes from the last event without duplicating events.
 - The interface works at 1366x768 and a mobile-width fallback.
 
@@ -523,6 +802,11 @@ Never replace a failed local model with an undisclosed cloud API during the demo
 - [ ] Engineer cannot approve.
 - [ ] Supervisor decision resumes/completes the flow.
 - [ ] Audit trail includes job, retrieval, tool, proposal, and decision events.
+- [ ] Workflow stages are visible through AI Elements and reflect real SSE events.
+- [ ] Tool calls expose safe inputs, outputs, denials, and errors.
+- [ ] Final findings render as sanitized Markdown.
+- [ ] Sources open the exact local evidence passage.
+- [ ] Approval confirmation is interactive only for a supervisor.
 
 ### Engineering
 
@@ -533,6 +817,10 @@ Never replace a failed local model with an undisclosed cloud API during the demo
 - [ ] No generated databases, caches, bytecode, or secrets are tracked.
 - [ ] API health reports degraded when Qdrant or Ollama is unavailable.
 - [ ] Qdrant applies role filters before returning chunks.
+- [ ] SSE `payload_ref` artifacts use typed, authenticated responses.
+- [ ] Replayed SSE events do not duplicate workflow or tool activity.
+- [ ] Markdown rendering blocks raw HTML and remote embedded content.
+- [ ] UI never renders private chain-of-thought, system prompts, or restricted chunks.
 - [ ] Job execution survives or cleanly recovers from API restart.
 - [ ] Duplicate approval requests cannot create duplicate work orders.
 
