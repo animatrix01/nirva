@@ -19,9 +19,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: Unit 3 — new investigation form: `src/app/investigations/new/page.tsx` (objective textarea + optional asset ID, client validation ≥8 chars, posts frozen POST /api/jobs `{objective, equipment_id}`, routes to detail on 201, typed 422/error display). Tests `page.test.tsx` (validation + create-and-redirect). 25 tests green.
 
+- 2026-08-29: Unit 4 — investigation detail workspace `/investigations/[jobId]`: header (status badge/current node/creator/timestamp), live SSE timeline via `src/lib/sse.ts` (seq dedupe, reconnect state banner while job live), all-six-state coverage with truthful banners (`timeline.ts` `bannerForStatus`: awaiting_approval warning, failed error, blocked_injection danger, completed success), node timeline rendering the Phase-1 plan (intake→answer→finalize+approval_executor) with pending/running/done states, final report section (findings/confidence/assumptions/gaps/citations). Pure helpers unit-tested (`timeline.test.ts`), streamed-to-completion component test. `npm run build` green. 35 tests green.
+
 ## In Progress
 
-- Investigation detail workspace `/investigations/[jobId]`: header + live SSE timeline, all 6 states.
+- Evidence panel: clickable citations per §c.5, passage highlight, metadata display.
 
 ## Blocked (reason + which lane must act)
 
