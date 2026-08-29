@@ -19,6 +19,7 @@ export interface EvidenceReference {
   content_hash: string;
   passage_text: string;
   why_retrieved: string;
+  score?: number;
 }
 
 // {kind:"tool", tool:{...}} per real artifacts router (tool_name, ok, summary).

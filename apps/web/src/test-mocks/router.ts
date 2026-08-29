@@ -245,6 +245,69 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
   },
   {
     method: "GET",
+    pattern: /^\/api\/documents$/,
+    handler: ({ token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      // ACL-filtered list: supervisor/safety_officer see only ops-visible docs.
+      const all = [
+        {
+          document_id: "doc-seed-1",
+          title: "P-204 OEM Maintenance Manual",
+          document_type: "manual",
+          revision: "B",
+          effective_date: "2026-01-01",
+          department: "Maintenance",
+          equipment_id: "P-204",
+          confidentiality_level: "internal",
+          content_hash: "a".repeat(64),
+          status: "indexed",
+          uploaded_at: "2026-08-01T00:00:00Z",
+        },
+        {
+          document_id: "doc-seed-2",
+          title: "Confidential Vendor Bulletin",
+          document_type: "incident",
+          revision: "1",
+          effective_date: "2026-02-01",
+          department: "Reliability",
+          equipment_id: null,
+          confidentiality_level: "restricted",
+          content_hash: "b".repeat(64),
+          status: "indexed",
+          uploaded_at: "2026-08-02T00:00:00Z",
+        },
+      ];
+      const allowed =
+        caller.role === "supervisor" || caller.role === "safety_officer"
+          ? all.filter((d) => d.confidentiality_level === "internal")
+          : all;
+      return allowed;
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/documents\/upload$/,
+    handler: ({ token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role !== "engineer" && caller.role !== "admin") {
+        throw new ApiError(
+          403,
+          "Document upload requires engineer or admin role"
+        );
+      }
+      return {
+        document_id: "doc-new-1",
+        status: "indexed",
+        content_hash: "c".repeat(64),
+        duplicate: false,
+        chunks: 3,
+      };
+    },
+  },
+  {
+    method: "GET",
     pattern: /^\/api\/jobs\/([^/]+)\/artifacts\/([^/]+)$/,
     handler: ({ params, token }) => {
       requireAuth(token);

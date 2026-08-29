@@ -38,6 +38,9 @@ export function AppHeader({ title }: { title: string }) {
           <span className="text-muted-foreground text-sm">{title}</span>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" asChild>
+            <a href="/documents">Documents</a>
+          </Button>
           <HealthIndicator />
           {auth.user.role === "supervisor" || auth.user.role === "admin" ? (
             <Button variant="ghost" size="sm" asChild>

@@ -121,7 +121,16 @@ export function EvidencePanel({
             </div>
             <div className="flex gap-2">
               <dt className="w-28 shrink-0 font-medium">Why retrieved</dt>
-              <dd>{detail.why_retrieved}</dd>
+              <dd>
+                {detail.why_retrieved}
+                {typeof detail.score === "number" && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — score {detail.score.toFixed(2)}, hybrid dense+sparse,
+                    rank-fused
+                  </span>
+                )}
+              </dd>
             </div>
           </dl>
         </div>

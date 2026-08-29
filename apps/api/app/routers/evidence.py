@@ -41,30 +41,39 @@ def get_evidence_chunk(
     if not _can_view(user, job):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
-    settings = get_settings()
-    client = QdrantClient(url=settings.qdrant_url, timeout=30, check_compatibility=False)
-    points, _ = client.scroll(
-        collection_name="nirva_chunks",
-        scroll_filter=models.Filter(
-            must=[models.FieldCondition(key="chunk_id", match=models.MatchValue(value=chunk_id))]
-        ),
-        limit=1,
-        with_payload=True,
+    from app.models import JobEvidence
+
+    snapshot = (
+        db.query(JobEvidence)
+        .filter(JobEvidence.job_id == job_id, JobEvidence.chunk_id == chunk_id)
+        .first()
     )
-    payload: dict[str, Any] | None = points[0].payload if points else None
+
+    settings = get_settings()
+    payload: dict[str, Any] | None = None
+    try:
+        client = QdrantClient(url=settings.qdrant_url, timeout=30, check_compatibility=False)
+        points, _ = client.scroll(
+            collection_name="nirva_chunks",
+            scroll_filter=models.Filter(
+                must=[models.FieldCondition(key="chunk_id", match=models.MatchValue(value=chunk_id))]
+            ),
+            limit=1,
+            with_payload=True,
+        )
+        payload = points[0].payload if points else None
+    except Exception:
+        # Qdrant unavailable: degrade to the persisted evidence snapshot (the
+        # chunk already passed ACL filtering when it was retrieved into this
+        # job) instead of failing the citation click.
+        payload = None
 
     if payload is None:
-        from app.models import JobEvidence
-
-        snapshot = (
-            db.query(JobEvidence)
-            .filter(JobEvidence.job_id == job_id, JobEvidence.chunk_id == chunk_id)
-            .first()
-        )
         if snapshot is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chunk not found")
         item = snapshot.payload
         source = str(item.get("source", "tool"))
+        score_raw: Any = item.get("score")
         return {
             "chunk_id": item.get("chunk_id"),
             "document_id": item.get("document_id"),
@@ -78,6 +87,7 @@ def get_evidence_chunk(
             "content_hash": "",
             "passage_text": item.get("text"),
             "source": source,
+            "score": float(score_raw) if score_raw is not None else 0.0,
             "why_retrieved": (
                 "Read-only operational tool result recorded during the investigation"
                 if source == "tool"
@@ -88,6 +98,10 @@ def get_evidence_chunk(
     if user.role not in (payload.get("allowed_roles") or []):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
+    score_from_payload: Any = payload.get("score")
+    if score_from_payload is None and snapshot is not None:
+        score_from_payload = snapshot.payload.get("score")
+    score = float(score_from_payload) if score_from_payload is not None else 0.0
     return {
         "chunk_id": payload.get("chunk_id"),
         "document_id": payload.get("document_id"),
@@ -101,5 +115,6 @@ def get_evidence_chunk(
         "content_hash": payload.get("content_hash"),
         "passage_text": payload.get("text"),
         "source": "retrieval",
+        "score": score,
         "why_retrieved": _WHY_RETRIEVED,
     }

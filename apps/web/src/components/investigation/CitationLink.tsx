@@ -120,7 +120,16 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
                 </div>
                 <div className="flex gap-2 py-0.5">
                   <dt className="w-32 shrink-0 font-medium">Why retrieved</dt>
-                  <dd>{evidence.why_retrieved}</dd>
+                  <dd>
+                    {evidence.why_retrieved}
+                    {typeof evidence.score === "number" && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — score {evidence.score.toFixed(2)}, hybrid dense+sparse,
+                        rank-fused
+                      </span>
+                    )}
+                  </dd>
                 </div>
               </dl>
               <Separator />

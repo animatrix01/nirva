@@ -81,6 +81,9 @@ def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
     return upsert_chunks(client, chunks, vectors)
 
 
+UPLOAD_ALLOWED_ROLES = ("engineer", "admin")
+
+
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 def upload_document(
     user: CurrentUser,
@@ -95,6 +98,11 @@ def upload_document(
     equipment_id: Annotated[str | None, Form()] = None,
     allowed_roles: Annotated[str | None, Form()] = None,
 ) -> DocumentUploadResponse:
+    if user.role not in UPLOAD_ALLOWED_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Document upload requires engineer or admin role",
+        )
     settings = get_settings()
     payload = file.file.read()
     if not payload:
