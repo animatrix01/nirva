@@ -34,6 +34,8 @@ uploads/
 # Misc
 *.log
 .DS_Store
+_phase*_out.txt
+_live_storage/
 
 # generated demo corpus (regenerate via data/synthetic/generate_corpus.py)
 data/synthetic/generated/
