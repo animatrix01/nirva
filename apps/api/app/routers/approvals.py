@@ -72,7 +72,7 @@ def decide_approval(
                 approval_id=approval.id,
                 job_id=approval.job_id,
                 proposal_id=approval.proposal_id,
-                asset=job.equipment_id if job is not None else "unknown",
+                asset=(job.equipment_id if job is not None else None) or "unspecified",
                 justification=approval.arguments_summary,
                 parts=["SEAL-P204-KIT"],
                 steps=["Isolate per SOP-014", "Replace seal kit", "Laser alignment", "Acceptance test"],

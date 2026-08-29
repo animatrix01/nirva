@@ -105,6 +105,61 @@ def test_audit_chain_valid_after_job_activity(
     assert "job.created" in actions
 
 
+def test_approval_for_equipmentless_job_creates_work_order(
+    client: TestClient,
+    auth_headers: AuthHeadersFn,
+) -> None:
+    """Regression: job without equipment_id must not crash work-order creation."""
+    engineer = auth_headers("engineer")
+    created = client.post(
+        "/api/jobs",
+        json={"objective": "Equipment-less approval regression test."},
+        headers=engineer,
+    )
+    assert created.status_code == 201
+    job_id = created.json()["job_id"]
+
+    from app.db import SessionLocal
+    from app.models import Approval
+
+    db = SessionLocal()
+    try:
+        approval = Approval(
+            id=str(uuid.uuid4()),
+            job_id=job_id,
+            proposal_id=f"PROP-{uuid.uuid4()}",
+            action="approve_work_order",
+            arguments_summary="generic action without equipment id",
+            evidence_refs=[],
+            risk_level="medium",
+        )
+        db.add(approval)
+        db.commit()
+        approval_id = approval.id
+    finally:
+        db.close()
+
+    headers = auth_headers("supervisor")
+    first = client.post(
+        f"/api/approvals/{approval_id}/decision",
+        json={"decision": "approved"},
+        headers=headers,
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["work_order_id"]
+
+    from app.db import SessionLocal
+    from app.models import WorkOrder
+
+    db = SessionLocal()
+    try:
+        wo = db.query(WorkOrder).filter(WorkOrder.approval_id == approval_id).first()
+        assert wo is not None
+        assert wo.asset == "unspecified"
+    finally:
+        db.close()
+
+
 @pytest.mark.parametrize("role", ["engineer"])
 def test_engineer_cannot_read_audit(
     client: TestClient, auth_headers: AuthHeadersFn, role: str
