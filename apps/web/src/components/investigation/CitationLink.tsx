@@ -27,18 +27,29 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
     Array<{ chunk_id: string; page: number | null; section: string | null; text: string }>
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [docUnavailable, setDocUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const isToolSource =
+    citation.chunk_id.startsWith("tool-") ||
+    citation.title.toLowerCase().includes("(read-only tool)");
 
   async function handleOpen() {
     setOpen(true);
     setLoading(true);
     setError(null);
+    setDocUnavailable(false);
     setEvidence(null);
     try {
       const chunk = await getEvidence(jobId, citation.chunk_id);
       setEvidence(chunk);
-      const doc = await getDocumentContent(chunk.document_id);
-      setDocChunks(doc.chunks);
+      try {
+        const doc = await getDocumentContent(chunk.document_id);
+        setDocChunks(doc.chunks);
+      } catch {
+        // Tool-sourced citations have no backing document — passage only.
+        setDocUnavailable(true);
+      }
     } catch (e: unknown) {
       setError(
         e instanceof ApiError ? e.body.detail : "Failed to load source passage"
@@ -85,6 +96,10 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
               </p>
               <dl className="text-xs">
                 <div className="flex gap-2 py-0.5">
+                  <dt className="w-32 shrink-0 font-medium">Source</dt>
+                  <dd>{isToolSource ? "tool (read-only result)" : "retrieval"}</dd>
+                </div>
+                <div className="flex gap-2 py-0.5">
                   <dt className="w-32 shrink-0 font-medium">Chunk ID</dt>
                   <dd className="font-mono break-all">{evidence.chunk_id}</dd>
                 </div>
@@ -109,6 +124,12 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
                 </div>
               </dl>
               <Separator />
+              {docUnavailable && (
+                <p className="text-muted-foreground text-xs">
+                  Full document view is not available for this source — tool
+                  results are shown as passage only.
+                </p>
+              )}
               {docChunks.length > 0 && (
                 <div className="max-h-40 overflow-y-auto">
                   <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase">

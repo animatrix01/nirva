@@ -36,9 +36,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: INTEGRATION Unit 2 — E2E verified through the REAL API (127.0.0.1:8000): engineer login → P-204 job created (queued) → SSE streamed 13 envelope events (intake→retrieve→answer→finalize→propose→awaiting_approval, payload_refs search_documents/approval_request) → approval_request artifact served (risk=high) → engineer decision attempt correctly 403 → supervisor approved (work_order_id issued) → duplicate decision 409 → job status completed → audit chain_valid=true (safety_officer) → Last-Event-ID:5 replayed seq 6-13 exactly. Lint+tsc+53 tests+production build all green.
 
+- 2026-08-29: Rehearsal-prep Unit — dev server verified live on http://localhost:3000 (Ready, all routes 200: /, /login, /investigations, /investigations/new, /approvals); full browser flow driven against the live API with the rehearsal objective: job created queued → 13 SSE events (intake→retrieve→answer→finalize→propose→awaiting_approval) → 6 structured citations on the report → retrieval citations: evidence endpoint OK (passage + why-retrieved source=retrieval) + document deep-link OK → tool citation `tool-inventory-SEAL-P204-KIT`: evidence OK (source=tool) and deep-link 404 handled as designed passage-only rendering (fixed CitationLink to show "passage only" note + Source: tool/retrieval label instead of an error); supervisor second-context sees the pending approval (risk=high). Self-check green (53 tests). No backend issues filed — none hit.
+
 ## In Progress
 
-- (nothing — integration complete; awaiting demo rehearsal input)
+- Ready for rehearsal; contradiction wiring expected from Terminal A (ContradictionView component exists, needs a data source — artifact or citation shape TBD).
 
 ## Blocked (reason + which lane must act)
 
