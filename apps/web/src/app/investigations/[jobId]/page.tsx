@@ -6,9 +6,18 @@ import { AppHeader } from "@/components/app-header";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { EventTimeline } from "@/components/investigation/EventTimeline";
 import { CitationLink } from "@/components/investigation/CitationLink";
+import { EvidencePanel } from "@/components/investigation/EvidencePanel";
+import { ToolActivityList } from "@/components/investigation/ToolActivityList";
+import { ContradictionView } from "@/components/investigation/ContradictionView";
 import { bannerForStatus } from "@/components/investigation/timeline";
-import { ApiError, getJob } from "@/lib/api";
+import { ApiError, getJob, getArtifact } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
+import type {
+  Contradiction,
+  EvidenceReference,
+  JobArtifact,
+  ToolActivity,
+} from "@/lib/artifacts";
 import type { JobDetail, SseEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +41,8 @@ export default function InvestigationDetailPage() {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
   const [events, setEvents] = useState<SseEvent[]>([]);
+  const [artifacts, setArtifacts] = useState<Record<string, JobArtifact>>({});
+  const [selectedChunkId, setSelectedChunkId] = useState<string | null>(null);
   const [streamState, setStreamState] = useState<StreamState>("connecting");
 
   const streamRef = useRef<{ close: () => void } | null>(null);
@@ -39,6 +50,21 @@ export default function InvestigationDetailPage() {
   useEffect(() => {
     if (!jobId) return;
     let cancelled = false;
+    const fetched = new Set<string>();
+
+    const fetchArtifact = (ref: string) => {
+      if (fetched.has(ref)) return;
+      fetched.add(ref);
+      void getArtifact(jobId, ref)
+        .then((artifact) => {
+          if (!cancelled) {
+            setArtifacts((prev) => ({ ...prev, [ref]: artifact }));
+          }
+        })
+        .catch(() => {
+          // Artifact unavailable: leave the panel showing "no data" state.
+        });
+    };
 
     queueMicrotask(() => {
       void (async () => {
@@ -69,6 +95,7 @@ export default function InvestigationDetailPage() {
             if (prev.some((p) => p.seq === event.seq)) return prev;
             return [...prev, event].sort((a, b) => a.seq - b.seq);
           });
+          if (event.payload_ref) fetchArtifact(event.payload_ref);
         },
       });
       streamRef.current = handle;
@@ -108,6 +135,16 @@ export default function InvestigationDetailPage() {
 
   const banner = bannerForStatus(job.status);
   const live = ["queued", "running"].includes(job.status);
+
+  const evidence: EvidenceReference[] = Object.values(artifacts).flatMap((a) =>
+    a.kind === "evidence" ? a.evidence : []
+  );
+  const tools: ToolActivity[] = Object.values(artifacts).flatMap((a) =>
+    a.kind === "tool" ? [a.tool] : []
+  );
+  const contradictions: Contradiction[] = Object.values(artifacts).flatMap(
+    (a) => (a.kind === "contradiction" ? [a.contradiction] : [])
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -154,6 +191,31 @@ export default function InvestigationDetailPage() {
             Plan &amp; timeline
           </h2>
           <EventTimeline events={events} />
+        </section>
+
+        {contradictions.map((c, i) => (
+          <section key={i} className="mt-6">
+            <ContradictionView contradiction={c} />
+          </section>
+        ))}
+
+        <section className="mt-6 grid grid-cols-1 gap-6">
+          <div>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+              Evidence
+            </h2>
+            <EvidencePanel
+              evidence={evidence}
+              selectedChunkId={selectedChunkId}
+              onSelect={setSelectedChunkId}
+            />
+          </div>
+          <div>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+              Tool activity
+            </h2>
+            <ToolActivityList tools={tools} />
+          </div>
         </section>
 
         {job.final_report && (
