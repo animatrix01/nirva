@@ -12,7 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "api"))
 
-os.environ.setdefault("DATABASE_URL", "sqlite:///./_server.db")
+if not os.environ.get("DATABASE_URL"):
+    raise SystemExit(
+        "DATABASE_URL must be set (use the SAME absolute URL the API server uses, "
+        "e.g. sqlite:///D:/.../apps/api/_server.db or the PostgreSQL URL)"
+    )
 
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.models import AssetEvent, InventoryItem  # noqa: E402

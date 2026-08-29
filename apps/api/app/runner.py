@@ -59,7 +59,7 @@ def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]
             role=role or role_hint,
             query_dense=dense[0],
             query_sparse=sparse,
-            top_k=5,
+            top_k=8,
         )
         evidence: list[dict[str, Any]] = [
             {

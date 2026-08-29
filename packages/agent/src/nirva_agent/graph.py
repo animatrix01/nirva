@@ -214,15 +214,14 @@ def _matching_sentence(text: str, patterns: tuple[str, ...]) -> str | None:
 def detect_contradictions(evidence: list[EvidenceItem]) -> list[Contradiction]:
     """Deterministic cross-source conflict detection: same topic, opposite claims.
 
-    A contradiction is surfaced, never silently resolved: the judge (human)
-    verifies which record is correct (COMMON.md principle: contradictions are
-    shown side-by-side).
+    Scans ALL evidence (retrieved chunks and read-only tool results alike): the
+    inspection-vs-work-order conflict may arrive through either channel. A
+    contradiction is surfaced, never silently resolved: the judge (human)
+    verifies which record is correct.
     """
     completed: list[tuple[EvidenceItem, str]] = []
     not_completed: list[tuple[EvidenceItem, str]] = []
     for item in evidence:
-        if item.source != "retrieval":
-            continue
         done = _matching_sentence(item.text, _COMPLETED_PATTERNS)
         if done:
             completed.append((item, done))
