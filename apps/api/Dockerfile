@@ -8,9 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv
 
 COPY packages/agent/ ./packages/agent/
+COPY packages/retrieval/ ./packages/retrieval/
 COPY apps/api/ ./apps/api/
 
-RUN pip install --no-cache-dir /srv/packages/agent /srv/apps/api
+RUN pip install --no-cache-dir /srv/packages/agent "/srv/packages/retrieval[parse,store]" /srv/apps/api
 
 EXPOSE 8000
 

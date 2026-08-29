@@ -23,7 +23,7 @@ from nirva_agent.state import NirvaState
 DEFAULT_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 GATEWAY_TIMEOUT_SECONDS = 90.0
 
-NODE_SEQUENCE: tuple[str, ...] = ("intake", "answer", "finalize")
+NODE_SEQUENCE: tuple[str, ...] = ("intake", "retrieve", "answer", "finalize")
 
 
 @dataclass
@@ -47,9 +47,14 @@ class LangGraphInvestigationGraph:
 
     name = "investigation_graph_v1"
 
-    def __init__(self, gateway: GatewayClient) -> None:
+    def __init__(
+        self,
+        gateway: GatewayClient,
+        retriever: Callable[[str, str], list[dict[str, Any]]] | None = None,
+    ) -> None:
         self._gateway = gateway
-        self._graph = build_investigation_graph(gateway)
+        self._retriever = retriever
+        self._graph = build_investigation_graph(gateway, retriever=retriever)
 
     def run(self, ctx: GraphRunContext) -> None:
         state: dict[str, Any] = {
@@ -76,6 +81,10 @@ class LangGraphInvestigationGraph:
                 if isinstance(delta, dict):
                     final_state.update(delta)
                 ctx.emit("node_finished", finished, None)
+                if finished == "retrieve" and isinstance(delta, dict):
+                    ctx.emit("tool_called", "retrieve", "search_documents")
+                    if delta.get("retrieved_evidence"):
+                        ctx.emit("evidence_added", "retrieve", None)
                 idx = NODE_SEQUENCE.index(finished) if finished in NODE_SEQUENCE else -1
                 if 0 <= idx < len(NODE_SEQUENCE) - 1:
                     pending = NODE_SEQUENCE[idx + 1]
@@ -91,7 +100,7 @@ class LangGraphInvestigationGraph:
         ctx.emit("completed", "finalize", None)
 
 
-def get_graph() -> InvestigationGraph:
+def get_graph(retriever: Callable[[str, str], list[dict[str, Any]]] | None = None) -> InvestigationGraph:
     config = load_gateway_config(model=DEFAULT_MODEL)
     gateway = GatewayClient(
         GatewayConfig(
@@ -100,4 +109,4 @@ def get_graph() -> InvestigationGraph:
             timeout_seconds=GATEWAY_TIMEOUT_SECONDS,
         )
     )
-    return LangGraphInvestigationGraph(gateway)
+    return LangGraphInvestigationGraph(gateway, retriever)

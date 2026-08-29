@@ -75,6 +75,10 @@ def fake_graph_backend() -> Iterator[None]:
             )
 
     original = gc.get_graph
-    gc.get_graph = lambda: gc.LangGraphInvestigationGraph(FakeGateway())  # type: ignore[arg-type,return-value]
+
+    def _fake_get_graph(retriever: object = None) -> gc.InvestigationGraph:
+        return gc.LangGraphInvestigationGraph(FakeGateway())  # type: ignore[arg-type]
+
+    gc.get_graph = _fake_get_graph  # type: ignore[assignment]
     yield
     gc.get_graph = original

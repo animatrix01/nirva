@@ -65,6 +65,26 @@ class Approval(Base):
     work_order_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class Document(Base):
+    __tablename__ = "documents"
+
+    document_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    title: Mapped[str] = mapped_column(String(255))
+    document_type: Mapped[str] = mapped_column(String(32))
+    revision: Mapped[str] = mapped_column(String(32))
+    effective_date: Mapped[str] = mapped_column(String(32))
+    department: Mapped[str] = mapped_column(String(64))
+    equipment_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    confidentiality_level: Mapped[str] = mapped_column(String(32))
+    allowed_roles: Mapped[list[object]] = mapped_column(JSON, default=list)
+    content_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(16), default="quarantined")
+    file_path: Mapped[str] = mapped_column(String(512))
+    file_size: Mapped[int] = mapped_column(Integer, default=0)
+    uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

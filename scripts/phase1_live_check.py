@@ -8,9 +8,8 @@ os.environ["JWT_SECRET"] = "x" * 40
 os.environ["MODEL_BASE_URL"] = "http://127.0.0.1:11434/v1"
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.main import create_app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 app = create_app()
 with TestClient(app) as c:

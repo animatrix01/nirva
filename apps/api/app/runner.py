@@ -1,13 +1,60 @@
 import threading
 import uuid
+from collections.abc import Callable
+from typing import Any
 
+from qdrant_client import QdrantClient
 from sqlalchemy.orm import Session
 
 from app import graph_client
+from app.config import get_settings
 from app.db import SessionLocal
 from app.events import emit_event
 from app.graph_client import GraphRunContext
 from app.models import Job, User, utcnow
+
+QDRANT_TIMEOUT_SECONDS = 30.0
+
+
+def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]]:
+    settings = get_settings()
+    client: QdrantClient | None = None
+
+    def retrieve(role: str, objective: str) -> list[dict[str, Any]]:
+        nonlocal client
+        from nirva_retrieval.embed import dense_embeddings, sparse_embedding
+        from nirva_retrieval.search import search_documents
+
+        if client is None:
+            client = QdrantClient(
+                url=settings.qdrant_url, timeout=30, check_compatibility=False
+            )
+        dense = dense_embeddings([objective], base_url=settings.model_base_url)
+        sparse = sparse_embedding(objective)
+        hits = search_documents(
+            client,
+            role=role or role_hint,
+            query_dense=dense[0],
+            query_sparse=sparse,
+            top_k=5,
+        )
+        return [
+            {
+                "chunk_id": hit.chunk_id,
+                "document_id": hit.document_id,
+                "document_title": hit.document_title,
+                "document_type": hit.document_type,
+                "revision": hit.revision,
+                "page": hit.page,
+                "section": hit.section,
+                "equipment_id": hit.equipment_id,
+                "text": hit.text,
+                "score": hit.score,
+            }
+            for hit in hits
+        ]
+
+    return retrieve
 
 
 def run_job(job_id: str) -> None:
@@ -45,7 +92,7 @@ def run_job(job_id: str) -> None:
             emit=emit,
             set_report=set_report,
         )
-        graph = graph_client.get_graph()
+        graph = graph_client.get_graph(retriever=_make_retriever(user_role))
         try:
             graph.run(ctx)
         except Exception as exc:

@@ -109,6 +109,28 @@ class AuditResponse(BaseModel):
     events: list[AuditEventOut]
 
 
+class DocumentOut(BaseModel):
+    document_id: str
+    title: str
+    document_type: str
+    revision: str
+    effective_date: str
+    department: str
+    equipment_id: str | None
+    confidentiality_level: str
+    content_hash: str
+    status: str
+    uploaded_at: datetime
+
+
+class DocumentUploadResponse(BaseModel):
+    document_id: str
+    status: str
+    content_hash: str
+    duplicate: bool
+    chunks: int = 0
+
+
 class ModelInfo(BaseModel):
     model_name: str
     purpose: str

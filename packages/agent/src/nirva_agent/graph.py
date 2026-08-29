@@ -1,12 +1,15 @@
-"""Deterministic three-node investigation graph (Phase 1, COMMON.md c.3).
+"""Deterministic investigation graph (COMMON.md c.3).
 
-intake -> answer -> finalize over the frozen 17-field NirvaState.
-The answer node talks ONLY to the local model gateway and treats every piece
-of retrieved content as EVIDENCE-DATA, never instructions (zoned prompts).
+Phase 2 shape: intake -> retrieve -> answer -> finalize over the frozen
+17-field NirvaState. The retrieve node calls an injected local retriever
+(Qdrant hybrid search) and produces EvidenceItem inputs; the answer node talks
+ONLY to the local model gateway and treats every piece of retrieved content as
+EVIDENCE-DATA, never instructions (zoned prompts).
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Protocol
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -46,6 +49,9 @@ class GatewayLike(Protocol):
         max_tokens: int = 1024,
         extra: dict[str, object] | None = None,
     ) -> ChatResponse: ...
+
+
+RetrieverLike = Callable[[str, str], list[dict[str, Any]]]
 
 
 def _seq(state: NirvaState) -> int:
@@ -104,6 +110,20 @@ def _citations_from_evidence(evidence: list[EvidenceItem]) -> list[Citation]:
         )
         for item in evidence
     ]
+
+
+def retrieve_node(state: NirvaState, retriever: RetrieverLike | None) -> dict[str, object]:
+    """Fetch authorized evidence via the injected local retriever (Qdrant)."""
+    if retriever is None:
+        evidence: list[dict[str, Any]] = []
+    else:
+        evidence = retriever(state["user_role"], state["objective"])
+    return {
+        "retrieved_evidence": [EvidenceItem.model_validate(item) for item in evidence],
+        "completed_steps": ["retrieve"],
+        "current_node": "answer",
+        "last_event_seq": _seq(state),
+    }
 
 
 def answer_node(state: NirvaState, gateway: GatewayLike) -> dict[str, object]:
@@ -167,14 +187,17 @@ def build_investigation_graph(
     gateway: GatewayLike,
     *,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
+    retriever: RetrieverLike | None = None,
 ) -> CompiledStateGraph:
     """Compile the deterministic graph; checkpointer enables resume."""
     builder = StateGraph(NirvaState)
     builder.add_node("intake", intake_node)
+    builder.add_node("retrieve", lambda state: retrieve_node(state, retriever))
     builder.add_node("answer", lambda state: answer_node(state, gateway))
     builder.add_node("finalize", finalize_node)
     builder.add_edge(START, "intake")
-    builder.add_edge("intake", "answer")
+    builder.add_edge("intake", "retrieve")
+    builder.add_edge("retrieve", "answer")
     builder.add_edge("answer", "finalize")
     builder.add_edge("finalize", END)
     if checkpointer is not None:
