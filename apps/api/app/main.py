@@ -46,7 +46,6 @@ def create_app() -> FastAPI:
         expose_headers=["Last-Event-ID", "X-Accel-Buffering"],
     )
     app.include_router(auth.router)
-    app.include_router(auth.audit_router)
     app.include_router(jobs.router)
     app.include_router(artifacts.router)
     app.include_router(evidence.router)

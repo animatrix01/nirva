@@ -18,7 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from nirva_agent.gateway import ChatMessage, ChatResponse
-from nirva_agent.state import Citation, EvidenceItem, FinalReport, NirvaState, ProposedAction
+from nirva_agent.state import Citation, Contradiction, EvidenceItem, FinalReport, NirvaState, ProposedAction
 
 SYSTEM_RULES = (
     "You are NIRVA, an offline industrial investigation agent for refinery "
@@ -192,6 +192,62 @@ PROPOSE_STEPS = [
     "Restore flush line and run 30 minute acceptance test",
 ]
 
+_CONFLICT_TOPIC = "alignment"
+_COMPLETED_PATTERNS = ("completed successfully", "alignment was completed", "alignment completed")
+_NOT_COMPLETED_PATTERNS = (
+    "not completed",
+    "was returned to service still misaligned",
+    "still misaligned",
+)
+
+
+def _matching_sentence(text: str, patterns: tuple[str, ...]) -> str | None:
+    lowered = text.lower()
+    if _CONFLICT_TOPIC not in lowered:
+        return None
+    for sentence in lowered.replace("!", ".").replace("?", ".").split("."):
+        if _CONFLICT_TOPIC in sentence and any(p in sentence for p in patterns):
+            return sentence.strip()
+    return None
+
+
+def detect_contradictions(evidence: list[EvidenceItem]) -> list[Contradiction]:
+    """Deterministic cross-source conflict detection: same topic, opposite claims.
+
+    A contradiction is surfaced, never silently resolved: the judge (human)
+    verifies which record is correct (COMMON.md principle: contradictions are
+    shown side-by-side).
+    """
+    completed: list[tuple[EvidenceItem, str]] = []
+    not_completed: list[tuple[EvidenceItem, str]] = []
+    for item in evidence:
+        if item.source != "retrieval":
+            continue
+        done = _matching_sentence(item.text, _COMPLETED_PATTERNS)
+        if done:
+            completed.append((item, done))
+        missing = _matching_sentence(item.text, _NOT_COMPLETED_PATTERNS)
+        if missing:
+            not_completed.append((item, missing))
+    if not completed or not not_completed:
+        return []
+
+    def _citation(item: EvidenceItem) -> Citation:
+        locator = f"page {item.page}" if item.page is not None else (item.section or "n/a")
+        return Citation(title=item.document_title, revision=item.revision, locator=locator, chunk_id=item.chunk_id)
+
+    done_item, done_claim = completed[0]
+    missing_item, missing_claim = not_completed[0]
+    return [
+        Contradiction(
+            topic="Coupling alignment completion",
+            source_a=_citation(done_item),
+            source_b=_citation(missing_item),
+            claim_a=done_claim,
+            claim_b=missing_claim,
+        )
+    ]
+
 
 def propose_node(state: NirvaState) -> dict[str, object]:
     """Draft a consequential action when findings are grounded; human approval
@@ -201,6 +257,7 @@ def propose_node(state: NirvaState) -> dict[str, object]:
         raise ValueError("propose failed: no final report")
     if report.confidence < 0.5:
         return {
+            "contradictions": detect_contradictions(list(state.get("retrieved_evidence", []))),
             "completed_steps": ["propose"],
             "current_node": None,
             "last_event_seq": _seq(state),
@@ -220,6 +277,7 @@ def propose_node(state: NirvaState) -> dict[str, object]:
     )
     return {
         "proposed_actions": [action],
+        "contradictions": detect_contradictions(evidence),
         "completed_steps": ["propose"],
         "current_node": None,
         "last_event_seq": _seq(state),

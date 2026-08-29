@@ -190,6 +190,10 @@ def run_job(job_id: str) -> None:
                     )
                 )
         actions = (result or {}).get("proposed_actions") or []
+        job.contradictions = [
+            c.model_dump() if hasattr(c, "model_dump") else dict(c)
+            for c in ((result or {}).get("contradictions") or [])
+        ]
         if actions:
             action = actions[0]
             db.add(

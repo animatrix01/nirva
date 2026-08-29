@@ -136,6 +136,73 @@ def test_finalize_abstains_low_confidence_without_evidence() -> None:
     assert any("No indexed evidence" in gap for gap in report.gaps)
 
 
+def test_detect_contradictions_pairs_conflicting_records() -> None:
+    from nirva_agent.graph import detect_contradictions
+    from nirva_agent.state import EvidenceItem
+
+    evidence = [
+        EvidenceItem(
+            chunk_id="chk-wo-112",
+            document_id="p204-workorders",
+            document_title="P-204 Work Order History",
+            document_type="work_order",
+            revision="1",
+            section="Record 003",
+            text="work_order: WO-2026-0112. Coupling alignment completed successfully.",
+            score=0.8,
+        ),
+        EvidenceItem(
+            chunk_id="chk-insp-07",
+            document_id="p204-insp-07",
+            document_title="P-204 Inspection Report July 2026",
+            document_type="incident",
+            revision="A",
+            page=1,
+            text=(
+                "The coupling alignment correction was not completed. "
+                "The pump was returned to service still misaligned."
+            ),
+            score=0.9,
+        ),
+        EvidenceItem(
+            chunk_id="chk-unrelated",
+            document_id="p204-manual",
+            document_title="P-204 OEM Maintenance Manual",
+            document_type="manual",
+            revision="B",
+            page=2,
+            text="Torque gland bolts to 45 Nm in a star pattern.",
+            score=0.5,
+        ),
+    ]
+    contradictions = detect_contradictions(evidence)
+    assert len(contradictions) == 1
+    c = contradictions[0]
+    assert c.source_a.chunk_id == "chk-wo-112"
+    assert c.source_b.chunk_id == "chk-insp-07"
+    assert "completed" in c.claim_a
+    assert "not completed" in c.claim_b
+
+
+def test_detect_contradictions_requires_both_sides() -> None:
+    from nirva_agent.graph import detect_contradictions
+    from nirva_agent.state import EvidenceItem
+
+    only_completed = [
+        EvidenceItem(
+            chunk_id="chk-1",
+            document_id="d",
+            document_title="T",
+            document_type="work_order",
+            revision="1",
+            text="Coupling alignment completed successfully.",
+            score=0.8,
+        )
+    ]
+    assert detect_contradictions(only_completed) == []
+    assert detect_contradictions([]) == []
+
+
 def test_full_run_end_to_end_without_checkpointer() -> None:
     graph = build_investigation_graph(FakeGateway(reply="Findings with [chunk-9]."))
     final = graph.invoke(_base_state())

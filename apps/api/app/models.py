@@ -29,6 +29,7 @@ class Job(Base):
     status: Mapped[str] = mapped_column(String(32), default="queued", index=True)
     current_node: Mapped[str | None] = mapped_column(String(64), nullable=True)
     final_report: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    contradictions: Mapped[list[object]] = mapped_column(JSON, default=list)
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

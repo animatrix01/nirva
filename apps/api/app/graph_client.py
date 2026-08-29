@@ -94,6 +94,8 @@ class LangGraphInvestigationGraph:
                         raise RuntimeError(msg)
                     ctx.set_report(cast(Any, report).model_dump())
                 if finished == "propose":
+                    if isinstance(delta, dict) and delta.get("contradictions"):
+                        ctx.emit("contradiction_found", "propose", "contradiction")
                     if isinstance(delta, dict) and delta.get("proposed_actions"):
                         ctx.emit("awaiting_approval", "propose", "approval_request")
                     else:

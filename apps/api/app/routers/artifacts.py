@@ -68,6 +68,12 @@ def get_artifact(
             },
         }
 
+    if payload_ref == "contradiction":
+        contradictions = job.contradictions or []
+        if not contradictions:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No contradiction recorded")
+        return {"kind": "contradiction", "contradiction": contradictions[0]}
+
     if payload_ref == "report":
         if job.final_report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not available")
