@@ -66,14 +66,16 @@ describe("DocumentsPage role gating", () => {
     );
     await user.type(screen.getByLabelText(/^title$/i), "P204 Vendor Bulletin");
     await user.type(screen.getByLabelText(/revision/i), "1");
+    await user.type(screen.getByLabelText(/effective date/i), "2026-08-29");
     await user.type(screen.getByLabelText(/department/i), "Reliability");
     await user.click(screen.getByRole("button", { name: /upload/i }));
     await waitFor(() =>
-      expect(screen.getByText(/Upload indexed — 3 chunk\(s\) indexed\./i)).toBeInTheDocument()
+      expect(screen.getByText(/indexed — 3 chunk/i)).toBeInTheDocument()
     );
   });
 
   it("chunk viewer lists document chunks with page and section", async () => {
+    setAuth("engineer");
     render(
       <ChunkViewer open onOpenChange={vi.fn()} documentId="doc-oem-pumps" />
     );

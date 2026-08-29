@@ -40,9 +40,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: TIER 1 Unit 2a — document library contract layer: `lib/types.ts` (+`DocumentType`, `DocumentUploadResponse {document_id, status, content_hash, duplicate, chunks}`), `lib/api.ts` `listDocuments()` + `uploadDocument()` (multipart with role-gated endpoint). Lint+tsc green.
 
+- 2026-08-29: TIER 1 Unit 2b/c — `/documents` route live: ACL-filtered library table (title/type/revision/status badge/department/equipment/uploaded), chunk viewer dialog (GET /api/documents/{id}/content, evidence-panel styling, stale-keyed loading), role-gated upload form (engineer+admin only; others see restriction note; file picker, type select, revision, effective_date, department, optional equipment_id, 4-role checkbox multi-select; success shows `indexed — N chunk(s)` and refreshes; duplicate=true renders informational "already indexed", not an error); EvidencePanel + CitationLink now show numeric `score` next to why-retrieved ("score 0.87 — hybrid dense+sparse, rank-fused") with graceful degradation when absent (live API: older chunks have no score — confirmed); AppHeader gains "Documents" link visible to all roles, placed before Approvals/Audit/System. Test doubles extended (ACL-filtered list, role-guarded upload 403 for supervisor/safety_officer). 58 tests green.
+
 ## In Progress
 
-- Ready for rehearsal; contradiction wiring expected from Terminal A (ContradictionView component exists, needs a data source — artifact or citation shape TBD).
+- EXIT GATE: browser verification of upload flow against real API (engineer upload → indexed+chunk count → chunks viewable; supervisor/safety_officer no form; admin upload; citation of uploaded doc) + production build.
 
 ## Blocked (reason + which lane must act)
 
