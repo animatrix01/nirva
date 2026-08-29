@@ -9,6 +9,7 @@ import type {
 } from "@/lib/types";
 import type { JobArtifact } from "@/lib/artifacts";
 import type { ApprovalRequest } from "@/lib/artifacts";
+import type { AuditResponse, HealthResponse } from "@/lib/types";
 import { ApiError } from "@/mocks/router";
 import { handleMockRequest } from "@/mocks/router";
 
@@ -154,6 +155,33 @@ export function decideApproval(
   return request("POST", `/api/approvals/${approvalId}/decision`, {
     body: { decision, comment },
   });
+}
+
+export function getAudit(
+  query: { job_id?: string; limit?: number } = {}
+): Promise<AuditResponse> {
+  const params = new URLSearchParams();
+  if (query.job_id) params.set("job_id", query.job_id);
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  const qs = params.toString();
+  return request("GET", `/api/audit${qs ? `?${qs}` : ""}`);
+}
+
+export function getHealth(): Promise<HealthResponse> {
+  return request<HealthResponse>("GET", "/api/health", { auth: false });
+}
+
+export function getAdminModels(): Promise<
+  Array<{
+    model_name: string;
+    purpose: string;
+    quantization: string;
+    checksum_sha256: string;
+    profile: string;
+    loaded: boolean;
+  }>
+> {
+  return request("GET", "/api/admin/models");
 }
 
 export type { JobStatus };

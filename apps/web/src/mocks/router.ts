@@ -17,6 +17,7 @@ import {
   toJobSummary,
 } from "@/mocks/db";
 import { getArtifact, findApprovalArtifact, listApprovalArtifacts, applyApprovalDecision } from "@/mocks/artifacts";
+import { getMockAudit, getMockHealth } from "@/mocks/audit";
 
 // ---------------------------------------------------------------------------
 // MOCK ROUTER — dispatches requests exactly as the frozen §c.1 endpoints would.
@@ -129,6 +130,65 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       const summaries: JobSummary[] = filtered.map(toJobSummary);
       return summaries;
     },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/admin\/models$/,
+    handler: ({ token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role !== "admin") {
+        throw new ApiError(403, "Admin role required");
+      }
+      return [
+        {
+          model_name: "nirva-generator-8b",
+          purpose: "generation",
+          quantization: "q4_k_m",
+          checksum_sha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          profile: "dev",
+          loaded: true,
+        },
+        {
+          model_name: "nirva-embedder-400m",
+          purpose: "embedding",
+          quantization: "f16",
+          checksum_sha256: "0f9e8d7c6b5a49382716059483726150f9e8d7c6b5a4938271605948372615",
+          profile: "dev",
+          loaded: true,
+        },
+        {
+          model_name: "nirva-reranker-200m",
+          purpose: "reranker",
+          quantization: "q8_0",
+          checksum_sha256: "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff",
+          profile: "dev",
+          loaded: false,
+        },
+      ];
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/audit$/,
+    handler: ({ query, token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role !== "admin" && caller.role !== "safety_officer") {
+        throw new ApiError(403, "Admin or safety_officer role required");
+      }
+      const jobId = query.get("job_id");
+      const limit = query.get("limit");
+      return getMockAudit({
+        job_id: jobId,
+        limit: limit ? Number(limit) : undefined,
+      });
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/health$/,
+    handler: () => getMockHealth(),
   },
   {
     method: "GET",

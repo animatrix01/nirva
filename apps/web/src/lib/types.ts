@@ -98,3 +98,32 @@ export interface TypedErrorBody {
   detail: string;
   field: string | null;
 }
+
+export interface AuditEvent {
+  event_id: string;
+  job_id: string;
+  actor: string;
+  actor_role: string;
+  action: string;
+  argument_summary: string;
+  outcome: "ok" | "error" | "blocked";
+  prev_hash: string;
+  hash: string;
+  ts: string;
+}
+
+export interface AuditResponse {
+  chain_valid: boolean;
+  events: AuditEvent[];
+}
+
+export interface HealthResponse {
+  status: "ok" | "degraded";
+  services: {
+    postgres: "up" | "down";
+    qdrant: "up" | "down";
+    model_gateway: "up" | "down";
+    storage: "up" | "down";
+  };
+  version: string;
+}

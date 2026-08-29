@@ -26,9 +26,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: Unit 7b — approval flow per frozen §c.1: `api.listApprovals()` + `api.decideApproval()`; mock routes GET /api/approvals (supervisor/admin, 403 others) + POST /api/approvals/{id}/decision (supervisor only, first-decision-wins 409, typed 422, resumes job to completed); `ApprovalCard.tsx` — engineer read-only waiting ("cannot self-approve"), supervisor enabled approve/reject + comment, post-decision shows decision/actor/timestamp/comment/work-order-id. Wired into detail page via approval payload_ref artifact. 51 tests green.
 
+- 2026-08-29: Unit 8 — approvals/audit/system/health: `/approvals` queue (pending/decided sections, decision wired for supervisors, 403 state for others); `/audit` (chain_valid badge, redacted-summary table, role-gated admin/safety_officer); `/admin/system` (frozen GET /api/admin/models table, admin-only); `HealthIndicator` in AppHeader polling GET /api/health → "Local / Offline" green / degraded / unreachable; role-aware nav links; mock handlers `/api/audit` (hash-chained events, chain re-verified on read, 403 others) + `/api/health` (no auth) + `/api/admin/models` (admin only). 51 tests green.
+
 ## In Progress
 
-- /approvals queue page (supervisor), /audit screen, Local/Offline health indicator, /admin/system.
+- AI Elements primitives (conversation/message/sources/tool/confirmation/task) + investigation workspace composition; layout pass 1366x768 + mobile fallback.
 
 ## Blocked (reason + which lane must act)
 
