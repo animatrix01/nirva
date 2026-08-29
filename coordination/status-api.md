@@ -4,9 +4,12 @@
 
 ## Current Phase
 
-Sprint engineering COMPLETE — 100% of the 24h-scoped plan (Phases 0-4). Remaining: joint demo rehearsal + backup video (operator + Terminal B).
+Tier 1 Unit 1 COMPLETE (documents upload role guard + evidence score) — Terminal B cleared for /documents UI.
 
 ## Done (list with dates + file paths)
+
+- 2026-08-30 | Tier 1 Unit 1: upload role guard (engineer+admin 201; supervisor/safety_officer 403 with document-control rationale, DECISIONS.md logged); evidence endpoint returns real numeric "score" (Qdrant payload -> job_evidence snapshot -> 0.0 fallback; tool items 1.0); Qdrant-outage resilience (evidence degrades to persisted snapshot instead of 500); upload 403 matrix + numeric-score tests; live server restarted, integration ALL GREEN incl. score in evidence keys and 403 guard verified live (`f62bac8`)
+- 2026-08-30 | Web app-header hydration fix committed by operator request (auth-guard race + Link nav) — crossover noted, all web checks green (`631be48`)
 
 - 2026-08-29 | BOTH docker images built and validated: nirva-api:latest (188s, pinned deps + vendored packages) and nirva-web:latest (35.7s after .dockerignore fix); web .dockerignore added; pypdf declared in retrieval parse extra (`bc1fa39`, `34bab7d`)
 - 2026-08-29 | Audit trail COMPLETE: 8 chained event types (job.created, retrieval.search_documents, tool.get_asset_history, tool.check_inventory, contradiction.detected, proposal.created, approval.approved, job.completed), chain_valid true; fixed hash-chain append race (process lock + commit-in-lock) (`f8b2046`, `db80494`)
