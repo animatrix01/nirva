@@ -201,7 +201,7 @@ export default function InvestigationDetailPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader title="Investigation" />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <JobStatusBadge status={job.status} />
@@ -238,104 +238,107 @@ export default function InvestigationDetailPage() {
           </div>
         )}
 
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-            Plan &amp; timeline
-          </h2>
-          <EventTimeline events={events} />
-        </section>
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[65fr_35fr]">
+          <div className="flex min-w-0 flex-col gap-6">
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+                Plan &amp; timeline
+              </h2>
+              <EventTimeline events={events} />
+            </section>
 
-        {contradictions.map((c, i) => (
-          <section key={i} className="mt-6">
-            <ContradictionView contradiction={c} />
-          </section>
-        ))}
+            {contradictions.map((c, i) => (
+              <section key={i}>
+                <ContradictionView contradiction={c} />
+              </section>
+            ))}
 
-        {approval && (
-          <section className="mt-6">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Approval gate
-            </h2>
-            <ApprovalCard
-              approval={approval}
-              viewerRole={auth?.user.role ?? ""}
-              deciding={deciding}
-              onDecide={handleDecision}
-            />
-          </section>
-        )}
-
-        <section className="mt-6 grid grid-cols-1 gap-6">
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Evidence
-            </h2>
-            <EvidencePanel
-              evidence={evidence}
-              selectedChunkId={selectedChunkId}
-              onSelect={setSelectedChunkId}
-            />
+            {job.final_report && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+                  Final report
+                </h2>
+                <div className="text-sm">
+                  <Message from="assistant">
+                    <MessageContent>
+                      {/* MessageResponse renders sanitized markdown — raw HTML disabled */}
+                      <MessageResponse>{job.final_report.findings}</MessageResponse>
+                    </MessageContent>
+                  </Message>
+                  <p className="mt-3 text-xs">
+                    Confidence: {(job.final_report.confidence * 100).toFixed(0)}%
+                  </p>
+                  {job.final_report.assumptions.length > 0 && (
+                    <div className="mt-3">
+                      <h3 className="text-xs font-semibold uppercase">Assumptions</h3>
+                      <ul className="text-muted-foreground list-disc pl-4 text-xs">
+                        {job.final_report.assumptions.map((a, i) => (
+                          <li key={i}>{a}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {job.final_report.gaps.length > 0 && (
+                    <div className="mt-3">
+                      <h3 className="text-xs font-semibold uppercase">Gaps</h3>
+                      <ul className="text-muted-foreground list-disc pl-4 text-xs">
+                        {job.final_report.gaps.map((g, i) => (
+                          <li key={i}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {job.final_report.citations.length > 0 && (
+                    <div className="mt-3">
+                      <Sources>
+                        <SourcesTrigger count={job.final_report.citations.length} />
+                        <SourcesContent>
+                          {job.final_report.citations.map((c, i) => (
+                            <Source key={i} href="#" onClick={(e) => e.preventDefault()}>
+                              <CitationLink citation={c} />
+                            </Source>
+                          ))}
+                        </SourcesContent>
+                      </Sources>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Tool activity
-            </h2>
-            <ToolActivityList tools={tools} />
-          </div>
-        </section>
 
-        {job.final_report && (
-          <section className="mt-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Final report
-            </h2>
-            <div className="text-sm">
-              <Message from="assistant">
-                <MessageContent>
-                  {/* MessageResponse renders sanitized markdown — raw HTML disabled */}
-                  <MessageResponse>{job.final_report.findings}</MessageResponse>
-                </MessageContent>
-              </Message>
-              <p className="mt-3 text-xs">
-                Confidence: {(job.final_report.confidence * 100).toFixed(0)}%
-              </p>
-              {job.final_report.assumptions.length > 0 && (
-                <div className="mt-3">
-                  <h3 className="text-xs font-semibold uppercase">Assumptions</h3>
-                  <ul className="text-muted-foreground list-disc pl-4 text-xs">
-                    {job.final_report.assumptions.map((a, i) => (
-                      <li key={i}>{a}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {job.final_report.gaps.length > 0 && (
-                <div className="mt-3">
-                  <h3 className="text-xs font-semibold uppercase">Gaps</h3>
-                  <ul className="text-muted-foreground list-disc pl-4 text-xs">
-                    {job.final_report.gaps.map((g, i) => (
-                      <li key={i}>{g}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {job.final_report.citations.length > 0 && (
-                <div className="mt-3">
-                  <Sources>
-                    <SourcesTrigger count={job.final_report.citations.length} />
-                    <SourcesContent>
-                      {job.final_report.citations.map((c, i) => (
-                        <Source key={i} href="#" onClick={(e) => e.preventDefault()}>
-                          <CitationLink citation={c} />
-                        </Source>
-                      ))}
-                    </SourcesContent>
-                  </Sources>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+          <aside className="flex min-w-0 flex-col gap-6">
+            {approval && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+                  Approval gate
+                </h2>
+                <ApprovalCard
+                  approval={approval}
+                  viewerRole={auth?.user.role ?? ""}
+                  deciding={deciding}
+                  onDecide={handleDecision}
+                />
+              </section>
+            )}
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+                Evidence
+              </h2>
+              <EvidencePanel
+                evidence={evidence}
+                selectedChunkId={selectedChunkId}
+                onSelect={setSelectedChunkId}
+              />
+            </section>
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+                Tool activity
+              </h2>
+              <ToolActivityList tools={tools} />
+            </section>
+          </aside>
+        </div>
       </main>
     </div>
   );

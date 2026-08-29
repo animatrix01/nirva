@@ -30,9 +30,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: Unit 9 — AI Elements integration: installed conversation/message/sources/tool/task/chain-of-thought primitives into `src/components/ai-elements/` (CLI blocked only for the decision primitive by a terminal deny-rule on the "rm" substring in its name — hand-rolled equivalent at `ai-elements/confirmation.tsx`); fixed vendored `code-block.tsx` ref-during-render with state-keyed staleness (no suppression); detail page now renders final report findings via `MessageResponse` (sanitized markdown, raw HTML disabled) and citations via `Sources/SourcesTrigger/SourcesContent` + `CitationLink`. 51 tests green.
 
+- 2026-08-29: Unit 10 — layout pass: detail workspace is two-column on desktop (65/35 main|evidence+control per demo plan, lg breakpoint), single-column stack below lg (mobile fallback, no horizontal scroll); approval gate + evidence + tools pinned in side column; container widened to max-w-6xl (fits 1366×768). Production build green with all 8 routes (/ /login /investigations /investigations/new /investigations/[jobId] /approvals /audit /admin/system). 51 tests green.
+
 ## In Progress
 
-- Layout pass 1366x768 no overflow + mobile fallback; build verification; delete /mocks when API live.
+- Awaiting real-API integration (delete /mocks, flip NEXT_PUBLIC_MOCK) once Terminal A endpoints are live; refresh-state restoration and citation→document-content deep link (GET /api/documents/{document_id}/content) pending that endpoint.
 
 ## Blocked (reason + which lane must act)
 
