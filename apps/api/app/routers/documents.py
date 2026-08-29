@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -47,7 +48,12 @@ def list_documents(user: CurrentUser, db: Annotated[Session, Depends(get_db)]) -
 
 
 def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
-    from nirva_retrieval.chunking import chunk_document
+    from nirva_agent.vision import VLM_OBSERVATIONS_PROMPT, describe_image
+    from nirva_retrieval.chunking import (
+        ParsedDocument,
+        SectionNode,
+        chunk_document,
+    )
     from nirva_retrieval.embed import dense_embeddings, sparse_embedding
     from nirva_retrieval.parse import parse_csv, parse_pdf
     from nirva_retrieval.store import ensure_collection, upsert_chunks
@@ -59,6 +65,21 @@ def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
         parsed = parse_pdf(path, base)
     elif suffix == ".csv":
         parsed = parse_csv(path, base)
+    elif suffix in (".jpg", ".jpeg", ".png"):
+        observation = describe_image(
+            base_url=settings.model_base_url,
+            model="qwen2.5vl:3b",
+            prompt=VLM_OBSERVATIONS_PROMPT,
+            image_bytes=path.read_bytes(),
+            image_format="png" if suffix == ".png" else "jpeg",
+        )
+        parsed = ParsedDocument(
+            root=SectionNode(
+                title=str(base["document_title"]),
+                children=[SectionNode(title="Vision inspection", text=observation)],
+            ),
+            **base,  # type: ignore[arg-type]
+        )
     else:
         msg = f"unsupported document type: {suffix}"
         raise ValueError(msg)
@@ -214,3 +235,26 @@ def document_content(
         "document": _document_out(doc).model_dump(mode="json"),
         "chunks": chunks,
     }
+
+
+@router.get("/{document_id}/file")
+def document_file(
+    document_id: str,
+    user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> FileResponse:
+    """Serve the stored original (e.g. image preview in the library)."""
+    doc = db.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if user.role not in (doc.allowed_roles or []):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    path = Path(doc.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stored file missing")
+    media = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+    }.get(path.suffix.lower(), "application/octet-stream")
+    return FileResponse(path, media_type=media)
