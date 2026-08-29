@@ -56,9 +56,7 @@ def get_asset_history(
     events = lookup_fn(input_.equipment_id)
     return AssetHistoryOutput(
         events=[
-            AssetEvent(
-                event_type=e["event_type"], description=e["description"], source_timestamp=e["source_timestamp"]
-            )
+            AssetEvent(event_type=e.event_type, description=e.description, source_timestamp=e.source_timestamp)
             for e in events
         ]
     )

@@ -9,9 +9,10 @@ WORKDIR /srv
 
 COPY packages/agent/ ./packages/agent/
 COPY packages/retrieval/ ./packages/retrieval/
+COPY packages/tools/ ./packages/tools/
 COPY apps/api/ ./apps/api/
 
-RUN pip install --no-cache-dir /srv/packages/agent "/srv/packages/retrieval[parse,store]" /srv/apps/api
+RUN pip install --no-cache-dir /srv/packages/agent "/srv/packages/retrieval[parse,store]" /srv/packages/tools /srv/apps/api
 
 EXPOSE 8000
 

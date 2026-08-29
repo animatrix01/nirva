@@ -11,9 +11,32 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.events import emit_event
 from app.graph_client import GraphRunContext
-from app.models import Approval, Job, User, utcnow
+from app.models import Approval, AssetEvent, InventoryItem, Job, User, utcnow
 
 QDRANT_TIMEOUT_SECONDS = 30.0
+
+
+def _lookup_asset_events(equipment_id: str) -> list[AssetEvent]:
+    from sqlalchemy import select
+
+    session = SessionLocal()
+    try:
+        stmt = (
+            select(AssetEvent)
+            .where(AssetEvent.equipment_id == equipment_id)
+            .order_by(AssetEvent.source_timestamp.asc())
+        )
+        return list(session.scalars(stmt))
+    finally:
+        session.close()
+
+
+def _lookup_inventory(part_number: str) -> InventoryItem | None:
+    session = SessionLocal()
+    try:
+        return session.get(InventoryItem, part_number)
+    finally:
+        session.close()
 
 
 def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]]:
@@ -38,7 +61,7 @@ def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]
             query_sparse=sparse,
             top_k=5,
         )
-        return [
+        evidence: list[dict[str, Any]] = [
             {
                 "chunk_id": hit.chunk_id,
                 "document_id": hit.document_id,
@@ -53,6 +76,54 @@ def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]
             }
             for hit in hits
         ]
+
+        from nirva_agent.state import EvidenceItem  # noqa: PLC0415
+
+        tool_session = SessionLocal()
+        try:
+            from nirva_tools.tools import check_inventory, get_asset_history  # noqa: PLC0415
+            from nirva_tools.types import AssetHistoryInput, InventoryInput  # noqa: PLC0415
+
+            history = get_asset_history(
+                role or role_hint, AssetHistoryInput(equipment_id="P-204"), lookup_fn=_lookup_asset_events
+            )
+            for event in history.events:
+                evidence.append(
+                    EvidenceItem(
+                        chunk_id=f"tool-asset-{event.source_timestamp}",
+                        document_id="asset-history-db",
+                        document_title="Asset History (read-only tool)",
+                        document_type="data",
+                        revision="1",
+                        section=event.event_type,
+                        equipment_id="P-204",
+                        text=f"{event.source_timestamp}: {event.description}",
+                        score=1.0,
+                        source="tool",
+                    ).model_dump()
+                )
+            inventory = check_inventory(
+                role or role_hint, InventoryInput(part_number="SEAL-P204-KIT"), lookup_fn=_lookup_inventory
+            )
+            evidence.append(
+                EvidenceItem(
+                    chunk_id=f"tool-inventory-{inventory.part_number}",
+                    document_id="inventory-db",
+                    document_title="Spare Parts Inventory (read-only tool)",
+                    document_type="data",
+                    revision="1",
+                    section="SEAL-P204-KIT",
+                    text=(
+                        f"Part {inventory.part_number}: {inventory.available_qty} available "
+                        f"(last updated {inventory.last_updated})"
+                    ),
+                    score=1.0,
+                    source="tool",
+                ).model_dump()
+            )
+        finally:
+            tool_session.close()
+        return evidence
 
     return retrieve
 

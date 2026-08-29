@@ -131,6 +131,8 @@ def _event_stream(job_id: str, after_seq: int) -> Generator[str, None, None]:
                 job = local_db.get(Job, job_id)
                 if job is None:
                     return
+                if job.status in ("completed", "failed", "blocked_injection", "awaiting_approval"):
+                    return
                 local_db.expire(job)
                 local_db.rollback()
                 time.sleep(POLL_INTERVAL_SECONDS)
