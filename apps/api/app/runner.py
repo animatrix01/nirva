@@ -252,7 +252,10 @@ def run_job(job_id: str) -> None:
                 actor="agent:propose",
                 actor_role=user_role,
                 action="proposal.created",
-                argument_summary=f"proposal={action.idempotency_key} action={action.action} risk={action.risk_level}; awaiting supervisor decision",
+                argument_summary=(
+                    f"proposal={action.idempotency_key} action={action.action} "
+                    f"risk={action.risk_level}; awaiting supervisor decision"
+                ),
                 job_id=job_id,
             )
         else:
