@@ -41,7 +41,8 @@ OBJECTIVE = (
 
 app = create_app()
 with TestClient(app) as c:
-    h = {"Authorization": "Bearer " + c.post("/api/auth/login", json={"username": "engineer", "password": "nirva-demo-pass"}).json()["access_token"]}
+    login = c.post("/api/auth/login", json={"username": "engineer", "password": "nirva-demo-pass"}).json()
+    h = {"Authorization": "Bearer " + login["access_token"]}
 
     print("--- uploading corpus via POST /api/documents/upload")
     for filename, title, dtype, revision, department, equipment in DOCS:
