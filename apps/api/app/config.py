@@ -14,6 +14,22 @@ class Settings(BaseSettings):
 
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 720
+    demo_mode: bool = False
+
+
+DEFAULT_DEV_SECRET = "dev-only-insecure-secret-change-me"
+
+
+def validate_secret(settings: Settings) -> None:
+    """Startup guard (demo plan Phase 0): refuse the default secret outside demo mode."""
+    if settings.demo_mode:
+        return
+    if settings.jwt_secret == DEFAULT_DEV_SECRET:
+        msg = (
+            "JWT_SECRET is still the default insecure value. Set a real JWT_SECRET, "
+            "or set DEMO_MODE=1 for the offline demo profile."
+        )
+        raise RuntimeError(msg)
 
 
 @lru_cache

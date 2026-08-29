@@ -105,8 +105,8 @@ services:
 
   api:
     build:
-      context: ../../apps/api
-      dockerfile: Dockerfile        # owned by API lane
+      context: ../..                   # repo root: image vendors packages/agent
+      dockerfile: apps/api/Dockerfile  # owned by EXECUTION terminal
     container_name: nirva-api
     env_file:
       - ../../.env

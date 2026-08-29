@@ -14,6 +14,7 @@ for path in (str(API_DIR), str(TOOLS_SRC)):
 
 _TEST_DB = Path(__file__).parent / "_api_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB}"
+os.environ["JWT_SECRET"] = "test-only-secret-not-the-default"
 if _TEST_DB.exists():
     _TEST_DB.unlink()
 

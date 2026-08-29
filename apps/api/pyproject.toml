@@ -1,0 +1,35 @@
+[project]
+name = "nirva-api"
+version = "0.1.0"
+description = "NIRVA FastAPI gateway: auth, jobs, SSE, approvals, audit"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn==0.52.4",
+    "SQLAlchemy==2.0.52",
+    "alembic==1.19.1",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.15.0",
+    "PyJWT==2.13.0",
+    "bcrypt==5.0.0",
+    "httpx==0.28.1",
+    "psycopg[binary,pool]==3.3.4",
+    "langgraph==1.2.11",
+    "langgraph-checkpoint-postgres==3.1.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.16.4",
+    "mypy==2.3.1",
+    "respx==0.23.1",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.routers"]

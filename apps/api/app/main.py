@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.config import get_settings, validate_secret
 from app.db import Base, SessionLocal, engine
 from app.routers import admin, approvals, audit, auth, health, jobs
 from app.seed import seed_users_if_empty
@@ -20,6 +21,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    validate_secret(get_settings())
     app = FastAPI(title="NIRVA API", version="0.1.0", lifespan=lifespan)
     app.include_router(auth.router)
     app.include_router(auth.audit_router)
