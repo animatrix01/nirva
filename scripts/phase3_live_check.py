@@ -21,11 +21,10 @@ os.environ["STORAGE_PATH"] = "./_live_storage"
 
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import create_app  # noqa: E402
 from app.models import AssetEvent, InventoryItem  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 

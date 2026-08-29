@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.config import get_settings, validate_secret
 from app.db import Base, SessionLocal, engine
-from app.routers import admin, approvals, audit, auth, documents, health, jobs
+from app.routers import admin, approvals, artifacts, audit, auth, documents, health, jobs
 from app.seed import seed_users_if_empty
 
 
@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(auth.audit_router)
     app.include_router(jobs.router)
+    app.include_router(artifacts.router)
     app.include_router(documents.router)
     app.include_router(approvals.router)
     app.include_router(audit.router)
