@@ -46,6 +46,8 @@ Phase 1 — Skeleton
 
 - 2026-08-30: TIER 2 Unit 1 — image upload UI: file input accepts .pdf/.csv/.jpg/.jpeg/.png; "Photo — vision inspection at upload" hint (with explanation of observations-only ingestion) shown only for image selections (`isImageFile` helper, tested incl. case-insensitive extensions). 6/6 documents tests green.
 
+- 2026-08-30: TIER 2 Unit 2 — blocked_injection security artifact: `JobArtifact` gains `{kind:"security", event:{pattern, document_title, chunk_id, action}}`, payload_ref "security" ratified; new `InjectionAlert.tsx` renders pattern + document title + "Excluded from evidence, investigation continued" + evidence-not-instructions zoning note; detail page swaps the generic banner for the detailed alert when the security artifact arrives. Test doubles seed the artifact for blocked_injection runs. 60 tests green.
+
 ## In Progress
 
 - Ready for Tier 1 Unit 3 / rehearsal.
