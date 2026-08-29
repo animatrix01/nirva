@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.events import emit_event
 from app.graph_client import GraphRunContext
-from app.models import Job, User, utcnow
+from app.models import Approval, Job, User, utcnow
 
 QDRANT_TIMEOUT_SECONDS = 30.0
 
@@ -89,21 +89,40 @@ def run_job(job_id: str) -> None:
             user_id=job.created_by,
             user_role=user_role,
             objective=job.objective,
+            equipment_id=job.equipment_id,
             emit=emit,
             set_report=set_report,
         )
         graph = graph_client.get_graph(retriever=_make_retriever(user_role))
         try:
-            graph.run(ctx)
+            result = graph.run(ctx)
         except Exception as exc:
             failing_node = getattr(exc, "node", failing_node)
             raise
         job = db.get(Job, job_id)
-        if job is not None:
+        if job is None:
+            return
+        actions = (result or {}).get("proposed_actions") or []
+        if actions:
+            action = actions[0]
+            db.add(
+                Approval(
+                    id=str(uuid.uuid4()),
+                    job_id=job_id,
+                    proposal_id=str(action.idempotency_key),
+                    action=str(action.action),
+                    arguments_summary=str(action.arguments_summary),
+                    evidence_refs=list(action.evidence_chunk_ids),
+                    risk_level=str(action.risk_level),
+                )
+            )
+            job.status = "awaiting_approval"
+            job.current_node = "propose"
+        else:
             job.status = "completed"
             job.current_node = None
-            job.updated_at = utcnow()
-            db.commit()
+        job.updated_at = utcnow()
+        db.commit()
     except Exception:
         db.rollback()
         job = db.get(Job, job_id)

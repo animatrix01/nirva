@@ -1,10 +1,11 @@
 """Deterministic investigation graph (COMMON.md c.3).
 
-Phase 2 shape: intake -> retrieve -> answer -> finalize over the frozen
-17-field NirvaState. The retrieve node calls an injected local retriever
-(Qdrant hybrid search) and produces EvidenceItem inputs; the answer node talks
-ONLY to the local model gateway and treats every piece of retrieved content as
-EVIDENCE-DATA, never instructions (zoned prompts).
+Phase 3 shape: intake -> retrieve -> answer -> finalize -> propose over the
+frozen 17-field NirvaState. The retrieve node calls an injected local retriever
+(Qdrant hybrid search); the answer node talks ONLY to the local model gateway
+and treats every piece of retrieved content as EVIDENCE-DATA, never
+instructions (zoned prompts); the propose node drafts a consequential action
+that can only execute after human approval.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from nirva_agent.gateway import ChatMessage, ChatResponse
-from nirva_agent.state import Citation, EvidenceItem, FinalReport, NirvaState
+from nirva_agent.state import Citation, EvidenceItem, FinalReport, NirvaState, ProposedAction
 
 SYSTEM_RULES = (
     "You are NIRVA, an offline industrial investigation agent for refinery "
@@ -183,6 +184,48 @@ def finalize_node(state: NirvaState) -> dict[str, object]:
     }
 
 
+PROPOSE_STEPS = [
+    "Isolate pump electrically and apply lockout-tagout per SOP-014",
+    "Depressurize and drain suction and discharge lines",
+    "Replace seal kit SEAL-P204-KIT, torque gland to 45 Nm star pattern",
+    "Perform laser coupling alignment to below 0.05 mm runout",
+    "Restore flush line and run 30 minute acceptance test",
+]
+
+
+def propose_node(state: NirvaState) -> dict[str, object]:
+    """Draft a consequential action when findings are grounded; human approval
+    is always required before execution (COMMON.md principle 4)."""
+    report = state.get("final_report")
+    if report is None:
+        raise ValueError("propose failed: no final report")
+    if report.confidence < 0.5:
+        return {
+            "completed_steps": ["propose"],
+            "current_node": None,
+            "last_event_seq": _seq(state),
+        }
+    evidence = list(state.get("retrieved_evidence", []))
+    chunk_ids = [item.chunk_id for item in evidence]
+    justification = report.findings[:400]
+    action = ProposedAction(
+        action="propose_work_order",
+        arguments_summary=(
+            "Replace mechanical seal kit SEAL-P204-KIT with laser coupling "
+            f"alignment. Justification: {justification}"
+        ),
+        evidence_chunk_ids=chunk_ids,
+        risk_level="high",
+        idempotency_key=f"propose-{state['request_id']}",
+    )
+    return {
+        "proposed_actions": [action],
+        "completed_steps": ["propose"],
+        "current_node": None,
+        "last_event_seq": _seq(state),
+    }
+
+
 def build_investigation_graph(
     gateway: GatewayLike,
     *,
@@ -195,11 +238,13 @@ def build_investigation_graph(
     builder.add_node("retrieve", lambda state: retrieve_node(state, retriever))
     builder.add_node("answer", lambda state: answer_node(state, gateway))
     builder.add_node("finalize", finalize_node)
+    builder.add_node("propose", propose_node)
     builder.add_edge(START, "intake")
     builder.add_edge("intake", "retrieve")
     builder.add_edge("retrieve", "answer")
     builder.add_edge("answer", "finalize")
-    builder.add_edge("finalize", END)
+    builder.add_edge("finalize", "propose")
+    builder.add_edge("propose", END)
     if checkpointer is not None:
         return builder.compile(checkpointer=checkpointer)
     return builder.compile()

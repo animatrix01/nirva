@@ -23,7 +23,7 @@ from nirva_agent.state import NirvaState
 DEFAULT_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 GATEWAY_TIMEOUT_SECONDS = 90.0
 
-NODE_SEQUENCE: tuple[str, ...] = ("intake", "retrieve", "answer", "finalize")
+NODE_SEQUENCE: tuple[str, ...] = ("intake", "retrieve", "answer", "finalize", "propose")
 
 
 @dataclass
@@ -32,6 +32,7 @@ class GraphRunContext:
     user_id: str
     user_role: str
     objective: str
+    equipment_id: str | None
     emit: Callable[[str, str, str | None], None]
     set_report: Callable[[dict[str, object]], None]
 
@@ -39,7 +40,7 @@ class GraphRunContext:
 class InvestigationGraph(Protocol):
     name: str
 
-    def run(self, ctx: GraphRunContext) -> None: ...
+    def run(self, ctx: GraphRunContext) -> dict[str, Any]: ...
 
 
 class LangGraphInvestigationGraph:
@@ -56,12 +57,13 @@ class LangGraphInvestigationGraph:
         self._retriever = retriever
         self._graph = build_investigation_graph(gateway, retriever=retriever)
 
-    def run(self, ctx: GraphRunContext) -> None:
+    def run(self, ctx: GraphRunContext) -> dict[str, Any]:
         state: dict[str, Any] = {
             "request_id": ctx.request_id,
             "user_id": ctx.user_id,
             "user_role": ctx.user_role,
             "objective": ctx.objective,
+            "equipment_id": ctx.equipment_id,
             "retrieved_evidence": [],
             "completed_steps": [],
             "last_event_seq": 0,
@@ -85,6 +87,18 @@ class LangGraphInvestigationGraph:
                     ctx.emit("tool_called", "retrieve", "search_documents")
                     if delta.get("retrieved_evidence"):
                         ctx.emit("evidence_added", "retrieve", None)
+                if finished == "finalize":
+                    report = final_state.get("final_report")
+                    if report is None:
+                        msg = "graph produced no final report"
+                        raise RuntimeError(msg)
+                    ctx.set_report(cast(Any, report).model_dump())
+                if finished == "propose":
+                    if isinstance(delta, dict) and delta.get("proposed_actions"):
+                        ctx.emit("awaiting_approval", "propose", "approval_request")
+                    else:
+                        ctx.emit("completed", "propose", None)
+                    return dict(final_state)
                 idx = NODE_SEQUENCE.index(finished) if finished in NODE_SEQUENCE else -1
                 if 0 <= idx < len(NODE_SEQUENCE) - 1:
                     pending = NODE_SEQUENCE[idx + 1]
@@ -97,7 +111,8 @@ class LangGraphInvestigationGraph:
             msg = "graph produced no final report"
             raise RuntimeError(msg)
         ctx.set_report(cast(Any, report).model_dump())
-        ctx.emit("completed", "finalize", None)
+        ctx.emit("completed", "propose", None)
+        return dict(final_state)
 
 
 def get_graph(retriever: Callable[[str, str], list[dict[str, Any]]] | None = None) -> InvestigationGraph:

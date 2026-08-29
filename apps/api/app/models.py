@@ -85,6 +85,40 @@ class Document(Base):
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class AssetEvent(Base):
+    __tablename__ = "asset_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    equipment_id: Mapped[str] = mapped_column(String(64), index=True)
+    event_type: Mapped[str] = mapped_column(String(32))
+    description: Mapped[str] = mapped_column(Text)
+    source_timestamp: Mapped[str] = mapped_column(String(32))
+
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+
+    part_number: Mapped[str] = mapped_column(String(64), primary_key=True)
+    description: Mapped[str] = mapped_column(String(255))
+    location: Mapped[str] = mapped_column(String(64))
+    available_qty: Mapped[int] = mapped_column(Integer, default=0)
+    last_updated: Mapped[str] = mapped_column(String(32))
+
+
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    approval_id: Mapped[str] = mapped_column(ForeignKey("approvals.id"), unique=True, index=True)
+    job_id: Mapped[str] = mapped_column(String(36), index=True)
+    proposal_id: Mapped[str] = mapped_column(String(64))
+    asset: Mapped[str] = mapped_column(String(64))
+    justification: Mapped[str] = mapped_column(Text)
+    parts: Mapped[list[object]] = mapped_column(JSON, default=list)
+    steps: Mapped[list[object]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

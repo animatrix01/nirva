@@ -63,6 +63,21 @@ def decide_approval(
     if body.decision == "approved":
         work_order_id = f"WO-{uuid.uuid4()}"
         approval.work_order_id = work_order_id
+        from app.models import Job, WorkOrder
+
+        job = db.get(Job, approval.job_id)
+        db.add(
+            WorkOrder(
+                id=work_order_id,
+                approval_id=approval.id,
+                job_id=approval.job_id,
+                proposal_id=approval.proposal_id,
+                asset=job.equipment_id if job is not None else "unknown",
+                justification=approval.arguments_summary,
+                parts=["SEAL-P204-KIT"],
+                steps=["Isolate per SOP-014", "Replace seal kit", "Laser alignment", "Acceptance test"],
+            )
+        )
     append_audit_event(
         db,
         actor=user.username,
@@ -72,6 +87,16 @@ def decide_approval(
         outcome="ok" if body.decision == "approved" else "blocked",
         job_id=approval.job_id,
     )
+    from app.events import emit_event
+    from app.models import Job as JobModel
+    from app.models import utcnow as _utcnow
+
+    job = db.get(JobModel, approval.job_id)
+    if job is not None:
+        job.status = "completed"
+        job.current_node = None
+        job.updated_at = _utcnow()
+    emit_event(db, approval.job_id, "completed", "approve", None)
     db.commit()
     assert approval.decided_at is not None
     decided_at = approval.decided_at if approval.decided_at.tzinfo is None else datetime.now(UTC)

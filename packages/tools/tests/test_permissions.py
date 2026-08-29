@@ -9,6 +9,7 @@ if str(TOOLS_SRC) not in sys.path:
 
 from nirva_tools.permissions import PermissionDenied, authorize, is_allowed  # noqa: E402
 from nirva_tools.tools import (  # noqa: E402
+    ApprovalFlowRequired,
     approve_work_order,
     propose_work_order,
 )
@@ -50,6 +51,6 @@ def test_denied_calls_never_execute(call: object) -> None:
         call()  # type: ignore[operator]
 
 
-def test_allowed_call_reaches_not_implemented_body() -> None:
-    with pytest.raises(NotImplementedError):
+def test_allowed_call_reaches_approval_flow_gate() -> None:
+    with pytest.raises(ApprovalFlowRequired):
         approve_work_order("supervisor", None)  # type: ignore[arg-type]
