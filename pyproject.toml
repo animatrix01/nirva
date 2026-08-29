@@ -13,7 +13,7 @@ select = ["E", "F", "W", "I", "UP", "B"]
 "scripts/phase*_live_check.py" = ["E501"]
 "scripts/integration_check.py" = ["E501"]
 "scripts/seed-operational-data.py" = ["E501"]
-"scripts/_dbg_retriever.py" = ["E501"]
+"scripts/_dbg_*.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

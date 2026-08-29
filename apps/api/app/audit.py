@@ -1,5 +1,6 @@
 import hashlib
 import json
+import threading
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -9,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.models import AuditEvent
 
 GENESIS_HASH = "0" * 64
+
+_chain_lock = threading.Lock()
 
 
 def _canonical(payload: Mapping[str, Any]) -> str:
@@ -26,35 +29,44 @@ def append_audit_event(
     job_id: str | None = None,
     payload: dict[str, Any] | None = None,
 ) -> AuditEvent:
-    last = (
-        db.query(AuditEvent)
-        .order_by(AuditEvent.ts.desc(), AuditEvent.id.desc())
-        .first()
-    )
-    prev_hash = last.hash if last is not None else GENESIS_HASH
-    material = {
-        "actor": actor,
-        "actor_role": actor_role,
-        "action": action,
-        "argument_summary": argument_summary,
-        "outcome": outcome,
-        "job_id": job_id,
-        "payload": payload or {},
-    }
-    digest = hashlib.sha256((_canonical(material) + prev_hash).encode("utf-8")).hexdigest()
-    event = AuditEvent(
-        id=str(uuid.uuid4()),
-        job_id=job_id,
-        actor=actor,
-        actor_role=actor_role,
-        action=action,
-        argument_summary=argument_summary,
-        outcome=outcome,
-        payload=payload,
-        prev_hash=prev_hash,
-        hash=digest,
-    )
-    db.add(event)
+    """Append one hash-chained event.
+
+    The read-last/link/insert sequence is serialized by a process-wide lock and
+    committed inside it, so concurrent appends (request thread vs job threads)
+    can never fork the chain. Multi-process deployments would additionally need
+    a DB-level advisory lock — noted for post-demo hardening.
+    """
+    with _chain_lock:
+        last = (
+            db.query(AuditEvent)
+            .order_by(AuditEvent.ts.desc(), AuditEvent.id.desc())
+            .first()
+        )
+        prev_hash = last.hash if last is not None else GENESIS_HASH
+        material = {
+            "actor": actor,
+            "actor_role": actor_role,
+            "action": action,
+            "argument_summary": argument_summary,
+            "outcome": outcome,
+            "job_id": job_id,
+            "payload": payload or {},
+        }
+        digest = hashlib.sha256((_canonical(material) + prev_hash).encode("utf-8")).hexdigest()
+        event = AuditEvent(
+            id=str(uuid.uuid4()),
+            job_id=job_id,
+            actor=actor,
+            actor_role=actor_role,
+            action=action,
+            argument_summary=argument_summary,
+            outcome=outcome,
+            payload=payload,
+            prev_hash=prev_hash,
+            hash=digest,
+        )
+        db.add(event)
+        db.commit()
     return event
 
 

@@ -96,6 +96,17 @@ def decide_approval(
         job.status = "completed"
         job.current_node = None
         job.updated_at = _utcnow()
+        append_audit_event(
+            db,
+            actor="system",
+            actor_role="system",
+            action="job.completed",
+            argument_summary=(
+                f"approval {body.decision} by {user.username}; "
+                + (f"work order {work_order_id} created" if work_order_id else "no work order created")
+            ),
+            job_id=approval.job_id,
+        )
     emit_event(db, approval.job_id, "completed", "approve", None)
     db.commit()
     assert approval.decided_at is not None

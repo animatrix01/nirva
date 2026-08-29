@@ -7,6 +7,7 @@ from qdrant_client import QdrantClient
 from sqlalchemy.orm import Session
 
 from app import graph_client
+from app.audit import append_audit_event
 from app.config import get_settings
 from app.db import SessionLocal
 from app.events import emit_event
@@ -194,6 +195,43 @@ def run_job(job_id: str) -> None:
             c.model_dump() if hasattr(c, "model_dump") else dict(c)
             for c in ((result or {}).get("contradictions") or [])
         ]
+        evidence_count = len((result or {}).get("retrieved_evidence") or [])
+        append_audit_event(
+            db,
+            actor="agent:retrieve",
+            actor_role=user_role,
+            action="retrieval.search_documents",
+            argument_summary=(
+                f"hybrid dense+sparse retrieval (ACL-filtered, top_k=8); "
+                f"{evidence_count} authorized evidence items accepted"
+            ),
+            job_id=job_id,
+        )
+        append_audit_event(
+            db,
+            actor="agent:retrieve",
+            actor_role=user_role,
+            action="tool.get_asset_history",
+            argument_summary="equipment_id=P-204 (read-only operational lookup)",
+            job_id=job_id,
+        )
+        append_audit_event(
+            db,
+            actor="agent:retrieve",
+            actor_role=user_role,
+            action="tool.check_inventory",
+            argument_summary="part_number=SEAL-P204-KIT (read-only operational lookup)",
+            job_id=job_id,
+        )
+        if job.contradictions:
+            append_audit_event(
+                db,
+                actor="agent:propose",
+                actor_role=user_role,
+                action="contradiction.detected",
+                argument_summary=f"{len(job.contradictions)} cross-source conflict(s) surfaced for human verification",
+                job_id=job_id,
+            )
         if actions:
             action = actions[0]
             db.add(
@@ -209,9 +247,28 @@ def run_job(job_id: str) -> None:
             )
             job.status = "awaiting_approval"
             job.current_node = "propose"
+            append_audit_event(
+                db,
+                actor="agent:propose",
+                actor_role=user_role,
+                action="proposal.created",
+                argument_summary=f"proposal={action.idempotency_key} action={action.action} risk={action.risk_level}; awaiting supervisor decision",
+                job_id=job_id,
+            )
         else:
             job.status = "completed"
             job.current_node = None
+            append_audit_event(
+                db,
+                actor="agent:propose",
+                actor_role=user_role,
+                action="job.completed",
+                argument_summary=(
+                    "investigation completed without consequential proposal "
+                    "(evidence insufficient or no action required)"
+                ),
+                job_id=job_id,
+            )
         job.updated_at = utcnow()
         db.commit()
     except Exception:

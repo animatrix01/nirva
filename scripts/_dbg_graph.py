@@ -7,8 +7,8 @@ os.environ["MODEL_BASE_URL"] = "http://127.0.0.1:11434/v1"
 os.environ["QDRANT_URL"] = "http://127.0.0.1:6333"
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from app.runner import _make_retriever  # noqa: E402
 from app.graph_client import GraphRunContext, LangGraphInvestigationGraph  # noqa: E402
+from app.runner import _make_retriever  # noqa: E402
 from nirva_agent.gateway import GatewayClient, GatewayConfig  # noqa: E402
 
 gateway = GatewayClient(GatewayConfig(base_url=os.environ["MODEL_BASE_URL"], model="qwen2.5:3b-instruct-q4_K_M", timeout_seconds=90.0))
