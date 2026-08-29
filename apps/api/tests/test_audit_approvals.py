@@ -1,9 +1,8 @@
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
-
 from conftest import AuthHeadersFn
+from fastapi.testclient import TestClient
 
 
 def _seed_pending_approval(job_suffix: str) -> str:
@@ -107,6 +106,8 @@ def test_audit_chain_valid_after_job_activity(
 
 
 @pytest.mark.parametrize("role", ["engineer"])
-def test_engineer_cannot_read_audit(client: TestClient, auth_headers: AuthHeadersFn, role: str) -> None:
+def test_engineer_cannot_read_audit(
+    client: TestClient, auth_headers: AuthHeadersFn, role: str
+) -> None:
     headers = auth_headers(role)
     assert client.get("/api/audit", headers=headers).status_code == 403

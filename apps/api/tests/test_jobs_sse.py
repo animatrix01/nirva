@@ -1,9 +1,8 @@
 import json
 import time
 
-from fastapi.testclient import TestClient
-
 from conftest import AuthHeadersFn
+from fastapi.testclient import TestClient
 
 ALLOWED_EVENT_TYPES = {
     "node_started",

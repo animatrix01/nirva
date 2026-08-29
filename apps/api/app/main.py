@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.db import Base, engine, SessionLocal
+from app.db import Base, SessionLocal, engine
 from app.routers import admin, approvals, audit, auth, health, jobs
 from app.seed import seed_users_if_empty
 

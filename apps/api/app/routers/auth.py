@@ -24,7 +24,10 @@ def _authenticate(db: Session, username: str, password: str) -> User:
 def login(body: LoginRequest, db: Annotated[Session, Depends(get_db)]) -> LoginResponse:
     user = _authenticate(db, body.username, body.password)
     token = create_access_token(user.id, user.role, user.username)
-    return LoginResponse(access_token=token, user=UserOut(user_id=user.id, username=user.username, role=user.role))
+    return LoginResponse(
+        access_token=token,
+        user=UserOut(user_id=user.id, username=user.username, role=user.role),
+    )
 
 
 @router.get("/me", response_model=MeResponse)

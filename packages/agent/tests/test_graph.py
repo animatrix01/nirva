@@ -3,6 +3,7 @@
 from typing import Any
 
 import pytest
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 
 from nirva_agent.gateway import ChatMessage, ChatResponse
@@ -13,7 +14,7 @@ from nirva_agent.graph import (
     finalize_node,
     intake_node,
 )
-from nirva_agent.state import EvidenceItem
+from nirva_agent.state import EvidenceItem, NirvaState
 
 
 class FakeGateway:
@@ -39,7 +40,7 @@ class FakeGateway:
         )
 
 
-def _base_state() -> dict[str, Any]:
+def _base_state() -> NirvaState:
     return {
         "request_id": "job-42",
         "user_id": "user-7",
@@ -66,7 +67,7 @@ def _base_state() -> dict[str, Any]:
 
 def test_intake_rejects_missing_fields() -> None:
     with pytest.raises(ValueError, match="intake failed"):
-        intake_node({"request_id": "", "user_id": "", "user_role": None})  # type: ignore[arg-type]
+        intake_node({"request_id": "", "user_id": "", "user_role": None})  # type: ignore[typeddict-item]
 
 
 def test_intake_lays_out_bounded_plan() -> None:
@@ -97,7 +98,7 @@ def test_answer_zones_system_objective_evidence_separately() -> None:
 def test_answer_derives_citations_from_evidence() -> None:
     gateway = FakeGateway()
     state = {**_base_state(), **intake_node(_base_state())}
-    result = answer_node(state, gateway)  # type: ignore[arg-type]
+    result: dict[str, Any] = answer_node(state, gateway)  # type: ignore[arg-type]
     report = result["final_report"]
     assert report.citations[0].title == "P-204 OEM Manual"
     assert report.citations[0].revision == "B"
@@ -107,13 +108,13 @@ def test_answer_derives_citations_from_evidence() -> None:
 
 def test_finalize_confidence_with_evidence_and_citations() -> None:
     gateway = FakeGateway()
-    state: dict[str, Any] = _base_state()
-    after_intake: dict[str, Any] = {**state, **intake_node(state)}  # type: ignore[arg-type]
+    state: NirvaState = _base_state()
+    after_intake: dict[str, Any] = {**state, **intake_node(state)}
     merged: dict[str, Any] = {
         **after_intake,
         **answer_node(after_intake, gateway),  # type: ignore[arg-type]
     }
-    result = finalize_node(merged)  # type: ignore[arg-type]
+    result: dict[str, Any] = finalize_node(merged)  # type: ignore[arg-type]
     report = result["final_report"]
     assert report.confidence > 0.5
     assert result["current_node"] is None
@@ -122,14 +123,14 @@ def test_finalize_confidence_with_evidence_and_citations() -> None:
 
 def test_finalize_abstains_low_confidence_without_evidence() -> None:
     gateway = FakeGateway()
-    state: dict[str, Any] = _base_state()
+    state: NirvaState = _base_state()
     state["retrieved_evidence"] = []
-    after_intake: dict[str, Any] = {**state, **intake_node(state)}  # type: ignore[arg-type]
+    after_intake: dict[str, Any] = {**state, **intake_node(state)}
     merged: dict[str, Any] = {
         **after_intake,
         **answer_node(after_intake, gateway),  # type: ignore[arg-type]
     }
-    result = finalize_node(merged)  # type: ignore[arg-type]
+    result: dict[str, Any] = finalize_node(merged)  # type: ignore[arg-type]
     report = result["final_report"]
     assert report.confidence <= 0.15
     assert any("No indexed evidence" in gap for gap in report.gaps)
@@ -137,7 +138,7 @@ def test_finalize_abstains_low_confidence_without_evidence() -> None:
 
 def test_full_run_end_to_end_without_checkpointer() -> None:
     graph = build_investigation_graph(FakeGateway(reply="Findings with [chunk-9]."))
-    final: dict[str, Any] = graph.invoke(_base_state())  # type: ignore[arg-type]
+    final = graph.invoke(_base_state())
     assert final["completed_steps"] == ["intake", "answer", "finalize"]
     assert final["final_report"].confidence >= 0.5
     assert final["current_node"] is None
@@ -148,8 +149,8 @@ def test_resume_from_fake_checkpointer_accumulates_progress() -> None:
     graph = build_investigation_graph(
         FakeGateway(), checkpointer=checkpointer  # type: ignore[arg-type]
     )
-    config = {"configurable": {"thread_id": "job-42"}}
-    final: dict[str, Any] = graph.invoke(_base_state(), config=config)  # type: ignore[arg-type]
+    config: RunnableConfig = {"configurable": {"thread_id": "job-42"}}
+    final = graph.invoke(_base_state(), config=config)
     snapshot = graph.get_state(config)
     assert snapshot.values["request_id"] == "job-42"
     assert snapshot.values["completed_steps"] == ["intake", "answer", "finalize"]

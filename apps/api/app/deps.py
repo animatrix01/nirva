@@ -22,7 +22,9 @@ def get_current_user(
     try:
         claims = decode_token(credentials.credentials)
     except jwt_exc.PyJWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from None
     user = db.get(User, str(claims.get("sub", "")))
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user")

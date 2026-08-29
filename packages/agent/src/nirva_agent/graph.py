@@ -11,6 +11,7 @@ from typing import Any, Protocol
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from nirva_agent.gateway import ChatMessage, ChatResponse
 from nirva_agent.state import Citation, EvidenceItem, FinalReport, NirvaState
@@ -166,7 +167,7 @@ def build_investigation_graph(
     gateway: GatewayLike,
     *,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
-) -> object:
+) -> CompiledStateGraph:
     """Compile the deterministic graph; checkpointer enables resume."""
     builder = StateGraph(NirvaState)
     builder.add_node("intake", intake_node)

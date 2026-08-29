@@ -1,7 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
-
 from conftest import AuthHeadersFn
+from fastapi.testclient import TestClient
 
 ALL_ROLES = ["engineer", "safety_officer", "supervisor", "admin"]
 

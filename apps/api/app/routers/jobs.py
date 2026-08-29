@@ -14,6 +14,7 @@ from app.events import TERMINAL_EVENT_TYPES, fetch_events_after, render_envelope
 from app.models import Job
 from app.runner import new_job_id, start_job_run
 from app.schemas import (
+    FinalReportOut,
     JobCreatedResponse,
     JobCreateRequest,
     JobDetailResponse,
@@ -95,6 +96,7 @@ def get_job(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     if not _can_view(user, job):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    report = FinalReportOut.model_validate(job.final_report) if job.final_report else None
     return JobDetailResponse(
         job_id=job.id,
         objective=job.objective,
@@ -103,6 +105,7 @@ def get_job(
         created_by=job.created_by,
         created_at=job.created_at,
         updated_at=job.updated_at,
+        final_report=report,
     )
 
 

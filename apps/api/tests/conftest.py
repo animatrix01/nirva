@@ -17,9 +17,8 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB}"
 if _TEST_DB.exists():
     _TEST_DB.unlink()
 
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.main import create_app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 DEMO_PASSWORD = "nirva-demo-pass"
 

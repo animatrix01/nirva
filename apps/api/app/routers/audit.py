@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.audit import verify_chain
 from app.db import get_db
 from app.deps import require_roles
 from app.models import User
 from app.schemas import AuditEventOut, AuditResponse
-from app.audit import verify_chain
 
 router = APIRouter(prefix="/api/audit", tags=["audit"])
 

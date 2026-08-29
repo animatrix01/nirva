@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -74,7 +74,7 @@ def decide_approval(
     )
     db.commit()
     assert approval.decided_at is not None
-    decided_at = approval.decided_at if approval.decided_at.tzinfo is None else datetime.now(timezone.utc)
+    decided_at = approval.decided_at if approval.decided_at.tzinfo is None else datetime.now(UTC)
     return ApprovalDecisionResponse(
         approval_id=approval.id,
         status=approval.status,

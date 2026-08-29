@@ -3,13 +3,14 @@ from typing import Protocol
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Job, JobEvent, utcnow
+from app.models import JobEvent, utcnow
 from app.schemas import envelope
 
 TERMINAL_EVENT_TYPES = frozenset({"completed", "failed", "blocked_injection"})
 
 
 def next_seq(db: Session, job_id: str) -> int:
+    db.flush()
     last = (
         db.query(JobEvent.seq)
         .filter(JobEvent.job_id == job_id)

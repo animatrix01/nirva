@@ -11,9 +11,7 @@ from nirva_tools.permissions import PermissionDenied, authorize, is_allowed  # n
 from nirva_tools.tools import (  # noqa: E402
     approve_work_order,
     propose_work_order,
-    search_documents,
 )
-from nirva_tools.types import SearchInput  # noqa: E402
 
 ALL_ROLES = ["engineer", "safety_officer", "supervisor", "admin"]
 

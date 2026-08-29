@@ -17,5 +17,11 @@ warn_redundant_casts = true
 exclude = ['\.venv', 'migrations/env\.py']
 
 [tool.pytest.ini_options]
-testpaths = ["apps/api/tests", "packages/tools/tests"]
+testpaths = [
+    "apps/api/tests",
+    "packages/agent/tests",
+    "packages/retrieval/tests",
+    "packages/tools/tests",
+]
+asyncio_mode = "auto"
 addopts = "-q"
