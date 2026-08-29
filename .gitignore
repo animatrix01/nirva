@@ -34,3 +34,6 @@ uploads/
 # Misc
 *.log
 .DS_Store
+
+# generated demo corpus (regenerate via data/synthetic/generate_corpus.py)
+data/synthetic/generated/
