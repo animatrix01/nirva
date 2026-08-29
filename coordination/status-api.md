@@ -4,9 +4,13 @@
 
 ## Current Phase
 
-Phase 4 support COMPLETE — Execution terminal sprint scope (Phases 0-4 support) DONE. Remaining: demo rehearsal + offline verification with Terminal B.
+Sprint engineering COMPLETE — 100% of the 24h-scoped plan (Phases 0-4). Remaining: joint demo rehearsal + backup video (operator + Terminal B).
 
 ## Done (list with dates + file paths)
+
+- 2026-08-29 | BOTH docker images built and validated: nirva-api:latest (188s, pinned deps + vendored packages) and nirva-web:latest (35.7s after .dockerignore fix); web .dockerignore added; pypdf declared in retrieval parse extra (`bc1fa39`, `34bab7d`)
+- 2026-08-29 | Audit trail COMPLETE: 8 chained event types (job.created, retrieval.search_documents, tool.get_asset_history, tool.check_inventory, contradiction.detected, proposal.created, approval.approved, job.completed), chain_valid true; fixed hash-chain append race (process lock + commit-in-lock) (`f8b2046`, `db80494`)
+- 2026-08-29 | OFFLINE PROOF + contradiction live: internet disconnected for entire session; golden flow ran fully local (Ollama+Qdrant+SQLite). Contradiction node surfaces inspection-vs-work-order conflict (contradiction_found event + artifact kind=contradiction, both claims verified). 15/15 citations resolve. Root-caused cwd-relative sqlite split-brain: server DB and seed DB were different files; DATABASE_URL now absolute. Integration check extended: contradiction_found + citation-resolution assertions. Dev endpoint /api/dev/audit-login removed (`fed633e`, `84d2af1`)
 
 - 2026-08-29 | Phase 3 COMPLETE + live gate: propose node drafts ProposedAction (confidence-gated, evidence-chunk-referenced); runner persists approval proposal + job reaches awaiting_approval; SSE emits awaiting_approval and stream ends cleanly (reconnect-safe); approvals decision endpoint: engineer 403, supervisor-only decision, idempotent work order (unique approval_id + first-decision-wins 409), resume-to-completed + completed event; audit chain verified on global order (chain_valid True); real read-only tools (get_asset_history, check_inventory) wired as tool-sourced evidence; nirva_tools now properly packaged (`075fec5`, `90f2fc0`)
 - 2026-08-29 | Phase 4 support: GET /api/jobs/{id}/artifacts/{payload_ref} discriminated union (approval_request / search_documents / report) matching the web artifact layer (`b567f31`)
