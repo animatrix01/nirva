@@ -54,11 +54,14 @@ export function ApprovalCard({
       <dl className="mt-3 space-y-1 text-xs">
         <div className="flex gap-2">
           <dt className="w-40 shrink-0 font-medium">Requested by</dt>
-          <dd className="font-mono">{approval.requested_by}</dd>
+          <dd className="font-mono">{approval.requested_by ?? "agent"}</dd>
         </div>
         <div className="flex gap-2">
           <dt className="w-40 shrink-0 font-medium">Decision by</dt>
-          <dd>{approval.required_role} (human approval gate — no bypass)</dd>
+          <dd>
+            {approval.required_role ?? "supervisor"} (human approval gate — no
+            bypass)
+          </dd>
         </div>
         <div className="flex gap-2">
           <dt className="w-40 shrink-0 font-medium">Evidence refs</dt>

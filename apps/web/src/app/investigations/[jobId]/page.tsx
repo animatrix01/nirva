@@ -8,7 +8,6 @@ import { EventTimeline } from "@/components/investigation/EventTimeline";
 import { CitationLink } from "@/components/investigation/CitationLink";
 import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ToolActivityList } from "@/components/investigation/ToolActivityList";
-import { ContradictionView } from "@/components/investigation/ContradictionView";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
@@ -21,14 +20,13 @@ import { useStoredAuth } from "@/lib/auth-client";
 import { bannerForStatus } from "@/components/investigation/timeline";
 import { ApiError, getJob, getArtifact, decideApproval } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
+import { isArtifactPayloadRef } from "@/lib/artifacts";
 import type {
   ApprovalRequest,
-  Contradiction,
-  EvidenceReference,
   JobArtifact,
   ToolActivity,
 } from "@/lib/artifacts";
-import type { JobDetail, SseEvent } from "@/lib/types";
+import type { CitationRef, JobDetail, SseEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type StreamState = "connecting" | "open" | "reconnecting" | "closed";
@@ -65,6 +63,7 @@ export default function InvestigationDetailPage() {
     const fetched = new Set<string>();
 
     const fetchArtifact = (ref: string) => {
+      if (!isArtifactPayloadRef(ref)) return;
       if (fetched.has(ref)) return;
       fetched.add(ref);
       void getArtifact(jobId, ref)
@@ -148,29 +147,22 @@ export default function InvestigationDetailPage() {
   const banner = bannerForStatus(job.status);
   const live = ["queued", "running"].includes(job.status);
 
-  const evidence: EvidenceReference[] = Object.values(artifacts).flatMap((a) =>
-    a.kind === "evidence" ? a.evidence : []
-  );
+  const citations: CitationRef[] = job.final_report?.citations ?? [];
   const tools: ToolActivity[] = Object.values(artifacts).flatMap((a) =>
     a.kind === "tool" ? [a.tool] : []
   );
-  const contradictions: Contradiction[] = Object.values(artifacts).flatMap(
-    (a) => (a.kind === "contradiction" ? [a.contradiction] : [])
-  );
-  const approvalRef =
-    Object.entries(artifacts).find(([, a]) => a.kind === "approval")?.[0] ?? null;
-  const approval: ApprovalRequest | null = approvalRef
-    ? (artifacts[approvalRef] as Extract<JobArtifact, { kind: "approval" }>).approval
-    : null;
+  const approval: ApprovalRequest | null =
+    (artifacts["approval_request"] as Extract<JobArtifact, { kind: "approval" }> | undefined)
+      ?.approval ?? null;
 
   const handleDecision = (decision: "approved" | "rejected", comment: string | null) => {
-    if (!approval || !approvalRef) return;
+    if (!approval) return;
     setDeciding(true);
     void decideApproval(approval.approval_id, decision, comment)
       .then((result) => {
         setArtifacts((prev) => ({
           ...prev,
-          [approvalRef]: {
+          approval_request: {
             kind: "approval",
             approval: {
               ...approval,
@@ -247,12 +239,6 @@ export default function InvestigationDetailPage() {
               <EventTimeline events={events} />
             </section>
 
-            {contradictions.map((c, i) => (
-              <section key={i}>
-                <ContradictionView contradiction={c} />
-              </section>
-            ))}
-
             {job.final_report && (
               <section>
                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
@@ -288,14 +274,14 @@ export default function InvestigationDetailPage() {
                       </ul>
                     </div>
                   )}
-                  {job.final_report.citations.length > 0 && (
+                  {citations.length > 0 && (
                     <div className="mt-3">
                       <Sources>
-                        <SourcesTrigger count={job.final_report.citations.length} />
+                        <SourcesTrigger count={citations.length} />
                         <SourcesContent>
-                          {job.final_report.citations.map((c, i) => (
-                            <Source key={i} href="#" onClick={(e) => e.preventDefault()}>
-                              <CitationLink citation={c} />
+                          {citations.map((c) => (
+                            <Source key={c.chunk_id} href="#" onClick={(e) => e.preventDefault()}>
+                              <CitationLink citation={c} jobId={jobId!} />
                             </Source>
                           ))}
                         </SourcesContent>
@@ -326,7 +312,8 @@ export default function InvestigationDetailPage() {
                 Evidence
               </h2>
               <EvidencePanel
-                evidence={evidence}
+                jobId={jobId!}
+                citations={citations}
                 selectedChunkId={selectedChunkId}
                 onSelect={setSelectedChunkId}
               />

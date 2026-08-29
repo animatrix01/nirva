@@ -1,6 +1,20 @@
 "use client";
 
-import type { Contradiction } from "@/lib/artifacts";
+// Precomputed structured contradiction view (per DECISIONS 2026-08-29:
+// "precomputed structured contradiction acceptable"). No live artifact source
+// in the ratified API yet — component kept ready for integration.
+
+export interface ContradictionSide {
+  citation: string;
+  passage_text: string;
+}
+
+export interface Contradiction {
+  topic: string;
+  source_a: ContradictionSide;
+  source_b: ContradictionSide;
+  note: string;
+}
 
 function ContradictionCard({
   label,

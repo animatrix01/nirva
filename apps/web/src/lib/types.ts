@@ -52,12 +52,45 @@ export interface JobListQuery {
   limit?: number;
 }
 
+export interface CitationRef {
+  title: string;
+  revision: string;
+  locator: string;
+  chunk_id: string;
+}
+
 export interface FinalReport {
   findings: string;
   confidence: number;
   assumptions: string[];
   gaps: string[];
-  citations: string[];
+  citations: CitationRef[];
+}
+
+export interface DocumentOut {
+  document_id: string;
+  title: string;
+  document_type: "manual" | "sop" | "work_order" | "incident" | "data";
+  revision: string;
+  effective_date: string;
+  department: string;
+  equipment_id: string | null;
+  confidentiality_level: string;
+  content_hash: string;
+  status: "indexed" | "quarantined";
+  uploaded_at: string;
+}
+
+export interface DocumentChunk {
+  chunk_id: string;
+  page: number | null;
+  section: string | null;
+  text: string;
+}
+
+export interface DocumentContentResponse {
+  document: DocumentOut;
+  chunks: DocumentChunk[];
 }
 
 export interface JobDetail {

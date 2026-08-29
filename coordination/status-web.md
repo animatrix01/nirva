@@ -32,9 +32,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: Unit 10 — layout pass: detail workspace is two-column on desktop (65/35 main|evidence+control per demo plan, lg breakpoint), single-column stack below lg (mobile fallback, no horizontal scroll); approval gate + evidence + tools pinned in side column; container widened to max-w-6xl (fits 1366×768). Production build green with all 8 routes (/ /login /investigations /investigations/new /investigations/[jobId] /approvals /audit /admin/system). 51 tests green.
 
+- 2026-08-29: INTEGRATION GO Unit 1 — flipped to real API: `lib/api.ts` real fetch only (base `http://127.0.0.1:8000` via `NEXT_PUBLIC_API_BASE`), `lib/sse.ts` rewritten on fetch streaming (Bearer header + manual Last-Event-ID resync — API authenticates via header, native EventSource unusable); `/mocks` moved to `/src/test-mocks` (test-only doubles, zero production imports) + global fetch stub in vitest.setup; contracts synced to ratifications: `FinalReport.citations` = structured `CitationRef[]`, artifact refs `approval_request|search_documents|report` (kinds approval/tool/report), evidence endpoint shape + `equipment_id`, document content deep link; demo password `nirva-demo-pass`. 53 tests green.
+
 ## In Progress
 
-- Awaiting real-API integration (delete /mocks, flip NEXT_PUBLIC_MOCK) once Terminal A endpoints are live; refresh-state restoration and citation→document-content deep link (GET /api/documents/{document_id}/content) pending that endpoint.
+- E2E verification through the REAL API (login → P-204 job → SSE → approval → evidence click → audit); then production build.
 
 ## Blocked (reason + which lane must act)
 

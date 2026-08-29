@@ -15,9 +15,16 @@ import {
   mockJobs,
   toJobDetail,
   toJobSummary,
-} from "@/mocks/db";
-import { getArtifact, findApprovalArtifact, listApprovalArtifacts, applyApprovalDecision } from "@/mocks/artifacts";
-import { getMockAudit, getMockHealth } from "@/mocks/audit";
+} from "@/test-mocks/db";
+import {
+  getArtifact,
+  findApprovalArtifact,
+  listApprovalArtifacts,
+  applyApprovalDecision,
+  getEvidenceChunk,
+  getDocumentContent,
+} from "@/test-mocks/artifacts";
+import { getMockAudit, getMockHealth } from "@/test-mocks/audit";
 
 // ---------------------------------------------------------------------------
 // MOCK ROUTER — dispatches requests exactly as the frozen §c.1 endpoints would.
@@ -225,8 +232,8 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         throw new ApiError(409, "Approval already decided (first decision wins)");
       }
       const result = applyApprovalDecision(approvalId, decision, username);
-      // Decision resumes the interrupted graph thread (mock: job completes).
-      const job = findMockJob(found.artifact.approval.job_id);
+      // Decision resumes the interrupted graph thread (test double: job completes).
+      const job = findMockJob(found.artifact.approval.job_id ?? "");
       if (job && job.status === "awaiting_approval") {
         job.status = "completed";
         job.current_node = null;
@@ -245,12 +252,37 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       const job = findMockJob(jobId);
       if (!job) throw new ApiError(404, "Unknown job id", "job_id");
       const ref = decodeURIComponent(encodedRef);
-      const artifact = getArtifact(ref);
-      // Artifact refs are keyed kind:job_id:n — ensure it belongs to this job.
-      if (!artifact || !ref.includes(`:${jobId}:`)) {
-        throw new ApiError(404, "Unknown artifact reference", "payload_ref");
+      // Ratified refs: approval_request | search_documents | report
+      if (
+        ref !== "approval_request" &&
+        ref !== "search_documents" &&
+        ref !== "report"
+      ) {
+        throw new ApiError(404, "Unknown artifact", "payload_ref");
       }
+      const artifact = getArtifact(ref);
+      if (!artifact) throw new ApiError(404, "Unknown artifact", "payload_ref");
       return artifact;
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/jobs\/([^/]+)\/evidence\/([^/]+)$/,
+    handler: ({ params, token }) => {
+      requireAuth(token);
+      const [, encodedChunk] = params;
+      const chunkId = decodeURIComponent(encodedChunk);
+      const chunk = getEvidenceChunk(chunkId);
+      if (!chunk) throw new ApiError(404, "Chunk not found", "chunk_id");
+      return chunk;
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/documents\/([^/]+)\/content$/,
+    handler: ({ params, token }) => {
+      requireAuth(token);
+      return getDocumentContent(decodeURIComponent(params[0]));
     },
   },
   {

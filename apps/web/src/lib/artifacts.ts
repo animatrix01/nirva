@@ -1,11 +1,11 @@
-import type { FinalReport, JobStatus, Role } from "@/lib/types";
+import type { CitationRef, FinalReport, Role } from "@/lib/types";
 
-// Artifact payload shapes per docs/demo-ready-plan.md Appendix
-// ("SSE event to component mapping"). payload_ref is the opaque key from the
-// frozen §c.2 SSE envelope; heavier content is fetched from
-// GET /api/jobs/{job_id}/artifacts/{payload_ref} (artifact endpoint pending on
-// Terminal A; mocked until live).
+// Artifact payloads per the ratified contract (DECISIONS.md 2026-08-29):
+// GET /api/jobs/{job_id}/artifacts/{payload_ref}, payload_ref in
+// {approval_request, search_documents, report} ->
+// {kind: "approval"|"tool"|"report", ...}
 
+// GET /api/jobs/{job_id}/evidence/{chunk_id} response (ratified).
 export interface EvidenceReference {
   chunk_id: string;
   document_id: string;
@@ -14,76 +14,61 @@ export interface EvidenceReference {
   revision: string;
   page: number | null;
   section: string | null;
+  equipment_id: string | null;
   confidentiality_level: string;
   content_hash: string;
   passage_text: string;
   why_retrieved: string;
 }
 
+// {kind:"tool", tool:{...}} per real artifacts router (tool_name, ok, summary).
 export interface ToolActivity {
   tool_name: string;
-  arguments_summary: string;
-  status: "running" | "completed" | "error" | "denied";
-  output_summary: string | null;
-  error: string | null;
+  ok: boolean;
+  summary: string;
 }
 
-export interface ContradictionSide {
-  citation: string;
-  passage_text: string;
-}
-
-export interface Contradiction {
-  topic: string;
-  source_a: ContradictionSide;
-  source_b: ContradictionSide;
-  note: string;
-}
-
+// Approval shape from GET /api/approvals + approval_request artifact.
+// Decision fields (§c.1 decision response) are merged client-side after
+// POST /api/approvals/{id}/decision.
 export interface ApprovalRequest {
   approval_id: string;
-  job_id: string;
+  job_id?: string;
   proposal_id: string;
   action: string;
-  equipment_id: string | null;
+  equipment_id?: string | null;
   arguments_summary: string;
   evidence_refs: string[];
   risk_level: "low" | "medium" | "high";
-  requested_by: string;
-  required_role: Role;
   status: "pending" | "approved" | "rejected";
-  decided_by: string | null;
-  decided_at: string | null;
-  comment: string | null;
-  work_order_id: string | null;
-}
-
-export interface SecurityEvent {
-  event_type: "blocked_injection";
-  description: string;
-  source_citation: string | null;
+  requested_at: string;
+  requested_by?: string;
+  required_role?: Role;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  comment?: string | null;
+  work_order_id?: string | null;
 }
 
 export type JobArtifact =
-  | { kind: "evidence"; evidence: EvidenceReference[] }
-  | { kind: "tool"; tool: ToolActivity }
-  | { kind: "contradiction"; contradiction: Contradiction }
   | { kind: "approval"; approval: ApprovalRequest }
-  | { kind: "report"; report: FinalReport }
-  | { kind: "security"; event: SecurityEvent };
+  | { kind: "tool"; tool: ToolActivity }
+  | { kind: "report"; report: FinalReport };
+
+export type ArtifactPayloadRef = "approval_request" | "search_documents" | "report";
+
+export function isArtifactPayloadRef(value: string): value is ArtifactPayloadRef {
+  return (
+    value === "approval_request" ||
+    value === "search_documents" ||
+    value === "report"
+  );
+}
 
 export function isJobArtifact(value: unknown): value is JobArtifact {
   if (typeof value !== "object" || value === null) return false;
   const kind = (value as { kind?: unknown }).kind;
-  return (
-    kind === "evidence" ||
-    kind === "tool" ||
-    kind === "contradiction" ||
-    kind === "approval" ||
-    kind === "report" ||
-    kind === "security"
-  );
+  return kind === "approval" || kind === "tool" || kind === "report";
 }
 
-// Job statuses for reference by UI layers that map artifacts to states.
-export type ArtifactJobStatus = JobStatus;
+export type { CitationRef, FinalReport };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildScript, scenarioKindForObjective } from "@/mocks/db";
+import { buildScript, scenarioKindForObjective } from "@/test-mocks/db";
 import { SSE_EVENT_TYPES } from "@/lib/types";
 
 describe("mock SSE scenario", () => {

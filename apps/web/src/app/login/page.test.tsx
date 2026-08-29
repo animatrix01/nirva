@@ -30,7 +30,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
     await user.type(screen.getByLabelText(/username/i), "engineer");
-    await user.type(screen.getByLabelText(/password/i), "nirva");
+    await user.type(screen.getByLabelText(/password/i), "nirva-demo-pass");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/investigations"));
     const stored = JSON.parse(

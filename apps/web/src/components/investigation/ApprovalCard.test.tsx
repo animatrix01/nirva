@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
-import { buildScript, createMockJob } from "@/mocks/db";
-import { openMockJobStream } from "@/mocks/sse";
-import { ApiError, handleMockRequest } from "@/mocks/router";
+import { buildScript, createMockJob } from "@/test-mocks/db";
+import { openMockJobStream } from "@/test-mocks/sse";
+import { ApiError, handleMockRequest } from "@/test-mocks/router";
 import type { ApprovalRequest } from "@/lib/artifacts";
 
 const baseApproval: ApprovalRequest = {
@@ -16,9 +16,10 @@ const baseApproval: ApprovalRequest = {
   arguments_summary: "Replace seal kit SK-204.",
   evidence_refs: ["chunk_a"],
   risk_level: "medium",
+  status: "pending",
+  requested_at: "2026-08-29T09:00:00Z",
   requested_by: "agent:answer",
   required_role: "supervisor",
-  status: "pending",
   decided_by: null,
   decided_at: null,
   comment: null,
@@ -89,7 +90,7 @@ describe("mock approval endpoints (frozen §c.1)", () => {
   it("supervisor lists and decides; second decision 409s; job completes", async () => {
     // Drive the job through the real mock stream until it parks at awaiting_approval
     await new Promise<void>((resolve) => {
-      const handle = openMockJobStream(jobId, 0, (event) => {
+      const handle = openMockJobStream(jobId, 0, (event: { type: string }) => {
         if (event.type === "awaiting_approval") {
           handle.abort();
           resolve();

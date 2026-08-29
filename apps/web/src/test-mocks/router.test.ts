@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, handleMockRequest } from "@/mocks/router";
-import { MOCK_USERS } from "@/mocks/db";
+import { ApiError, handleMockRequest } from "@/test-mocks/router";
+import { MOCK_USERS } from "@/test-mocks/db";
 
 const engToken = "mock-token-engineer";
 const supToken = "mock-token-supervisor";
@@ -8,7 +8,7 @@ const supToken = "mock-token-supervisor";
 describe("mock router: auth", () => {
   it("logs in a seeded user and returns the frozen LoginResponse shape", () => {
     const data = handleMockRequest("POST", "/api/auth/login", {
-      body: { username: "engineer", password: "nirva" },
+      body: { username: "engineer", password: "nirva-demo-pass" },
     }) as { access_token: string; token_type: string; user: { role: string } };
     expect(data.token_type).toBe("bearer");
     expect(data.user.role).toBe("engineer");

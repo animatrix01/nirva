@@ -1,5 +1,5 @@
 import type { SseEvent } from "@/lib/types";
-import { buildScript, findMockJob, scenarioKindForObjective } from "@/mocks/db";
+import { buildScript, findMockJob, scenarioKindForObjective } from "@/test-mocks/db";
 
 // ---------------------------------------------------------------------------
 // MOCK SSE STREAM — replays the §c.2 envelope over time, honoring Last-Event-ID

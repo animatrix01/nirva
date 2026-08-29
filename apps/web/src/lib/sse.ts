@@ -1,17 +1,17 @@
 "use client";
 
 import type { SseEvent } from "@/lib/types";
+import { getAuthToken } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
-// Job SSE stream with reconnect-and-resync-from-job-state.
-// Live mode uses native EventSource on GET /api/jobs/{id}/events; the browser
-// automatically sends Last-Event-ID on reconnect, and the server replays from
-// that seq (COMMON.md §c.1). Mock mode delegates to src/mocks/sse.ts.
+// Job SSE stream over fetch (the API authenticates via Authorization header,
+// which native EventSource cannot send). Reconnect-and-resync: on reconnect we
+// send Last-Event-ID = last received seq; the server replays events with
+// seq > that value, so dedupe by seq in the consumer stays correct.
 // ---------------------------------------------------------------------------
 
-const MOCK_STREAM =
-  process.env.NEXT_PUBLIC_MOCK !== "0" &&
-  process.env.NODE_ENV !== "production";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 
 const RECONNECT_BASE_DELAY_MS = 1000;
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -30,63 +30,72 @@ export function openJobStream(
   let lastSeq = -1;
   let closed = false;
   let attempts = 0;
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  const controller = new AbortController();
 
-  const connect = () => {
-    if (closed) return;
-    handlers.onStateChange?.(attempts === 0 ? "connecting" : "reconnecting");
+  const delay = () => RECONNECT_BASE_DELAY_MS * 2 ** Math.max(0, attempts - 1);
 
-    if (MOCK_STREAM) {
-      // Dynamic import keeps mocks out of the production bundle path.
-      void import("@/mocks/sse").then(({ openMockJobStream }) =>
-        openMockJobStream(
-          jobId,
-          lastSeq + 1,
-          (event) => {
-            lastSeq = event.seq;
-            attempts = 0;
-            handlers.onEvent(event);
-          },
-          () => scheduleReconnect()
-        )
-      );
-      return;
-    }
-
-    const source = new EventSource(`/api/jobs/${jobId}/events`);
-    source.onopen = () => {
-      attempts = 0;
-      handlers.onStateChange?.("open");
-    };
-    source.onmessage = (message: MessageEvent<string>) => {
+  const loop = async () => {
+    while (!closed && attempts < MAX_RECONNECT_ATTEMPTS) {
       try {
-        const event = JSON.parse(message.data) as SseEvent;
-        lastSeq = event.seq;
-        handlers.onEvent(event);
+        handlers.onStateChange?.(attempts === 0 ? "connecting" : "reconnecting");
+        const token = getAuthToken();
+        const response = await fetch(
+          `${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/events`,
+          {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(lastSeq >= 0 ? { "Last-Event-ID": String(lastSeq) } : {}),
+            },
+            signal: controller.signal,
+          }
+        );
+        if (!response.ok || !response.body) {
+          throw new Error(`SSE HTTP ${response.status}`);
+        }
+        attempts = 0;
+        handlers.onStateChange?.("open");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const frames = buffer.split("\n\n");
+          buffer = frames.pop() ?? "";
+          for (const frame of frames) {
+            for (const line of frame.split("\n")) {
+              if (!line.startsWith("data:")) continue;
+              const data = line.slice(5).trim();
+              if (!data) continue;
+              try {
+                const event = JSON.parse(data) as SseEvent;
+                lastSeq = event.seq;
+                handlers.onEvent(event);
+              } catch {
+                // Malformed frame: ignore; contract guarantees typed JSON.
+              }
+            }
+          }
+        }
+        // Server closed the stream (terminal state reached) — stop.
+        return;
       } catch {
-        // Malformed frame: ignore, contract guarantees typed JSON.
+        if (closed || controller.signal.aborted) return;
+        attempts += 1;
+        if (attempts >= MAX_RECONNECT_ATTEMPTS) return;
+        await new Promise((r) => setTimeout(r, delay()));
       }
-    };
-    source.onerror = () => {
-      source.close();
-      scheduleReconnect();
-    };
+    }
   };
 
-  const scheduleReconnect = () => {
-    if (closed) return;
-    if (attempts >= MAX_RECONNECT_ATTEMPTS) return;
-    attempts += 1;
-    const delay = RECONNECT_BASE_DELAY_MS * 2 ** (attempts - 1);
-    timer = setTimeout(connect, delay);
-  };
-
-  connect();
+  void loop();
 
   return {
     close: () => {
       closed = true;
-      if (timer !== null) clearTimeout(timer);
+      controller.abort();
     },
   };
 }

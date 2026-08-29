@@ -94,7 +94,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex-col items-start gap-2">
           <p className="text-muted-foreground text-xs">
-            Demo accounts (mock mode) — password: <code>nirva</code>
+            Demo accounts — password: <code>nirva-demo-pass</code>
           </p>
           <div className="grid grid-cols-2 gap-1 text-xs">
             {DEMO_ACCOUNTS.map((a) => (
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 className="text-primary hover:underline"
                 onClick={() => {
                   setUsername(a.username);
-                  setPassword("nirva");
+                  setPassword("nirva-demo-pass");
                 }}
               >
                 {a.role}

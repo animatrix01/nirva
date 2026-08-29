@@ -11,7 +11,7 @@ import type {
 // DELETE THIS ENTIRE /mocks FOLDER once status-api.md reports the real API live.
 // ---------------------------------------------------------------------------
 
-import { attachPayloadRefs, seedArtifactsForJob } from "@/mocks/artifacts";
+import { seedArtifactsForJob } from "@/test-mocks/artifacts";
 
 export interface MockUserRecord {
   user_id: string;
@@ -22,10 +22,10 @@ export interface MockUserRecord {
 }
 
 export const MOCK_USERS: MockUserRecord[] = [
-  { user_id: "u-eng-0001", username: "engineer", display_name: "Asha Rao", role: "engineer", password: "nirva" },
-  { user_id: "u-saf-0002", username: "safety", display_name: "Vikram Shetty", role: "safety_officer", password: "nirva" },
-  { user_id: "u-sup-0003", username: "supervisor", display_name: "Meera Iyer", role: "supervisor", password: "nirva" },
-  { user_id: "u-adm-0004", username: "admin", display_name: "System Admin", role: "admin", password: "nirva" },
+  { user_id: "u-eng-0001", username: "engineer", display_name: "Asha Rao", role: "engineer", password: "nirva-demo-pass" },
+  { user_id: "u-saf-0002", username: "safety", display_name: "Vikram Shetty", role: "safety_officer", password: "nirva-demo-pass" },
+  { user_id: "u-sup-0003", username: "supervisor", display_name: "Meera Iyer", role: "supervisor", password: "nirva-demo-pass" },
+  { user_id: "u-adm-0004", username: "admin", display_name: "System Admin", role: "admin", password: "nirva-demo-pass" },
 ];
 
 let seqCounter = 1000;
@@ -121,8 +121,18 @@ export function toJobDetail(job: MockJobRecord): JobDetail {
             ],
             gaps: ["No vibration sensor data available for the 48h before the second failure."],
             citations: [
-              "[OEM Manual Centrifugal Pumps, rev C, page 41, chunk_oem_p41]",
-              "[Work Order WO-88712, rev 2, section 3.2, chunk_wo88712_s32]",
+              {
+                title: "OEM Manual Centrifugal Pumps",
+                revision: "rev C",
+                locator: "page 41",
+                chunk_id: "chunk_oem_p41",
+              },
+              {
+                title: "Work Order WO-88712",
+                revision: "rev 2",
+                locator: "section 3.2",
+                chunk_id: "chunk_wo88712_s32",
+              },
             ],
           }
         : null,
@@ -187,20 +197,21 @@ export function buildScript(
 ): Array<SseEvent & { delayMs: number }> {
   const script = NODE_SCRIPTS[kind];
   let seq = 0;
-  const steps = script.map((step) => ({
-    job_id: jobId,
-    seq: seq++,
-    type: step.type,
-    node: step.node,
-    payload_ref: null,
-    ts: new Date().toISOString(),
-    delayMs: step.delayMs,
-  }));
-  const evidenceSeqs = steps
-    .filter((s) => s.type === "evidence_added")
-    .map((s) => s.seq);
-  seedArtifactsForJob(jobId, kind, evidenceSeqs);
-  attachPayloadRefs(steps, jobId);
+  const steps: Array<SseEvent & { delayMs: number; payload_ref: string | null }> =
+    script.map((step) => ({
+      job_id: jobId,
+      seq: seq++,
+      type: step.type,
+      node: step.node,
+      payload_ref: null,
+      ts: new Date().toISOString(),
+      delayMs: step.delayMs,
+    }));
+  seedArtifactsForJob(jobId, kind);
+  for (const step of steps) {
+    if (step.type === "tool_called") step.payload_ref = "search_documents";
+    else if (step.type === "awaiting_approval") step.payload_ref = "approval_request";
+  }
   return steps;
 }
 
