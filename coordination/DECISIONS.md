@@ -12,3 +12,4 @@
 ---
 
 2026-08-26 | infra | [DECISION] | Workspace bootstrap. COMMON.md frozen: REST contracts, SSE envelope, 17-field LangGraph state schema (Winning Plan §9's 15 canonical fields + operational fields `current_node`, `last_event_seq` added to support SSE streaming and checkpoint resume), chunk metadata schema with allowed_roles ACL, citation contract, roles/default-deny permissions, five env vars.
+2026-08-29 | infra | [DECISION] | 24h demo sprint: api + ai + infra lanes merged into a single EXECUTION terminal (Terminal A); web stays a separate lane (Terminal B). Scope = Phases 0-4 of docs/demo-ready-plan.md only; Phase 5 dropped; precomputed structured contradiction acceptable. Frozen contracts unchanged. Sprint ends after Phase 4 support (artifacts endpoint).
