@@ -24,9 +24,11 @@ Phase 1 — Skeleton
 - 2026-08-29: Unit 6 — artifact layer: `src/lib/artifacts.ts` (JobArtifact discriminated union; EvidenceReference with chunk metadata, hash, why_retrieved); `api.getArtifact()` → GET /api/jobs/{job_id}/artifacts/{payload_ref}; `/mocks/artifacts.ts` + payload_ref-backed SSE scripts; mock router serves artifacts with job-ownership check. 44 tests green.
 - 2026-08-29: Unit 7a — workspace read-only panels: `src/components/investigation/EvidencePanel.tsx` (source list w/ §c.5 locator, selected passage highlighted, confidentiality/revision/page/chunk_id/content_hash/why-retrieved), `ToolActivityList.tsx` (name/status/sanitized args/output), `ContradictionView.tsx` (side-by-side sources + note). Detail page fetches artifacts on payload_ref events (fetch-once cache) and renders all panels. 44 tests green.
 
+- 2026-08-29: Unit 7b — approval flow per frozen §c.1: `api.listApprovals()` + `api.decideApproval()`; mock routes GET /api/approvals (supervisor/admin, 403 others) + POST /api/approvals/{id}/decision (supervisor only, first-decision-wins 409, typed 422, resumes job to completed); `ApprovalCard.tsx` — engineer read-only waiting ("cannot self-approve"), supervisor enabled approve/reject + comment, post-decision shows decision/actor/timestamp/comment/work-order-id. Wired into detail page via approval payload_ref artifact. 51 tests green.
+
 ## In Progress
 
-- Detail-page integration: artifact fetch on payload_ref events; evidence panel + contradiction view + approval UI in workspace.
+- /approvals queue page (supervisor), /audit screen, Local/Offline health indicator, /admin/system.
 
 ## Blocked (reason + which lane must act)
 

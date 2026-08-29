@@ -9,12 +9,68 @@ import type { SseEvent } from "@/lib/types";
 
 const artifacts = new Map<string, JobArtifact>();
 
+export function clearArtifacts(): void {
+  artifacts.clear();
+}
+
 export function putArtifact(ref: string, artifact: JobArtifact): void {
   artifacts.set(ref, artifact);
 }
 
 export function getArtifact(ref: string): JobArtifact | undefined {
   return artifacts.get(ref);
+}
+
+export function findApprovalArtifact(
+  approvalId: string
+): { ref: string; artifact: Extract<JobArtifact, { kind: "approval" }> } | undefined {
+  for (const [ref, artifact] of artifacts) {
+    if (artifact.kind === "approval" && artifact.approval.approval_id === approvalId) {
+      return { ref, artifact };
+    }
+  }
+  return undefined;
+}
+
+export function listApprovalArtifacts(): Array<
+  Extract<JobArtifact, { kind: "approval" }>["approval"]
+> {
+  const out: Array<Extract<JobArtifact, { kind: "approval" }>["approval"]> = [];
+  for (const artifact of artifacts.values()) {
+    if (artifact.kind === "approval") out.push(artifact.approval);
+  }
+  return out;
+}
+
+let workOrderSeq = 1000;
+
+export function applyApprovalDecision(
+  approvalId: string,
+  decision: "approved" | "rejected",
+  decidedBy: string
+): {
+  approval_id: string;
+  status: "approved" | "rejected";
+  decided_by: string;
+  decided_at: string;
+  work_order_id: string | null;
+} {
+  const found = findApprovalArtifact(approvalId);
+  if (!found) throw new Error("unknown approval");
+  const approval = found.artifact.approval;
+  const decidedAt = new Date().toISOString();
+  const workOrderId = decision === "approved" ? `wo-${workOrderSeq++}` : null;
+  approval.status = decision;
+  approval.decided_by = decidedBy;
+  approval.decided_at = decidedAt;
+  approval.work_order_id = workOrderId;
+  return {
+    approval_id: approvalId,
+    status: decision,
+    decided_by: decidedBy,
+    decided_at: decidedAt,
+    work_order_id: workOrderId,
+  };
 }
 
 function seedEvidenceArtifacts(jobId: string, evidenceSeqs: number[]): void {

@@ -16,7 +16,7 @@ import {
   toJobDetail,
   toJobSummary,
 } from "@/mocks/db";
-import { getArtifact } from "@/mocks/artifacts";
+import { getArtifact, findApprovalArtifact, listApprovalArtifacts, applyApprovalDecision } from "@/mocks/artifacts";
 
 // ---------------------------------------------------------------------------
 // MOCK ROUTER — dispatches requests exactly as the frozen §c.1 endpoints would.
@@ -128,6 +128,52 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         .slice(0, Number.isFinite(limit) ? limit : 50);
       const summaries: JobSummary[] = filtered.map(toJobSummary);
       return summaries;
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/approvals$/,
+    handler: ({ token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role !== "supervisor" && caller.role !== "admin") {
+        throw new ApiError(403, "Supervisor or admin role required");
+      }
+      return listApprovalArtifacts();
+    },
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/approvals\/([^/]+)\/decision$/,
+    handler: ({ params, body, token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role !== "supervisor") {
+        throw new ApiError(403, "Only a supervisor may decide approvals");
+      }
+      const approvalId = params[0];
+      const { decision, comment } = (body ?? {}) as {
+        decision?: unknown;
+        comment?: unknown;
+      };
+      if (decision !== "approved" && decision !== "rejected") {
+        throw new ApiError(422, 'decision must be "approved" or "rejected"', "decision");
+      }
+      const found = findApprovalArtifact(approvalId);
+      if (!found) throw new ApiError(404, "Unknown approval id", "approval_id");
+      if (found.artifact.approval.status !== "pending") {
+        throw new ApiError(409, "Approval already decided (first decision wins)");
+      }
+      const result = applyApprovalDecision(approvalId, decision, username);
+      // Decision resumes the interrupted graph thread (mock: job completes).
+      const job = findMockJob(found.artifact.approval.job_id);
+      if (job && job.status === "awaiting_approval") {
+        job.status = "completed";
+        job.current_node = null;
+        job.updated_at = new Date().toISOString();
+      }
+      void comment;
+      return result;
     },
   },
   {

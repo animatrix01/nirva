@@ -9,10 +9,13 @@ import { CitationLink } from "@/components/investigation/CitationLink";
 import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ToolActivityList } from "@/components/investigation/ToolActivityList";
 import { ContradictionView } from "@/components/investigation/ContradictionView";
+import { ApprovalCard } from "@/components/investigation/ApprovalCard";
+import { useStoredAuth } from "@/lib/auth-client";
 import { bannerForStatus } from "@/components/investigation/timeline";
-import { ApiError, getJob, getArtifact } from "@/lib/api";
+import { ApiError, getJob, getArtifact, decideApproval } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
 import type {
+  ApprovalRequest,
   Contradiction,
   EvidenceReference,
   JobArtifact,
@@ -37,6 +40,7 @@ const BANNER_TONE: Record<string, string> = {
 export default function InvestigationDetailPage() {
   const params = useParams<{ jobId: string }>();
   const jobId = params?.jobId;
+  const auth = useStoredAuth();
 
   const [job, setJob] = useState<JobDetail | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
@@ -44,6 +48,7 @@ export default function InvestigationDetailPage() {
   const [artifacts, setArtifacts] = useState<Record<string, JobArtifact>>({});
   const [selectedChunkId, setSelectedChunkId] = useState<string | null>(null);
   const [streamState, setStreamState] = useState<StreamState>("connecting");
+  const [deciding, setDeciding] = useState(false);
 
   const streamRef = useRef<{ close: () => void } | null>(null);
 
@@ -145,6 +150,46 @@ export default function InvestigationDetailPage() {
   const contradictions: Contradiction[] = Object.values(artifacts).flatMap(
     (a) => (a.kind === "contradiction" ? [a.contradiction] : [])
   );
+  const approvalRef =
+    Object.entries(artifacts).find(([, a]) => a.kind === "approval")?.[0] ?? null;
+  const approval: ApprovalRequest | null = approvalRef
+    ? (artifacts[approvalRef] as Extract<JobArtifact, { kind: "approval" }>).approval
+    : null;
+
+  const handleDecision = (decision: "approved" | "rejected", comment: string | null) => {
+    if (!approval || !approvalRef) return;
+    setDeciding(true);
+    void decideApproval(approval.approval_id, decision, comment)
+      .then((result) => {
+        setArtifacts((prev) => ({
+          ...prev,
+          [approvalRef]: {
+            kind: "approval",
+            approval: {
+              ...approval,
+              status: result.status,
+              decided_by: result.decided_by,
+              decided_at: result.decided_at,
+              comment,
+              work_order_id: result.work_order_id,
+            },
+          },
+        }));
+        setJob((prev) =>
+          prev && prev.status === "awaiting_approval"
+            ? { ...prev, status: "completed" }
+            : prev
+        );
+      })
+      .catch((e: unknown) => {
+        setJobError(
+          e instanceof ApiError
+            ? e.body.detail
+            : "Failed to record approval decision"
+        );
+      })
+      .finally(() => setDeciding(false));
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -198,6 +243,20 @@ export default function InvestigationDetailPage() {
             <ContradictionView contradiction={c} />
           </section>
         ))}
+
+        {approval && (
+          <section className="mt-6">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+              Approval gate
+            </h2>
+            <ApprovalCard
+              approval={approval}
+              viewerRole={auth?.user.role ?? ""}
+              deciding={deciding}
+              onDecide={handleDecision}
+            />
+          </section>
+        )}
 
         <section className="mt-6 grid grid-cols-1 gap-6">
           <div>

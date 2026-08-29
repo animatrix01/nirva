@@ -8,6 +8,7 @@ import type {
   TypedErrorBody,
 } from "@/lib/types";
 import type { JobArtifact } from "@/lib/artifacts";
+import type { ApprovalRequest } from "@/lib/artifacts";
 import { ApiError } from "@/mocks/router";
 import { handleMockRequest } from "@/mocks/router";
 
@@ -133,6 +134,26 @@ export function getArtifact(
     "GET",
     `/api/jobs/${jobId}/artifacts/${encodeURIComponent(payloadRef)}`
   );
+}
+
+export function listApprovals(): Promise<ApprovalRequest[]> {
+  return request<ApprovalRequest[]>("GET", "/api/approvals");
+}
+
+export function decideApproval(
+  approvalId: string,
+  decision: "approved" | "rejected",
+  comment: string | null
+): Promise<{
+  approval_id: string;
+  status: "approved" | "rejected";
+  decided_by: string;
+  decided_at: string;
+  work_order_id: string | null;
+}> {
+  return request("POST", `/api/approvals/${approvalId}/decision`, {
+    body: { decision, comment },
+  });
 }
 
 export type { JobStatus };
