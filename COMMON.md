@@ -192,6 +192,12 @@ No auth. Response 200:
 
 Error taxonomy (all endpoints): validation errors -> 4xx with typed body `{ "detail": "str", "field": "str|null" }`; auth failures -> 401; forbidden -> 403; conflict/idempotency rejection -> 409; unknown id -> 404. No silent error swallowing.
 
+Phase 2/4 additions (ratified in DECISIONS.md 2026-08-29):
+- `GET /api/documents/{document_id}/content` -> `{ document: DocumentOut, chunks: [{chunk_id, page, section, text}] }` (caller-role ACL).
+- `GET /api/jobs/{job_id}/evidence/{chunk_id}` -> `{ chunk_id, document_id, document_title, document_type, revision, page, section, equipment_id, confidentiality_level, content_hash, passage_text, why_retrieved }` (job-visibility + chunk ACL inside the vector query).
+- `GET /api/jobs/{job_id}/artifacts/{payload_ref}` -> discriminated union `{kind: "approval", approval: {...}} | {kind: "tool", tool: {...}} | {kind: "report", report: {...}}`; known payload_refs: `approval_request`, `search_documents`, `report`.
+- `final_report.citations` entries are structured §c.5 refs: `{title, revision, locator, chunk_id}`.
+
 ### c.2 SSE event envelope (EXACT JSON)
 
 Every SSE event's `data:` payload is exactly:
@@ -299,6 +305,7 @@ Job visibility: users see their own jobs; supervisor/admin see all. Approvals li
 | `MODEL_BASE_URL` | OpenAI-compatible inference endpoint (Ollama in dev, vLLM in prod); engine swap is config, never code |
 | `JWT_SECRET` | Signing secret for JWTs; never committed — set via `.env` from `.env.example` template |
 | `STORAGE_PATH` | Local filesystem path for uploaded/quarantined documents |
+| `DEMO_MODE` | Optional (ratified 2026-08-29): bool, default false. Startup refuses the default JWT secret unless true; for the offline demo profile |
 
 No other service addresses may be hardcoded; anything new requires a contract proposal.
 
