@@ -47,12 +47,19 @@ class JobSummary(BaseModel):
     created_at: datetime
 
 
+class CitationOut(BaseModel):
+    title: str
+    revision: str
+    locator: str
+    chunk_id: str
+
+
 class FinalReportOut(BaseModel):
     findings: str
     confidence: float
     assumptions: list[str]
     gaps: list[str]
-    citations: list[str]
+    citations: list[CitationOut]
 
 
 class JobDetailResponse(BaseModel):
