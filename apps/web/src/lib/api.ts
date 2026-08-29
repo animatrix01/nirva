@@ -7,6 +7,7 @@ import type {
   LoginResponse,
   TypedErrorBody,
 } from "@/lib/types";
+import type { JobArtifact } from "@/lib/artifacts";
 import { ApiError } from "@/mocks/router";
 import { handleMockRequest } from "@/mocks/router";
 
@@ -122,6 +123,16 @@ export function listJobs(query: JobListQuery = {}): Promise<JobSummary[]> {
 
 export function getJob(jobId: string): Promise<JobDetail> {
   return request<JobDetail>("GET", `/api/jobs/${jobId}`);
+}
+
+export function getArtifact(
+  jobId: string,
+  payloadRef: string
+): Promise<JobArtifact> {
+  return request<JobArtifact>(
+    "GET",
+    `/api/jobs/${jobId}/artifacts/${encodeURIComponent(payloadRef)}`
+  );
 }
 
 export type { JobStatus };

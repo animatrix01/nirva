@@ -20,11 +20,12 @@ Phase 1 — Skeleton
 - 2026-08-29: Unit 3 — new investigation form: `src/app/investigations/new/page.tsx` (objective textarea + optional asset ID, client validation ≥8 chars, posts frozen POST /api/jobs `{objective, equipment_id}`, routes to detail on 201, typed 422/error display). Tests `page.test.tsx` (validation + create-and-redirect). 25 tests green.
 
 - 2026-08-29: Unit 4 — investigation detail workspace `/investigations/[jobId]`: header (status badge/current node/creator/timestamp), live SSE timeline via `src/lib/sse.ts` (seq dedupe, reconnect banner while live), all-six-state truthful banners (`timeline.ts`), Phase-1 node timeline (intake→answer→finalize+approval_executor; pending/running/done), final report section. `npm run build` green. 35 tests green.
-- 2026-08-29: Unit 5 — citation evidence inspector: `src/lib/citation.ts` (§c.5 `[title, rev, page/section, chunk_id]` parser + tests), `src/components/investigation/CitationLink.tsx` (clickable citation → dialog with title/revision/locator/chunk_id/stream-seq; passage/classification/hash/why-retrieved marked unavailable until artifacts endpoint lands). Contract gap filed as [PROPOSAL] 2026-08-29 web in DECISIONS.md. 38 tests green.
+- 2026-08-29: Unit 5 — citation evidence inspector: `src/lib/citation.ts` (§c.5 parser + tests), `src/components/investigation/CitationLink.tsx` (clickable citation dialog). [PROPOSAL] filed in DECISIONS.md re: evidence artifact endpoint (demo plan now specifies GET /api/jobs/{job_id}/artifacts/{payload_ref}).
+- 2026-08-29: Unit 6 — artifact layer per demo-ready-plan Appendix: `src/lib/artifacts.ts` (JobArtifact discriminated union: evidence/tool/contradiction/approval/report/security; EvidenceReference carries chunk_id, doc metadata, confidentiality_level, content_hash, passage_text, why_retrieved); `api.getArtifact()` → GET /api/jobs/{job_id}/artifacts/{payload_ref}; `/mocks/artifacts.ts` seeds payload-backed artifacts, mock SSE scripts now carry real payload_refs on evidence_added/tool_called/contradiction_found/awaiting_approval; mock router serves artifacts with job-ownership check. 44 tests green.
 
 ## In Progress
 
-- Sprint realigned to docs/demo-ready-plan.md (DECISIONS 2026-08-29, Phases 0-4, Terminal B = apps/web only). Next: artifact client (GET /api/jobs/{job_id}/artifacts/{payload_ref} discriminated union) + mock handlers; evidence panel with passage display; approval UI; /audit + /admin/system; AI Elements primitives; layout pass 1366x768.
+- Detail-page integration: artifact fetch on payload_ref events; evidence panel + contradiction view + approval UI in workspace.
 
 ## Blocked (reason + which lane must act)
 

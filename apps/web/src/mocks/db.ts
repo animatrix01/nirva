@@ -11,6 +11,8 @@ import type {
 // DELETE THIS ENTIRE /mocks FOLDER once status-api.md reports the real API live.
 // ---------------------------------------------------------------------------
 
+import { attachPayloadRefs, seedArtifactsForJob } from "@/mocks/artifacts";
+
 export interface MockUserRecord {
   user_id: string;
   username: string;
@@ -185,7 +187,7 @@ export function buildScript(
 ): Array<SseEvent & { delayMs: number }> {
   const script = NODE_SCRIPTS[kind];
   let seq = 0;
-  return script.map((step) => ({
+  const steps = script.map((step) => ({
     job_id: jobId,
     seq: seq++,
     type: step.type,
@@ -194,6 +196,12 @@ export function buildScript(
     ts: new Date().toISOString(),
     delayMs: step.delayMs,
   }));
+  const evidenceSeqs = steps
+    .filter((s) => s.type === "evidence_added")
+    .map((s) => s.seq);
+  seedArtifactsForJob(jobId, kind, evidenceSeqs);
+  attachPayloadRefs(steps, jobId);
+  return steps;
 }
 
 export function findMockJob(jobId: string): MockJobRecord | undefined {

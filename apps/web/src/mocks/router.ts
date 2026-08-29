@@ -16,6 +16,7 @@ import {
   toJobDetail,
   toJobSummary,
 } from "@/mocks/db";
+import { getArtifact } from "@/mocks/artifacts";
 
 // ---------------------------------------------------------------------------
 // MOCK ROUTER — dispatches requests exactly as the frozen §c.1 endpoints would.
@@ -127,6 +128,23 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         .slice(0, Number.isFinite(limit) ? limit : 50);
       const summaries: JobSummary[] = filtered.map(toJobSummary);
       return summaries;
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/jobs\/([^/]+)\/artifacts\/([^/]+)$/,
+    handler: ({ params, token }) => {
+      requireAuth(token);
+      const [jobId, encodedRef] = params;
+      const job = findMockJob(jobId);
+      if (!job) throw new ApiError(404, "Unknown job id", "job_id");
+      const ref = decodeURIComponent(encodedRef);
+      const artifact = getArtifact(ref);
+      // Artifact refs are keyed kind:job_id:n — ensure it belongs to this job.
+      if (!artifact || !ref.includes(`:${jobId}:`)) {
+        throw new ApiError(404, "Unknown artifact reference", "payload_ref");
+      }
+      return artifact;
     },
   },
   {
