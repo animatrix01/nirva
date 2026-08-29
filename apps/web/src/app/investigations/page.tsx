@@ -5,9 +5,11 @@ import { InvestigationsList } from "@/components/InvestigationsList";
 
 export default function InvestigationsPage() {
   return (
-    <main className="flex flex-1 overflow-y-auto">
+    <div className="flex min-h-screen flex-col">
       <AppHeader title="Investigations" />
-      <InvestigationsList />
-    </main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+        <InvestigationsList />
+      </main>
+    </div>
   );
 }

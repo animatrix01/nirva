@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,13 +12,48 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { JobStatusBadge } from "@/components/job-status-badge";
-import { listJobs } from "@/lib/api";
-import type { JobSummary } from "@/lib/types";
+import { ApiError, listJobs } from "@/lib/api";
+import type { JobStatus, JobSummary } from "@/lib/types";
+
+const STATUS_OPTIONS: Array<{ value: JobStatus | "all"; label: string }> = [
+  { value: "all", label: "All statuses" },
+  { value: "queued", label: "Queued" },
+  { value: "running", label: "Running" },
+  { value: "awaiting_approval", label: "Awaiting approval" },
+  { value: "completed", label: "Completed" },
+  { value: "failed", label: "Failed" },
+  { value: "blocked_injection", label: "Blocked injection" },
+];
+
+export function formatJobDate(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+export function clientFilterByDate(
+  jobs: JobSummary[],
+  fromDate: string
+): JobSummary[] {
+  if (!fromDate) return jobs;
+  const from = new Date(fromDate);
+  from.setHours(0, 0, 0, 0);
+  if (isNaN(from.getTime())) return jobs;
+  return jobs.filter((j) => {
+    const created = new Date(j.created_at);
+    return !isNaN(created.getTime()) && created >= from;
+  });
+}
 
 export function InvestigationsList() {
-  const [searchParams] = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
   const [equipmentFilter, setEquipmentFilter] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("");
 
@@ -26,61 +61,77 @@ export function InvestigationsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
+  const load = useCallback(
+    async (signal?: { cancelled: boolean }) => {
       try {
         const data = await listJobs({
-          status:
-            statusFilter === "All" ? undefined : (statusFilter as JobSummary["status"]),
+          status: statusFilter === "all" ? undefined : statusFilter,
+          equipment_id: equipmentFilter.trim() ? equipmentFilter.trim() : undefined,
         });
-        // Client-side equipment and date filtering
-        let filtered = data;
-        if (equipmentFilter) {
-          filtered = filtered.filter((j) =>
-            j.objective_summary?.includes(equipmentFilter)
-          );
-        }
-        if (dateFilter) {
-          const from = new Date(dateFilter);
-          filtered = filtered.filter((j) => {
-            const created = new Date(j.created_at);
-            return created >= from;
-          });
-        }
-        setJobs(filtered);
+        if (signal?.cancelled) return;
+        setJobs(clientFilterByDate(data, dateFilter));
         setError(null);
-      } catch (e) {
-        setError(e?.detail ?? "Failed to load investigations");
+      } catch (e: unknown) {
+        if (signal?.cancelled) return;
+        if (e instanceof ApiError) {
+          setError(e.body.detail);
+        } else if (e instanceof Error) {
+          setError(e.message);
+        } else {
+          setError("Failed to load investigations");
+        }
         setJobs([]);
       } finally {
-        setLoading(false);
+        if (!signal?.cancelled) setLoading(false);
       }
-    }
-    load();
-  }, [statusFilter, equipmentFilter, dateFilter]);
+    },
+    [statusFilter, equipmentFilter, dateFilter]
+  );
+
+  useEffect(() => {
+    const signal = { cancelled: false };
+    queueMicrotask(() => void load(signal));
+    return () => {
+      signal.cancelled = true;
+    };
+  }, [load]);
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setEquipmentFilter("");
+    setDateFilter("");
+  };
 
   return (
     <Card className="w-full max-w-3xl">
       <CardHeader>
         <CardTitle>Investigations</CardTitle>
         <CardDescription>
-          Search and filter investigations. Date filtering is client-side.
+          Filter by status, asset, or date. Date filtering is applied locally.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="status">Status</Label>
-            <Input
-              id="status"
-              placeholder="All"
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            />
+              onValueChange={(v) => setStatusFilter(v as JobStatus | "all")}
+            >
+              <SelectTrigger id="status" aria-label="Filter by status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <Label htmlFor="equipment">Equipment</Label>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="equipment">Asset</Label>
             <Input
               id="equipment"
               placeholder="e.g., P-204"
@@ -88,7 +139,7 @@ export function InvestigationsList() {
               onChange={(e) => setEquipmentFilter(e.target.value)}
             />
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <Label htmlFor="date">From date</Label>
             <Input
               id="date"
@@ -97,45 +148,59 @@ export function InvestigationsList() {
               onChange={(e) => setDateFilter(e.target.value)}
             />
           </div>
-          <div />
-        </form>
-        {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {error && (
-          <p role="alert" className="text-sm text-destructive mt-2">
-            {error}
-          </p>
-        )}
-        {jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground mt-4">
-            No investigations found. Try adjusting filters.
-          </p>
-        ) : (
-          <div className="mt-4 space-y-2">
-            {jobs.map((j) => (
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col gap-2" aria-busy="true">
+            {[0, 1, 2].map((i) => (
               <div
-                key={j.job_id}
-                className="flex items-center justify-between p-3 rounded border bg-card"
-              >
-                <div className="flex items-center gap-3">
-                  <JobStatusBadge status={j.status} />
-                  <span className="font-medium truncate w-64">
-                    {j.objective_summary ?? "-"}
-                  </span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {j.created_at}
-                </span>
-              </div>
+                key={i}
+                className="h-14 animate-pulse rounded border bg-muted/50"
+              />
             ))}
           </div>
+        ) : error ? (
+          <div role="alert" className="flex flex-col gap-2">
+            <p className="text-destructive text-sm">{error}</p>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>          </div>
+        ) : jobs.length === 0 ? (
+          <p className="text-muted-foreground mt-2 text-sm">
+            No investigations found. Try adjusting filters or create a new
+            investigation.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {jobs.map((j) => (
+              <li key={j.job_id}>
+                <Link
+                  href={`/investigations/${j.job_id}`}
+                  className="bg-card hover:bg-muted/50 flex items-center justify-between gap-3 rounded border p-3"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <JobStatusBadge status={j.status} />
+                    <span className="truncate text-sm font-medium">
+                      {j.objective_summary || "(no objective)"}
+                    </span>
+                  </div>
+                  <time className="text-muted-foreground shrink-0 text-xs">
+                    {formatJobDate(j.created_at)}
+                  </time>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
-        <Button
-          asChild
-          className="mt-3 justify-end"
-          onClick={() => setSearchParams("")}
-        >
-          Clear filters
-        </Button>
+
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            Clear filters
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/investigations/new">New investigation</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

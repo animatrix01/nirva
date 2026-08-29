@@ -8,6 +8,8 @@ Phase 1 — Skeleton
 
 ## Done (list with dates + file paths)
 
+- 2026-08-29: Unit 1-2 — investigations list complete: fixed 2 tsc errors (`e?.detail` → `ApiError` instanceof guard; removed invalid `setSearchParams`/`useSearchParams` misuse), removed unused-var warning. `src/components/InvestigationsList.tsx` rewritten: status Select (all six §c.1 statuses + All), asset filter via frozen `equipment_id` query param, client-side from-date filter, rows link to `/investigations/[jobId]`, skeleton loading/empty/error+retry states. Page layout fixed (`src/app/investigations/page.tsx`). Helper tests (`InvestigationsList.test.ts`). 21 tests green. Note: react-hooks/set-state-in-effect lint rule requires state updates only in async callbacks — fetch scheduled via queueMicrotask with cancellation signal.
+
 - 2026-08-26: Scaffolded Next.js 16 App Router app in `apps/web/` (TypeScript, Tailwind v4, src dir, `@/*` alias). `src/app/*`, `package.json`.
 - 2026-08-26: Installed + wired shadcn/ui (radix/nova preset): button, card, input, label, badge, select, table, separator, tabs, dialog, sonner under `src/components/ui/`; `src/lib/utils.ts`; `components.json`.
 - 2026-08-26: Vitest + Testing Library setup: `vitest.config.ts`, `vitest.setup.ts`, scripts `lint`/`typecheck`/`test` in `package.json`. Landing page replaced with NIRVA entry (`src/app/page.tsx`) + smoke test (`src/app/page.test.tsx`). Self-check green.
@@ -17,7 +19,7 @@ Phase 1 — Skeleton
 
 ## In Progress
 
-- Investigations list with status/asset/date filters (Phase 1 UI order per charter).
+- New investigation form `/investigations/new` posting frozen POST /api/jobs shape.
 
 ## Blocked (reason + which lane must act)
 
