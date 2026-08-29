@@ -39,7 +39,7 @@ export function AppHeader({ title }: { title: string }) {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
-            <a href="/documents">Documents</a>
+            <Link href="/documents">Documents</Link>
           </Button>
           <HealthIndicator />
           {auth.user.role === "supervisor" || auth.user.role === "admin" ? (

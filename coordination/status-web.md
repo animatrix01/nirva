@@ -42,9 +42,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: TIER 1 Unit 2b/c — `/documents` route live: ACL-filtered library table (title/type/revision/status badge/department/equipment/uploaded), chunk viewer dialog (GET /api/documents/{id}/content, evidence-panel styling, stale-keyed loading), role-gated upload form (engineer+admin only; others see restriction note; file picker, type select, revision, effective_date, department, optional equipment_id, 4-role checkbox multi-select; success shows `indexed — N chunk(s)` and refreshes; duplicate=true renders informational "already indexed", not an error); EvidencePanel + CitationLink now show numeric `score` next to why-retrieved ("score 0.87 — hybrid dense+sparse, rank-fused") with graceful degradation when absent (live API: older chunks have no score — confirmed); AppHeader gains "Documents" link visible to all roles, placed before Approvals/Audit/System. Test doubles extended (ACL-filtered list, role-guarded upload 403 for supervisor/safety_officer). 58 tests green.
 
+- 2026-08-29: TIER 1 Unit 2 EXIT GATE — verified on the real API end-to-end: engineer multipart upload of a small PDF → `status=indexed, chunks=1` (`doc-b17cf95305a6`), chunk content viewable via `/content` (text extracted correctly); exact re-upload → `duplicate=true, chunks=0` (informational path); supervisor AND safety_officer upload → 403 `{"detail":"Document upload requires engineer or admin role"}` (exact string); admin/engineer allowed; new investigation about the bulletin's content (ZK-9911-XQ) streamed to awaiting_approval and its report cites the uploaded doc (`chk-doc-b17cf95305a6-0000 | NIRVA Test Seal-Wipe Bulletin`); fresh evidence chunks carry numeric `score` (0.6666667 observed) — rendered as "score 0.67 — hybrid dense+sparse, rank-fused"; older chunks lack score → degrades gracefully. Production build green incl. new /documents route. 58 tests green.
+
 ## In Progress
 
-- EXIT GATE: browser verification of upload flow against real API (engineer upload → indexed+chunk count → chunks viewable; supervisor/safety_officer no form; admin upload; citation of uploaded doc) + production build.
+- Ready for Tier 1 Unit 3 / rehearsal.
 
 ## Blocked (reason + which lane must act)
 
