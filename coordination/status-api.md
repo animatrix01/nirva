@@ -4,20 +4,15 @@
 
 ## Current Phase
 
-Phase 2 — Ingestion + Citations (Phase 0 and Phase 1 COMPLETE)
+Phase 3 — Tools + Approval (Phase 0, 1, 2 COMPLETE)
 
 ## Done (list with dates + file paths)
 
-- 2026-08-29 | Repo repair: docs/demo-ready-plan.md saved; .gitignore restored; 58 tracked junk files (dbs/journals/pycache) untracked+deleted; lane-merge decision logged (`75170d5`, `5d1bfa3`)
-- 2026-08-29 | Fixed final_report serialization bug in job detail + full typing/lint cleanup; mypy clean, 75/75 tests green incl. agent+retrieval suites now in default pytest scope (`4aaa271`)
-- 2026-08-29 | Phase 0: pinned apps/api/pyproject.toml; apps/api + apps/web Dockerfiles; compose api build context widened to repo root; README; JWT-secret startup guard + DEMO_MODE proposal; compose config VALID; Docker engine started (was installed but not running); .env provisioned (`b352d66`)
-- 2026-08-29 | Infra live: postgres 16 healthy, qdrant v1.12.4 up, otel-collector up; NATIVE Ollama on 127.0.0.1:11434 already serving qwen2.5:3b-instruct-q4_K_M, qwen2.5vl:3b, bge-m3 (container ollama skipped — port occupied; native use sanctioned by plan recovery table)
-- 2026-08-29 | Phase 1: MockIntakeAnswerFinalizeGraph REPLACED by LangGraphInvestigationGraph adapter around packages/agent build_investigation_graph(); stream bridge emits frozen SSE node events live (commit per emit); failures attributed to executing node; GatewayClient from MODEL_BASE_URL with 90s timeout; real owner role into state; job id = thread_id; fake-gateway fixture keeps API tests offline+real-graph (`855a2c9`)
-- 2026-08-29 | PHASE 1 EXIT GATE PASSED: live run through real graph + real Ollama model produced local-model report, status completed (scripts/phase1_live_check.py)
+- 2026-08-29 | Phase 2 COMPLETE + live gate: synthetic corpus generators (contradiction + injection fixtures); Docling parse -> structural chunking -> Ollama bge-m3 dense + local sparse -> Qdrant hybrid (RRF) with allowed_roles filter INSIDE query; ACL leakage 0; documents router (upload w/ hash dedup + quarantine -> indexed, list, content); retrieve graph node added (intake->retrieve->answer->finalize); golden investigation through real API produced structured citations [title, revision, locator, chunk_id] grounded in retrieved chunks (`116f3fa`, `a94e5e8`, `b03d973`)
 
 ## In Progress
 
-- Phase 2 unit #1: synthetic P-204 corpus generators (data/synthetic)
+- Phase 3: operational tools (asset history, inventory) + work-order proposal approval gate
 
 ## Blocked (reason + which lane must act)
 
