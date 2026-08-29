@@ -69,6 +69,11 @@ with client.stream("GET", f"/api/jobs/{jid}/events", headers=eng) as resp:
 print(f"   streamed {len(events)} events in {time.time() - t0:.0f}s; terminal={terminal} contradiction_found={contradiction_seen}")
 
 detail = client.get(f"/api/jobs/{jid}", headers=eng).json()
+for _ in range(40):
+    if detail["status"] != "running":
+        break
+    time.sleep(0.25)
+    detail = client.get(f"/api/jobs/{jid}", headers=eng).json()
 report = detail.get("final_report") or {}
 citations = report.get("citations", [])
 print(f"   status={detail['status']} confidence={report.get('confidence')} citations={len(citations)}")
