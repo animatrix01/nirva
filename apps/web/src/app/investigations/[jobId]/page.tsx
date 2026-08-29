@@ -10,6 +10,13 @@ import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ToolActivityList } from "@/components/investigation/ToolActivityList";
 import { ContradictionView } from "@/components/investigation/ContradictionView";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import {
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+  Source,
+} from "@/components/ai-elements/sources";
 import { useStoredAuth } from "@/lib/auth-client";
 import { bannerForStatus } from "@/components/investigation/timeline";
 import { ApiError, getJob, getArtifact, decideApproval } from "@/lib/api";
@@ -282,8 +289,13 @@ export default function InvestigationDetailPage() {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
               Final report
             </h2>
-            <div className="rounded-lg border p-4 text-sm">
-              <p className="whitespace-pre-wrap">{job.final_report.findings}</p>
+            <div className="text-sm">
+              <Message from="assistant">
+                <MessageContent>
+                  {/* MessageResponse renders sanitized markdown — raw HTML disabled */}
+                  <MessageResponse>{job.final_report.findings}</MessageResponse>
+                </MessageContent>
+              </Message>
               <p className="mt-3 text-xs">
                 Confidence: {(job.final_report.confidence * 100).toFixed(0)}%
               </p>
@@ -309,14 +321,16 @@ export default function InvestigationDetailPage() {
               )}
               {job.final_report.citations.length > 0 && (
                 <div className="mt-3">
-                  <h3 className="text-xs font-semibold uppercase">Citations</h3>
-                  <ul className="list-disc pl-4 text-xs">
-                    {job.final_report.citations.map((c, i) => (
-                      <li key={i}>
-                        <CitationLink citation={c} />
-                      </li>
-                    ))}
-                  </ul>
+                  <Sources>
+                    <SourcesTrigger count={job.final_report.citations.length} />
+                    <SourcesContent>
+                      {job.final_report.citations.map((c, i) => (
+                        <Source key={i} href="#" onClick={(e) => e.preventDefault()}>
+                          <CitationLink citation={c} />
+                        </Source>
+                      ))}
+                    </SourcesContent>
+                  </Sources>
                 </div>
               )}
             </div>

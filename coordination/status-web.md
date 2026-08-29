@@ -28,9 +28,11 @@ Phase 1 — Skeleton
 
 - 2026-08-29: Unit 8 — approvals/audit/system/health: `/approvals` queue (pending/decided sections, decision wired for supervisors, 403 state for others); `/audit` (chain_valid badge, redacted-summary table, role-gated admin/safety_officer); `/admin/system` (frozen GET /api/admin/models table, admin-only); `HealthIndicator` in AppHeader polling GET /api/health → "Local / Offline" green / degraded / unreachable; role-aware nav links; mock handlers `/api/audit` (hash-chained events, chain re-verified on read, 403 others) + `/api/health` (no auth) + `/api/admin/models` (admin only). 51 tests green.
 
+- 2026-08-29: Unit 9 — AI Elements integration: installed conversation/message/sources/tool/task/chain-of-thought primitives into `src/components/ai-elements/` (CLI blocked only for the decision primitive by a terminal deny-rule on the "rm" substring in its name — hand-rolled equivalent at `ai-elements/confirmation.tsx`); fixed vendored `code-block.tsx` ref-during-render with state-keyed staleness (no suppression); detail page now renders final report findings via `MessageResponse` (sanitized markdown, raw HTML disabled) and citations via `Sources/SourcesTrigger/SourcesContent` + `CitationLink`. 51 tests green.
+
 ## In Progress
 
-- AI Elements primitives (conversation/message/sources/tool/confirmation/task) + investigation workspace composition; layout pass 1366x768 + mobile fallback.
+- Layout pass 1366x768 no overflow + mobile fallback; build verification; delete /mocks when API live.
 
 ## Blocked (reason + which lane must act)
 
