@@ -62,6 +62,14 @@ function statusBadgeClass(status: string): string {
   }
 }
 
+export function isImageFile(file: { name: string; type: string }): boolean {
+  const imageExtensions = [".jpg", ".jpeg", ".png"];
+  return (
+    file.type.startsWith("image/") ||
+    imageExtensions.some((ext) => file.name.toLowerCase().endsWith(ext))
+  );
+}
+
 export function DocumentsTable({
   documents,
   onOpen,
@@ -278,9 +286,15 @@ export function UploadForm({ onUploaded }: { onUploaded: () => void }) {
           <Input
             id="doc-file"
             type="file"
-            accept=".pdf,.csv,.txt"
+            accept=".pdf,.csv,.jpg,.jpeg,.png"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
+          {file && isImageFile(file) && (
+            <p className="text-muted-foreground text-xs">
+              Photo — vision inspection at upload: the local vision model will
+              record observations-only text at ingestion.
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="doc-title">Title</Label>

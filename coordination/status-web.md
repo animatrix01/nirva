@@ -44,6 +44,8 @@ Phase 1 — Skeleton
 
 - 2026-08-29: TIER 1 Unit 2 EXIT GATE — verified on the real API end-to-end: engineer multipart upload of a small PDF → `status=indexed, chunks=1` (`doc-b17cf95305a6`), chunk content viewable via `/content` (text extracted correctly); exact re-upload → `duplicate=true, chunks=0` (informational path); supervisor AND safety_officer upload → 403 `{"detail":"Document upload requires engineer or admin role"}` (exact string); admin/engineer allowed; new investigation about the bulletin's content (ZK-9911-XQ) streamed to awaiting_approval and its report cites the uploaded doc (`chk-doc-b17cf95305a6-0000 | NIRVA Test Seal-Wipe Bulletin`); fresh evidence chunks carry numeric `score` (0.6666667 observed) — rendered as "score 0.67 — hybrid dense+sparse, rank-fused"; older chunks lack score → degrades gracefully. Production build green incl. new /documents route. 58 tests green.
 
+- 2026-08-30: TIER 2 Unit 1 — image upload UI: file input accepts .pdf/.csv/.jpg/.jpeg/.png; "Photo — vision inspection at upload" hint (with explanation of observations-only ingestion) shown only for image selections (`isImageFile` helper, tested incl. case-insensitive extensions). 6/6 documents tests green.
+
 ## In Progress
 
 - Ready for Tier 1 Unit 3 / rehearsal.

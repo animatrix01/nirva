@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import DocumentsPage, { ChunkViewer } from "./page";
+import DocumentsPage, { ChunkViewer, isImageFile } from "./page";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({}),
@@ -85,5 +85,32 @@ describe("DocumentsPage role gating", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText(/chunk_oem_p41/)).toBeInTheDocument();
+  });
+
+  it("shows the vision-inspection hint only for image selections", async () => {
+    setAuth("engineer");
+    render(<DocumentsPage />);
+    await waitFor(() => expect(screen.getByLabelText(/file/i)).toBeInTheDocument());
+    const user = userEvent.setup();
+
+    expect(isImageFile({ name: "a.pdf", type: "application/pdf" })).toBe(false);
+    expect(isImageFile({ name: "b.png", type: "image/png" })).toBe(true);
+    expect(isImageFile({ name: "c.JPG", type: "" })).toBe(true);
+
+    await user.upload(
+      screen.getByLabelText(/file/i) as HTMLInputElement,
+      new File(["fake-png"], "p204-seal-photo.png", { type: "image/png" })
+    );
+    expect(
+      screen.getByText(/Photo — vision inspection at upload/i)
+    ).toBeInTheDocument();
+
+    await user.upload(
+      screen.getByLabelText(/file/i) as HTMLInputElement,
+      new File(["%PDF-1.4"], "plain.pdf", { type: "application/pdf" })
+    );
+    expect(
+      screen.queryByText(/Photo — vision inspection at upload/i)
+    ).toBeNull();
   });
 });
