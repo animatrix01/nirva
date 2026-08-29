@@ -9,6 +9,7 @@ import { CitationLink } from "@/components/investigation/CitationLink";
 import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ToolActivityList } from "@/components/investigation/ToolActivityList";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
+import { InjectionAlert } from "@/components/investigation/InjectionAlert";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   Sources,
@@ -154,6 +155,9 @@ export default function InvestigationDetailPage() {
   const approval: ApprovalRequest | null =
     (artifacts["approval_request"] as Extract<JobArtifact, { kind: "approval" }> | undefined)
       ?.approval ?? null;
+  const securityEvent =
+    (artifacts["security"] as Extract<JobArtifact, { kind: "security" }> | undefined)
+      ?.event ?? null;
 
   const handleDecision = (decision: "approved" | "rejected", comment: string | null) => {
     if (!approval) return;
@@ -221,7 +225,9 @@ export default function InvestigationDetailPage() {
           )}
         </header>
 
-        {banner && (
+        {securityEvent && <InjectionAlert event={securityEvent} />}
+
+        {!securityEvent && banner && (
           <div
             role="status"
             className={cn("mt-4 rounded-lg border p-3 text-sm", BANNER_TONE[banner.tone])}

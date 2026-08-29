@@ -1,4 +1,4 @@
-import type { JobArtifact, EvidenceReference } from "@/lib/artifacts";
+import type { JobArtifact, EvidenceReference, SecurityEvent } from "@/lib/artifacts";
 import type { DocumentContentResponse } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -159,6 +159,17 @@ export function getDocumentContent(documentId: string): DocumentContentResponse 
 // --- Artifact seeds ---------------------------------------------------------
 
 export function seedArtifactsForJob(jobId: string, kind: string): void {
+  if (kind === "blocked_injection") {
+    putArtifact("security", {
+      kind: "security",
+      event: {
+        pattern: "ignore previous instructions",
+        document_title: "Vendor Maintenance Note (untrusted)",
+        chunk_id: "chk-poison-0000",
+        action: "chunk_excluded",
+      } satisfies SecurityEvent,
+    });
+  }
   if (kind === "awaiting_approval") {
     putArtifact("approval_request", {
       kind: "approval",

@@ -74,6 +74,31 @@ def get_artifact(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No contradiction recorded")
         return {"kind": "contradiction", "contradiction": contradictions[0]}
 
+    if payload_ref == "security":
+        from app.models import AuditEvent
+
+        event = (
+            db.query(AuditEvent)
+            .filter(
+                AuditEvent.job_id == job_id,
+                AuditEvent.action == "security.injection_blocked",
+            )
+            .order_by(AuditEvent.ts.desc())
+            .first()
+        )
+        if event is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No security event recorded")
+        detail = event.payload or {}
+        return {
+            "kind": "security",
+            "event": {
+                "pattern": detail.get("pattern", "instruction-like content"),
+                "document_title": detail.get("document_title", ""),
+                "chunk_id": detail.get("chunk_id", ""),
+                "action": detail.get("action", "excluded_from_evidence"),
+            },
+        }
+
     if payload_ref == "report":
         if job.final_report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not available")

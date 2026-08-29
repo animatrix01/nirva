@@ -211,6 +211,7 @@ export function buildScript(
   for (const step of steps) {
     if (step.type === "tool_called") step.payload_ref = "search_documents";
     else if (step.type === "awaiting_approval") step.payload_ref = "approval_request";
+    else if (step.type === "blocked_injection") step.payload_ref = "security";
   }
   return steps;
 }

@@ -315,11 +315,12 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       const job = findMockJob(jobId);
       if (!job) throw new ApiError(404, "Unknown job id", "job_id");
       const ref = decodeURIComponent(encodedRef);
-      // Ratified refs: approval_request | search_documents | report
+      // Ratified refs: approval_request | search_documents | report | security
       if (
         ref !== "approval_request" &&
         ref !== "search_documents" &&
-        ref !== "report"
+        ref !== "report" &&
+        ref !== "security"
       ) {
         throw new ApiError(404, "Unknown artifact", "payload_ref");
       }

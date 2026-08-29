@@ -54,22 +54,43 @@ export interface ApprovalRequest {
 export type JobArtifact =
   | { kind: "approval"; approval: ApprovalRequest }
   | { kind: "tool"; tool: ToolActivity }
-  | { kind: "report"; report: FinalReport };
+  | { kind: "report"; report: FinalReport }
+  | { kind: "security"; event: SecurityEvent };
 
-export type ArtifactPayloadRef = "approval_request" | "search_documents" | "report";
+// GET /api/jobs/{job_id}/artifacts/security (TIER 2, 2026-08-30):
+// emitted for blocked_injection events — the poisoned chunk is excluded from
+// evidence and the investigation continues.
+export interface SecurityEvent {
+  pattern: string;
+  document_title: string;
+  chunk_id: string;
+  action: string;
+}
+
+export type ArtifactPayloadRef =
+  | "approval_request"
+  | "search_documents"
+  | "report"
+  | "security";
 
 export function isArtifactPayloadRef(value: string): value is ArtifactPayloadRef {
   return (
     value === "approval_request" ||
     value === "search_documents" ||
-    value === "report"
+    value === "report" ||
+    value === "security"
   );
 }
 
 export function isJobArtifact(value: unknown): value is JobArtifact {
   if (typeof value !== "object" || value === null) return false;
   const kind = (value as { kind?: unknown }).kind;
-  return kind === "approval" || kind === "tool" || kind === "report";
+  return (
+    kind === "approval" ||
+    kind === "tool" ||
+    kind === "report" ||
+    kind === "security"
+  );
 }
 
 export type { CitationRef, FinalReport };

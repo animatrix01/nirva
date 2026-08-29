@@ -40,7 +40,33 @@ def _lookup_inventory(part_number: str) -> InventoryItem | None:
         session.close()
 
 
-def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]]:
+def _partition_by_injection(
+    evidence: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], str]]]:
+    """Split retrieval hits into clean evidence and instruction-like suspects.
+
+    Suspects are EXCLUDED from evidence — the model never sees them — while
+    the caller records the exclusions as blocked_injection events + audit rows.
+    """
+    from nirva_agent.security import detect_injection
+
+    clean: list[dict[str, Any]] = []
+    suspicious: list[tuple[dict[str, Any], str]] = []
+    for item in evidence:
+        pattern = detect_injection(str(item.get("text", "")))
+        if pattern is None:
+            clean.append(item)
+        else:
+            suspicious.append((item, pattern))
+    return clean, suspicious
+
+
+def _make_retriever(
+    role_hint: str,
+    job_id: str,
+    emit: Callable[[str, str, str | None], None],
+    db: Session,
+) -> Callable[[str, str], list[dict[str, Any]]]:
     settings = get_settings()
     client: QdrantClient | None = None
 
@@ -78,7 +104,40 @@ def _make_retriever(role_hint: str) -> Callable[[str, str], list[dict[str, Any]]
             for hit in hits
         ]
 
+        from nirva_agent.security import detect_injection
+
+        from app.audit import append_audit_event
+
+        clean: list[dict[str, Any]] = []
+        for item in evidence:
+            pattern = detect_injection(str(item["text"]))
+            if pattern is None:
+                clean.append(item)
+                continue
+            emit("blocked_injection", "retrieve", "security")
+            append_audit_event(
+                db,
+                actor="agent:retrieve",
+                actor_role=role or role_hint,
+                action="security.injection_blocked",
+                argument_summary=(
+                    f"pattern '{pattern}' in '{item['document_title']}'; "
+                    "chunk excluded from evidence"
+                ),
+                outcome="blocked",
+                job_id=job_id,
+                payload={
+                    "pattern": pattern,
+                    "document_title": item["document_title"],
+                    "chunk_id": item["chunk_id"],
+                    "action": "excluded_from_evidence",
+                },
+            )
+            db.commit()
+
         from nirva_agent.state import EvidenceItem  # noqa: PLC0415
+
+        evidence = clean
 
         tool_session = SessionLocal()
         try:
@@ -165,7 +224,7 @@ def run_job(job_id: str) -> None:
             emit=emit,
             set_report=set_report,
         )
-        graph = graph_client.get_graph(retriever=_make_retriever(user_role))
+        graph = graph_client.get_graph(retriever=_make_retriever(user_role, job_id, emit, db))
         try:
             result = graph.run(ctx)
         except Exception as exc:

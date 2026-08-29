@@ -15,27 +15,40 @@ vi.mock("@/lib/sse", () => ({
     _jobId: string,
     handlers: { onEvent: (e: SseEvent) => void }
   ) => {
-    const events: Array<Omit<SseEvent, "job_id" | "ts" | "payload_ref">> = [
-      { seq: 0, type: "node_started", node: "intake" },
-      { seq: 1, type: "node_finished", node: "intake" },
-      { seq: 2, type: "node_started", node: "answer" },
-      { seq: 3, type: "tool_called", node: "answer" },
-      { seq: 4, type: "node_finished", node: "answer" },
-      { seq: 5, type: "node_started", node: "finalize" },
-      { seq: 6, type: "node_finished", node: "finalize" },
-      { seq: 7, type: "completed", node: "finalize" },
-    ];
+    const events: Array<Omit<SseEvent, "job_id" | "ts" | "payload_ref">> =
+      world === "injection"
+        ? [
+            { seq: 0, type: "node_started", node: "intake" },
+            { seq: 1, type: "blocked_injection", node: "intake" },
+          ]
+        : [
+            { seq: 0, type: "node_started", node: "intake" },
+            { seq: 1, type: "node_finished", node: "intake" },
+            { seq: 2, type: "node_started", node: "answer" },
+            { seq: 3, type: "tool_called", node: "answer" },
+            { seq: 4, type: "node_finished", node: "answer" },
+            { seq: 5, type: "node_started", node: "finalize" },
+            { seq: 6, type: "node_finished", node: "finalize" },
+            { seq: 7, type: "completed", node: "finalize" },
+          ];
     for (const e of events) {
       handlers.onEvent({
         ...e,
         job_id: "job-seed-0001",
-        payload_ref: e.type === "tool_called" ? "search_documents" : null,
+        payload_ref:
+          e.type === "tool_called"
+            ? "search_documents"
+            : e.type === "blocked_injection"
+              ? "security"
+              : null,
         ts: new Date().toISOString(),
       });
     }
     return { close: () => undefined };
   },
 }));
+
+let world = "completed";
 
 describe("InvestigationDetailPage", () => {
   beforeEach(() => {
@@ -70,5 +83,34 @@ describe("InvestigationDetailPage", () => {
         screen.getAllByText(/\[OEM Manual Centrifugal Pumps, rev C, page 41\]/i).length
       ).toBeGreaterThan(0)
     );
+  }, 20000);
+
+  it("renders the security artifact details on blocked_injection", async () => {
+    world = "injection";
+    const { putArtifact } = await import("@/test-mocks/artifacts");
+    putArtifact("security", {
+      kind: "security",
+      event: {
+        pattern: "ignore previous instructions",
+        document_title: "Vendor Maintenance Note (untrusted)",
+        chunk_id: "chk-poison-0000",
+        action: "chunk_excluded",
+      },
+    });
+    try {
+      render(<DetailPage />);
+      await waitFor(() =>
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          /attempted to inject instructions/i
+        )
+      );
+      expect(screen.getByText(/Vendor Maintenance Note/i)).toBeInTheDocument();
+      expect(screen.getByText(/ignore previous instructions/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Excluded from evidence, investigation continued/i)
+      ).toBeInTheDocument();
+    } finally {
+      world = "completed";
+    }
   }, 20000);
 });
