@@ -45,3 +45,36 @@ def auth_headers(client: TestClient) -> AuthHeadersFn:
         return {"Authorization": f"Bearer {token}"}
 
     return _login
+
+
+@pytest.fixture(scope="session", autouse=True)
+def fake_graph_backend() -> Iterator[None]:
+    """Route job runs through the REAL LangGraph adapter with a fake gateway.
+
+    Keeps API tests offline and deterministic while still exercising the
+    production graph code path (no mock graph, no network).
+    """
+    import app.graph_client as gc
+    from nirva_agent.gateway import ChatResponse
+
+    class FakeGateway:
+        def chat(
+            self,
+            messages: list[object],
+            *,
+            temperature: float = 0.0,
+            max_tokens: int = 1024,
+            extra: dict[str, object] | None = None,
+        ) -> ChatResponse:
+            return ChatResponse(
+                content="Seal wear is the likely cause. [chunk-9]",
+                finish_reason="stop",
+                model="fake",
+                prompt_tokens=1,
+                completion_tokens=1,
+            )
+
+    original = gc.get_graph
+    gc.get_graph = lambda: gc.LangGraphInvestigationGraph(FakeGateway())  # type: ignore[arg-type,return-value]
+    yield
+    gc.get_graph = original

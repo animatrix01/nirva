@@ -3,10 +3,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app import graph_client
 from app.db import SessionLocal
 from app.events import emit_event
-from app.graph_client import GraphRunContext, get_graph
-from app.models import Job, utcnow
+from app.graph_client import GraphRunContext
+from app.models import Job, User, utcnow
 
 
 def run_job(job_id: str) -> None:
@@ -20,23 +21,31 @@ def run_job(job_id: str) -> None:
         job.updated_at = utcnow()
         db.commit()
 
+        owner = db.get(User, job.created_by)
+        if owner is None:
+            msg = "job owner no longer exists"
+            raise RuntimeError(msg)
+        user_role = owner.role
+
         def emit(type_: str, node: str, payload_ref: str | None) -> None:
             emit_event(db, job_id, type_, node, payload_ref)
+            db.commit()
 
         def set_report(report: dict[str, object]) -> None:
             current = db.get(Job, job_id)
             if current is not None:
                 current.final_report = report
+                db.commit()
 
         ctx = GraphRunContext(
             request_id=job_id,
             user_id=job.created_by,
-            user_role="engineer",
+            user_role=user_role,
             objective=job.objective,
             emit=emit,
             set_report=set_report,
         )
-        graph = get_graph()
+        graph = graph_client.get_graph()
         try:
             graph.run(ctx)
         except Exception as exc:
@@ -57,9 +66,9 @@ def run_job(job_id: str) -> None:
             job.updated_at = utcnow()
             try:
                 emit_event(db, job_id, "failed", failing_node, None)
+                db.commit()
             except Exception:
-                pass
-            db.commit()
+                db.rollback()
     finally:
         db.close()
 
