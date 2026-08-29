@@ -1,21 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/role-badge";
 import { HealthIndicator } from "@/components/health-indicator";
 import { clearAuth } from "@/lib/api";
 import { useStoredAuth } from "@/lib/auth-client";
 
+const subscribeNever = () => () => {};
+
 export function AppHeader({ title }: { title: string }) {
   const router = useRouter();
   const auth = useStoredAuth();
+  // Hydration-safe: `mounted` is false in the server/SSR snapshot and true on
+  // the client after hydration, so the login redirect only fires once
+  // localStorage has actually been read — never against the null hydration
+  // snapshot (which bounced Approvals/Audit/System deep-links to /login).
+  const mounted = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    useCallback(() => false, [])
+  );
 
-  const authenticated = auth !== null;
   useEffect(() => {
-    if (!authenticated) router.replace("/login");
-  }, [authenticated, router]);
+    if (mounted && auth === null) router.replace("/login");
+  }, [mounted, auth, router]);
 
   if (!auth) return null;
 
@@ -30,17 +41,17 @@ export function AppHeader({ title }: { title: string }) {
           <HealthIndicator />
           {auth.user.role === "supervisor" || auth.user.role === "admin" ? (
             <Button variant="ghost" size="sm" asChild>
-              <a href="/approvals">Approvals</a>
+              <Link href="/approvals">Approvals</Link>
             </Button>
           ) : null}
           {auth.user.role === "admin" || auth.user.role === "safety_officer" ? (
             <Button variant="ghost" size="sm" asChild>
-              <a href="/audit">Audit</a>
+              <Link href="/audit">Audit</Link>
             </Button>
           ) : null}
           {auth.user.role === "admin" ? (
             <Button variant="ghost" size="sm" asChild>
-              <a href="/admin/system">System</a>
+              <Link href="/admin/system">System</Link>
             </Button>
           ) : null}
           <span className="text-sm font-medium">{auth.user.username}</span>
