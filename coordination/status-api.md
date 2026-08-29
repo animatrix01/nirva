@@ -4,9 +4,11 @@
 
 ## Current Phase
 
-Tier 1 Unit 1 COMPLETE (documents upload role guard + evidence score) — Terminal B cleared for /documents UI.
+TIER 1 COMPLETE (both units) — operator browser test pending, then Tier 2 decision (vision + injection blocking).
 
 ## Done (list with dates + file paths)
+
+- 2026-08-30 | TIER 1 COMPLETE (both units): web exit gate verified on real API (upload indexed + chunk viewer, duplicate=info, 403 matrix exact string, uploaded doc cited in fresh investigation, live score 0.67 with graceful degradation on pre-patch chunks). Joint validation: 84/84 py + 58/58 web tests, lint/tsc/build green. B-side commits `ad6c9d0`, `5e1f268`.
 
 - 2026-08-30 | Tier 1 Unit 1: upload role guard (engineer+admin 201; supervisor/safety_officer 403 with document-control rationale, DECISIONS.md logged); evidence endpoint returns real numeric "score" (Qdrant payload -> job_evidence snapshot -> 0.0 fallback; tool items 1.0); Qdrant-outage resilience (evidence degrades to persisted snapshot instead of 500); upload 403 matrix + numeric-score tests; live server restarted, integration ALL GREEN incl. score in evidence keys and 403 guard verified live (`f62bac8`)
 - 2026-08-30 | Web app-header hydration fix committed by operator request (auth-guard race + Link nav) — crossover noted, all web checks green (`631be48`)
