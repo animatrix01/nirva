@@ -18,9 +18,8 @@ os.environ["STORAGE_PATH"] = "./_live_storage"
 
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from fastapi.testclient import TestClient  # noqa: E402
-
 from app.main import create_app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 GENERATED = Path("data/synthetic/generated")
 
