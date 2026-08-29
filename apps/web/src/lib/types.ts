@@ -93,6 +93,21 @@ export interface DocumentContentResponse {
   chunks: DocumentChunk[];
 }
 
+export type DocumentType =
+  | "manual"
+  | "sop"
+  | "work_order"
+  | "incident"
+  | "data";
+
+export interface DocumentUploadResponse {
+  document_id: string;
+  status: "indexed" | "quarantined";
+  content_hash: string;
+  duplicate: boolean;
+  chunks: number;
+}
+
 export interface JobDetail {
   job_id: string;
   objective: string;

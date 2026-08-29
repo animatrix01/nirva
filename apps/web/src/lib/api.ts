@@ -2,6 +2,9 @@ import type {
   AuditResponse,
   CurrentUser,
   DocumentContentResponse,
+  DocumentOut,
+  DocumentType,
+  DocumentUploadResponse,
   HealthResponse,
   JobDetail,
   JobListQuery,
@@ -153,6 +156,55 @@ export function getDocumentContent(
     "GET",
     `/api/documents/${encodeURIComponent(documentId)}/content`
   );
+}
+
+export function listDocuments(): Promise<DocumentOut[]> {
+  return request<DocumentOut[]>("GET", "/api/documents");
+}
+
+export interface DocumentUploadPayload {
+  file: File;
+  title: string;
+  document_type: DocumentType;
+  revision: string;
+  effective_date: string;
+  department: string;
+  equipment_id: string | null;
+  confidentiality_level: string;
+  allowed_roles: string[];
+}
+
+export function uploadDocument(
+  payload: DocumentUploadPayload
+): Promise<DocumentUploadResponse> {
+  const form = new FormData();
+  form.append("file", payload.file);
+  form.append("title", payload.title);
+  form.append("document_type", payload.document_type);
+  form.append("revision", payload.revision);
+  form.append("effective_date", payload.effective_date);
+  form.append("department", payload.department);
+  if (payload.equipment_id) form.append("equipment_id", payload.equipment_id);
+  form.append("confidentiality_level", payload.confidentiality_level);
+  form.append("allowed_roles", payload.allowed_roles.join(","));
+
+  const auth = loadStoredAuth();
+  return fetch(`${BASE_URL}/api/documents/upload`, {
+    method: "POST",
+    headers: auth ? { Authorization: `Bearer ${auth.token}` } : {},
+    body: form,
+  }).then(async (response) => {
+    if (!response.ok) {
+      let body: TypedErrorBody = { detail: response.statusText, field: null };
+      try {
+        body = (await response.json()) as TypedErrorBody;
+      } catch {
+        // keep default
+      }
+      throw new ApiError(response.status, body.detail, body.field);
+    }
+    return (await response.json()) as DocumentUploadResponse;
+  });
 }
 
 export function listApprovals(): Promise<ApprovalRequest[]> {
