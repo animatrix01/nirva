@@ -37,7 +37,7 @@ OBJECTIVE = (
     "Investigate why Pump P-204 has failed repeatedly during the last three months. "
     "Identify the most likely cause, cite the supporting records, check spare-part "
     "availability, and propose a safe next action."
-)
+)  # noqa: E501
 
 app = create_app()
 with TestClient(app) as c:
