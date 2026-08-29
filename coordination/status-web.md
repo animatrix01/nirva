@@ -17,9 +17,11 @@ Phase 1 — Skeleton
 
 - 2026-08-26: Login screen + role display: `src/app/login/page.tsx` (POST /api/auth/login, error states, demo-account hints), `src/components/role-badge.tsx` (all four §c.6 roles), `src/components/app-header.tsx` (auth guard via `src/lib/auth-client.ts` useSyncExternalStore, username+role display, sign out). Tests: `src/app/login/page.test.tsx`, `src/components/role-badge.test.tsx`. 16 tests green.
 
+- 2026-08-29: Unit 3 — new investigation form: `src/app/investigations/new/page.tsx` (objective textarea + optional asset ID, client validation ≥8 chars, posts frozen POST /api/jobs `{objective, equipment_id}`, routes to detail on 201, typed 422/error display). Tests `page.test.tsx` (validation + create-and-redirect). 25 tests green.
+
 ## In Progress
 
-- New investigation form `/investigations/new` posting frozen POST /api/jobs shape.
+- Investigation detail workspace `/investigations/[jobId]`: header + live SSE timeline, all 6 states.
 
 ## Blocked (reason + which lane must act)
 
