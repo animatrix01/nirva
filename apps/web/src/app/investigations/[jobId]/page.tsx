@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { EventTimeline } from "@/components/investigation/EventTimeline";
+import { CitationLink } from "@/components/investigation/CitationLink";
 import { bannerForStatus } from "@/components/investigation/timeline";
 import { ApiError, getJob } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
@@ -190,8 +191,8 @@ export default function InvestigationDetailPage() {
                   <h3 className="text-xs font-semibold uppercase">Citations</h3>
                   <ul className="list-disc pl-4 text-xs">
                     {job.final_report.citations.map((c, i) => (
-                      <li key={i} className="font-mono">
-                        {c}
+                      <li key={i}>
+                        <CitationLink citation={c} />
                       </li>
                     ))}
                   </ul>
