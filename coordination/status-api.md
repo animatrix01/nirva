@@ -40,3 +40,5 @@ Phase 4 support COMPLETE — Execution terminal sprint scope (Phases 0-4 support
 - DEMO_MODE env var is a [PROPOSAL] pending infra-ratification edit of COMMON.md §c.7 (entry in DECISIONS.md 2026-08-29).
 - Web exit-gate item `npm run build` belongs to Terminal B environment; not run here.
 - Compose api healthcheck expects /api/health 200 — current impl returns 200 when postgres is up; acceptable for sprint, revisit post-demo.
+
+- 2026-08-29 | Real-API GO issued to web: live uvicorn on 127.0.0.1:8000 verified ALL GREEN (CORS, documents content deep-link, evidence chunk endpoint, artifacts, approval->work order, audit chain). Evidence proposal ratified (DECISIONS.md); DEMO_MODE ratified into COMMON.md c.7. Restart: DATABASE_URL=sqlite:///./_server.db + seeded library (6 docs).
