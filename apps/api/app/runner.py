@@ -173,6 +173,22 @@ def run_job(job_id: str) -> None:
         job = db.get(Job, job_id)
         if job is None:
             return
+        from app.models import JobEvidence
+
+        for item in (result or {}).get("retrieved_evidence") or []:
+            existing = (
+                db.query(JobEvidence)
+                .filter(JobEvidence.job_id == job_id, JobEvidence.chunk_id == str(item.chunk_id))
+                .first()
+            )
+            if existing is None:
+                db.add(
+                    JobEvidence(
+                        job_id=job_id,
+                        chunk_id=str(item.chunk_id),
+                        payload=item.model_dump(),
+                    )
+                )
         actions = (result or {}).get("proposed_actions") or []
         if actions:
             action = actions[0]

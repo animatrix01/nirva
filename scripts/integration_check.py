@@ -70,7 +70,7 @@ report = detail.get("final_report") or {}
 citations = report.get("citations", [])
 print(f"   status={detail['status']} confidence={report.get('confidence')} citations={len(citations)}")
 
-# 5. Evidence chunk endpoint (web proposal shape)
+# 5. Evidence chunk endpoint (web proposal shape) + citation->document resolution
 ok = True
 if citations:
     chunk_id = citations[0]["chunk_id"]
@@ -78,6 +78,22 @@ if citations:
     body = r.json()
     print(f"5. evidence: {r.status_code} keys={sorted(body.keys())}")
     ok = r.status_code == 200 and body.get("passage_text") and body.get("why_retrieved")
+
+    stale = []
+    for cit in citations:
+        ev = client.get(f"/api/jobs/{jid}/evidence/{cit['chunk_id']}", headers=eng)
+        if ev.status_code != 200:
+            stale.append((cit["chunk_id"], f"evidence {ev.status_code}"))
+            continue
+        body = ev.json()
+        if body.get("source") == "tool":
+            continue  # tool results are passages, not documents: no deep-link
+        doc_id = body.get("document_id")
+        dc = client.get(f"/api/documents/{doc_id}/content", headers=eng)
+        if dc.status_code != 200:
+            stale.append((cit["chunk_id"], f"doc {doc_id} -> {dc.status_code}"))
+    print(f"   citation resolution: {len(citations) - len(stale)}/{len(citations)} resolve (stale: {stale})")
+    ok = ok and not stale
 
 # 6. Artifacts (approval_request while pending)
 if detail["status"] == "awaiting_approval":

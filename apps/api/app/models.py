@@ -119,6 +119,16 @@ class WorkOrder(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class JobEvidence(Base):
+    __tablename__ = "job_evidence"
+    __table_args__ = (UniqueConstraint("job_id", "chunk_id", name="uq_job_evidence_chunk"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), index=True)
+    chunk_id: Mapped[str] = mapped_column(String(128))
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

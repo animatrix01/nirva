@@ -11,6 +11,7 @@ select = ["E", "F", "W", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/phase*_live_check.py" = ["E501"]
+"scripts/integration_check.py" = ["E501"]
 "scripts/_dbg_retriever.py" = ["E501"]
 
 [tool.mypy]
