@@ -250,7 +250,7 @@ export default function InvestigationsPage() {
   }, [featured]);
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-screen bg-neutral-950 font-sans">
       <main className="mx-auto max-w-6xl px-6 py-8">
         {/* 1. Page header & stats */}
         <div className="flex items-start justify-between">
@@ -410,17 +410,17 @@ export default function InvestigationsPage() {
                       <div className="mt-5 grid grid-cols-3 gap-6 border-t border-amber-500/15 pt-4">
                         <div>
                           <p className="text-xs text-neutral-500">Last updated</p>
-                          <p className="mt-1 text-sm text-neutral-200">
+                          <p className="mt-1 font-mono text-xs text-neutral-200">
                             {relativeTime(j.created_at)}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-neutral-500">Confidence</p>
                           {featuredConfidence === null ? (
-                            <p className="mt-1 text-sm text-neutral-500">—</p>
+                            <p className="mt-1 font-mono text-xs text-neutral-500">—</p>
                           ) : (
                             <>
-                              <p className="mt-1 text-sm text-neutral-200">
+                              <p className="mt-1 font-mono text-sm text-neutral-200">
                                 {Math.round(featuredConfidence * 100)}%
                               </p>
                               <div className="mt-1.5 h-1 w-3/4 rounded-full bg-neutral-800">
@@ -497,12 +497,12 @@ export default function InvestigationsPage() {
                           <div className="h-1 w-1/2 rounded-full bg-sky-500" />
                         </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-neutral-500">Started</p>
-                        <p className="mt-1 text-sm text-neutral-200">
-                          {relativeTime(j.created_at)}
-                        </p>
-                      </div>
+                        <div>
+                          <p className="text-xs text-neutral-500">Started</p>
+                          <p className="mt-1 font-mono text-xs text-neutral-200">
+                            {relativeTime(j.created_at)}
+                          </p>
+                        </div>
                     </div>
                   </div>
                 ))
@@ -530,17 +530,19 @@ export default function InvestigationsPage() {
                           COMPLETED
                         </span>
                       </div>
-                      <h3 className="mt-2 text-sm font-medium text-white">
+                      <h3 className="mt-2 line-clamp-2 text-sm font-medium leading-snug text-white">
                         {j.objective_summary}
                       </h3>
-                      <p className="mt-1 text-xs text-neutral-400">
+                      <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-400">
                         {j.equipment_id
                           ? `Equipment ${j.equipment_id}`
                           : "General investigation"}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {j.equipment_id ? <Tag>{j.equipment_id}</Tag> : null}
-                        <Tag>{relativeTime(j.created_at)}</Tag>
+                        <Tag>
+                          <span className="font-mono">{relativeTime(j.created_at)}</span>
+                        </Tag>
                       </div>
                       <div className="mt-4 flex items-center justify-end gap-1 border-t border-neutral-800 pt-3 text-xs text-neutral-500">
                         Open
@@ -581,10 +583,12 @@ export default function InvestigationsPage() {
               <div className="overflow-hidden">
                 <div className="grid grid-cols-12 gap-3 px-2 pb-2 text-sm text-neutral-500">
                   <div className="col-span-2">Status</div>
-                  <div className="col-span-4">Investigation</div>
+                  <div className="col-span-3">Investigation</div>
                   <div className="col-span-1">Asset</div>
+                  <div className="col-span-1">Sources</div>
+                  <div className="col-span-2">Confidence</div>
                   <div className="col-span-1">Updated</div>
-                  <div className="col-span-4">Next step</div>
+                  <div className="col-span-2">Next step</div>
                 </div>
 
                 {filtered.length === 0 ? (
@@ -611,7 +615,7 @@ export default function InvestigationsPage() {
                             {meta.label}
                           </span>
                         </div>
-                        <div className="col-span-4 min-w-0">
+                        <div className="col-span-3 min-w-0">
                           <p className="truncate text-sm text-neutral-100">
                             {j.objective_summary}
                           </p>
@@ -622,10 +626,34 @@ export default function InvestigationsPage() {
                         <div className="col-span-1 font-mono text-sm text-neutral-300">
                           {j.equipment_id || "—"}
                         </div>
-                        <div className="col-span-1 text-xs text-neutral-400">
+                        <div className="col-span-1 font-mono text-sm text-neutral-300">
+                          {j.sources}
+                        </div>
+                        <div className="col-span-2">
+                          {j.confidence === null ? (
+                            <span className="font-mono text-xs text-neutral-600">—</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm text-neutral-200">
+                                {Math.round(j.confidence * 100)}%
+                              </span>
+                              <div className="h-1 w-12 rounded-full bg-neutral-800">
+                                <div
+                                  className={`h-1 rounded-full ${
+                                    j.status === "awaiting_approval"
+                                      ? "bg-amber-500"
+                                      : "bg-emerald-500"
+                                  }`}
+                                  style={{ width: `${Math.round(j.confidence * 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-span-1 font-mono text-xs text-neutral-400">
                           {relativeTime(j.created_at)}
                         </div>
-                        <div className="col-span-4 flex items-center gap-2 text-xs text-neutral-400">
+                        <div className="col-span-2 flex items-center gap-2 text-xs text-neutral-400">
                           {meta.next}
                           <ArrowRight className="size-3 text-neutral-600" />
                           <span className="flex-1" />

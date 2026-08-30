@@ -43,6 +43,8 @@ export interface JobSummary {
   objective_summary: string;
   status: JobStatus;
   equipment_id: string | null;
+  sources: number;
+  confidence: number | null;
   created_by: string;
   created_at: string;
 }

@@ -44,6 +44,8 @@ class JobSummary(BaseModel):
     objective_summary: str
     status: str
     equipment_id: str | None = None
+    sources: int = 0
+    confidence: float | None = None
     created_by: str
     created_at: datetime
 

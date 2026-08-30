@@ -8,6 +8,8 @@ function job(id: string, createdAt: string): JobSummary {
     objective_summary: `objective ${id}`,
     status: "completed",
     equipment_id: "P-204",
+    sources: 0,
+    confidence: null,
     created_by: "u1",
     created_at: createdAt,
   };

@@ -5,13 +5,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit_event
 from app.db import SessionLocal, get_db
 from app.deps import CurrentUser
 from app.events import STREAM_STOP_EVENT_TYPES, fetch_events_after, render_envelope
-from app.models import Job
+from app.models import Job, JobEvidence
 from app.runner import new_job_id, start_job_run
 from app.schemas import (
     FinalReportOut,
@@ -73,12 +74,32 @@ def list_jobs(
     if equipment_id is not None:
         query = query.filter(Job.equipment_id == equipment_id)
     jobs = query.order_by(Job.created_at.desc()).limit(min(limit, 200)).all()
+
+    # evidence-source counts + report confidence for the list view
+    evidence_counts: dict[str, int] = {
+        job_id: count
+        for job_id, count in db.query(
+            JobEvidence.job_id, func.count(JobEvidence.id)
+        )
+        .group_by(JobEvidence.job_id)
+        .all()
+    }
+
+    def _confidence(job: Job) -> float | None:
+        report = job.final_report
+        if not isinstance(report, dict):
+            return None
+        value = report.get("confidence")
+        return float(value) if isinstance(value, (int, float)) else None
+
     return [
         JobSummary(
             job_id=j.id,
             objective_summary=j.objective[:120],
             status=j.status,
             equipment_id=j.equipment_id,
+            sources=evidence_counts.get(j.id, 0),
+            confidence=_confidence(j),
             created_by=j.created_by,
             created_at=j.created_at,
         )
