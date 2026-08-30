@@ -32,7 +32,7 @@ export function AppHeader({ title }: { title: string }) {
 
   return (
     <header className="relative border-b bg-background">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 pr-48 pl-4">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 py-3 pr-48 pl-4">
         <div className="flex items-center gap-3">
           <span className="text-lg font-semibold tracking-tight">NIRVA</span>
           <span className="text-muted-foreground text-sm">{title}</span>
