@@ -31,8 +31,8 @@ export function AppHeader({ title }: { title: string }) {
   if (!auth) return null;
 
   return (
-    <header className="border-b bg-background">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
+    <header className="relative border-b bg-background">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 pr-48 pl-4">
         <div className="flex items-center gap-3">
           <span className="text-lg font-semibold tracking-tight">NIRVA</span>
           <span className="text-muted-foreground text-sm">{title}</span>
@@ -67,8 +67,10 @@ export function AppHeader({ title }: { title: string }) {
           >
             Sign out
           </Button>
-          <HealthIndicator />
         </div>
+      </div>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+        <HealthIndicator />
       </div>
     </header>
   );
