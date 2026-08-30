@@ -17,7 +17,7 @@ import { ApiError, login, storeAuth } from "@/lib/api";
 
 const DEMO_ACCOUNTS = [
   { username: "engineer", role: "engineer" },
-  { username: "safety", role: "safety_officer" },
+  { username: "safety_officer", role: "safety_officer" },
   { username: "supervisor", role: "supervisor" },
   { username: "admin", role: "admin" },
 ];
