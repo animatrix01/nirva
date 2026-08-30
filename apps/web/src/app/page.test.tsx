@@ -58,15 +58,39 @@ describe("LandingPage", () => {
     expect(screen.getByText("Role-based access")).toBeInTheDocument();
   });
 
-  it("renders pipeline, differentiator band, metrics and footer", () => {
+  it("renders pipeline, analytics, terminal, roles, band, metrics and footer", () => {
     render(<LandingPage />);
     expect(screen.getByText(/How it works/i)).toBeInTheDocument();
+    expect(screen.getByText("01")).toBeInTheDocument();
+    expect(screen.getByText("04")).toBeInTheDocument();
     expect(screen.getByText("100% LOCAL")).toBeInTheDocument();
+    // Analytics (dark charts panel)
+    expect(screen.getByText(/Measured, not claimed/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Authorized chunks retrieved per step/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Illustrative demo data/i)).toBeInTheDocument();
+    // Terminal
+    expect(screen.getByText(/Every event, streamed and auditable/i)).toBeInTheDocument();
+    expect(screen.getByText(/approval_request/)).toBeInTheDocument();
+    expect(screen.getAllByText(/awaiting_approval/).length).toBeGreaterThanOrEqual(2);
+    // Roles
+    expect(screen.getByText(/Four roles, least privilege/i)).toBeInTheDocument();
+    expect(screen.getByText(/The only role that can approve consequential actions/i)).toBeInTheDocument();
+    // Differentiator + metrics + footer
     expect(screen.getByText(/Runs inside your walls/i)).toBeInTheDocument();
     expect(screen.getByText(/no data egress/i)).toBeInTheDocument();
-    expect(screen.getAllByText("0")).toHaveLength(2);
+    expect(screen.getAllByText("0")).toHaveLength(3); // 2 metric blocks + chart axis label
     expect(
       screen.getByText(/NIRVA — SIH26117 · All demo data is synthetic/i)
     ).toBeInTheDocument();
+  });
+
+  it("renders the hero workbench mock with timeline, citations and approval badge", () => {
+    render(<LandingPage />);
+    expect(screen.getByText(/NIRVA — Investigation P-204/i)).toBeInTheDocument();
+    expect(screen.getByText(/composing cited findings/i)).toBeInTheDocument();
+    expect(screen.getByText(/\[OEM Manual, rev C, p41\]/i)).toBeInTheDocument();
+    expect(screen.getByText(/awaiting_approval — supervisor decision required/i)).toBeInTheDocument();
   });
 });
