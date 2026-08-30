@@ -43,6 +43,7 @@ class JobSummary(BaseModel):
     job_id: str
     objective_summary: str
     status: str
+    equipment_id: str | None = None
     created_by: str
     created_at: datetime
 

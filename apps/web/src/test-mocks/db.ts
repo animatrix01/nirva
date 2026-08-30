@@ -96,6 +96,7 @@ export function toJobSummary(job: MockJobRecord): JobSummary {
     job_id: job.job_id,
     objective_summary: job.objective.slice(0, 120),
     status: job.status,
+    equipment_id: job.equipment_id,
     created_by: job.created_by,
     created_at: job.created_at,
   };

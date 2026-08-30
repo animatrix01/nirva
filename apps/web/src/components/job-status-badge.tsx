@@ -1,48 +1,49 @@
-import { Badge } from "@/components/ui/badge";
 import type { JobStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STATUS_META: Record<JobStatus, { label: string; className: string }> = {
   queued: {
     label: "Queued",
-    className: "bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-300",
+    className: "bg-neutral-500/10 text-neutral-400",
   },
   running: {
     label: "Running",
-    className: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+    className: "bg-sky-500/10 text-sky-400",
   },
   awaiting_approval: {
     label: "Awaiting approval",
-    className:
-      "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300",
+    className: "bg-amber-500/10 text-amber-400",
   },
   completed: {
     label: "Completed",
-    className:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+    className: "bg-emerald-500/10 text-emerald-400",
   },
   failed: {
     label: "Failed",
-    className: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+    className: "bg-red-500/10 text-red-400",
   },
   blocked_injection: {
     label: "Blocked injection",
-    className:
-      "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300",
+    className: "bg-fuchsia-500/10 text-fuchsia-400",
   },
 };
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
   const meta = STATUS_META[status] ?? { label: status, className: "" };
   return (
-    <Badge variant="secondary" className={cn(meta.className)}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        meta.className
+      )}
+    >
       {status === "running" && (
         <span
           aria-hidden
-          className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-current"
+          className="mr-0.5 inline-block size-1.5 animate-pulse rounded-full bg-current"
         />
       )}
       {meta.label}
-    </Badge>
+    </span>
   );
 }

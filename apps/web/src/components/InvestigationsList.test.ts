@@ -7,6 +7,7 @@ function job(id: string, createdAt: string): JobSummary {
     job_id: id,
     objective_summary: `objective ${id}`,
     status: "completed",
+    equipment_id: "P-204",
     created_by: "u1",
     created_at: createdAt,
   };

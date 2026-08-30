@@ -78,6 +78,7 @@ def list_jobs(
             job_id=j.id,
             objective_summary=j.objective[:120],
             status=j.status,
+            equipment_id=j.equipment_id,
             created_by=j.created_by,
             created_at=j.created_at,
         )

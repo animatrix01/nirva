@@ -3,13 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -103,22 +96,19 @@ export function InvestigationsList() {
   };
 
   return (
-    <Card className="w-full max-w-3xl">
-      <CardHeader>
-        <CardTitle>Investigations</CardTitle>
-        <CardDescription>
-          Filter by status, asset, or date. Date filtering is applied locally.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="status">Status</Label>
+    <div className="flex flex-col">
+      {/* Sticky filter bar */}
+      <div className="sticky top-0 z-20 -mx-6 border-b border-neutral-800 bg-[#1a1917]/95 px-6 py-3 backdrop-blur">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="status" className="text-xs text-neutral-400">
+              Status
+            </Label>
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as JobStatus | "all")}
             >
-              <SelectTrigger id="status" aria-label="Filter by status">
+              <SelectTrigger id="status" aria-label="Filter by status" className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -130,78 +120,85 @@ export function InvestigationsList() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="equipment">Asset</Label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="equipment" className="text-xs text-neutral-400">
+              Asset
+            </Label>
             <Input
               id="equipment"
               placeholder="e.g., P-204"
+              className="w-36"
               value={equipmentFilter}
               onChange={(e) => setEquipmentFilter(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="date">From date</Label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="date" className="text-xs text-neutral-400">
+              From date
+            </Label>
             <Input
               id="date"
               type="date"
+              className="w-40"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             />
           </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col gap-2" aria-busy="true">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-14 animate-pulse rounded border bg-muted/50"
-              />
-            ))}
-          </div>
-        ) : error ? (
-          <div role="alert" className="flex flex-col gap-2">
-            <p className="text-destructive text-sm">{error}</p>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
-              Retry
-            </Button>          </div>
-        ) : jobs.length === 0 ? (
-          <p className="text-muted-foreground mt-2 text-sm">
-            No investigations found. Try adjusting filters or create a new
-            investigation.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {jobs.map((j) => (
-              <li key={j.job_id}>
-                <Link
-                  href={`/investigations/${j.job_id}`}
-                  className="bg-card hover:bg-muted/50 flex items-center justify-between gap-3 rounded border p-3"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <JobStatusBadge status={j.status} />
-                    <span className="truncate text-sm font-medium">
-                      {j.objective_summary || "(no objective)"}
-                    </span>
-                  </div>
-                  <time className="text-muted-foreground shrink-0 text-xs">
-                    {formatJobDate(j.created_at)}
-                  </time>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            Clear filters
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/investigations/new">New investigation</Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="text-neutral-400 hover:text-neutral-200"
+          >
+            Clear
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <ul aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i} className="border-b border-neutral-800 px-2 py-4">
+              <div className="h-5 w-2/3 animate-pulse rounded bg-neutral-800/60" />
+            </li>
+          ))}
+        </ul>
+      ) : error ? (
+        <div role="alert" className="flex flex-col gap-2 px-2 py-6">
+          <p className="text-destructive text-sm">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Retry
+          </Button>
+        </div>
+      ) : jobs.length === 0 ? (
+        <p className="px-2 py-8 text-sm text-neutral-400">
+          No investigations found. Try adjusting filters or create a new
+          investigation.
+        </p>
+      ) : (
+        <ul>
+          {jobs.map((j) => (
+            <li key={j.job_id}>
+              <Link
+                href={`/investigations/${j.job_id}`}
+                className="flex items-center gap-4 border-b border-neutral-800 px-2 py-4 transition-colors hover:bg-neutral-800/50"
+              >
+                <JobStatusBadge status={j.status} />
+                <span className="min-w-0 flex-1 truncate text-sm text-neutral-200">
+                  {j.objective_summary || "(no objective)"}
+                </span>
+                <span className="hidden shrink-0 font-mono text-sm text-neutral-400 sm:inline">
+                  {j.equipment_id || "—"}
+                </span>
+                <time className="shrink-0 text-xs text-neutral-500">
+                  {formatJobDate(j.created_at)}
+                </time>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
