@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,20 @@ export default function NewInvestigationPage() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [caseId] = useState(
-    () =>
-      `INV-2026-${Math.random().toString(16).slice(2, 6).toUpperCase()}`
-  );
+  // Case ID is generated client-side only (after mount) — Math.random() during
+  // SSR prerender would mismatch hydration and force a full client re-render.
+  const caseIdRef = useRef<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (!mounted) {
+      caseIdRef.current = `INV-2026-${Math.random()
+        .toString(16)
+        .slice(2, 6)
+        .toUpperCase()}`;
+      setMounted(true);
+    }
+  }, [mounted]);
+  const caseId = mounted ? (caseIdRef.current as string) : "INV-2026-…";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
