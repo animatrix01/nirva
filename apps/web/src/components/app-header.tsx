@@ -56,7 +56,6 @@ export function AppHeader({ title }: { title: string }) {
               <Link href="/admin/system">System</Link>
             </Button>
           ) : null}
-          <RoleBadge role={auth.user.role} />
           <Button
             variant="ghost"
             size="sm"
@@ -67,6 +66,7 @@ export function AppHeader({ title }: { title: string }) {
           >
             Sign out
           </Button>
+          <RoleBadge role={auth.user.role} />
         </div>
       </div>
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
