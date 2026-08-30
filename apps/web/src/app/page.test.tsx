@@ -25,7 +25,7 @@ describe("LandingPage", () => {
     window.localStorage.clear();
   });
 
-  it("renders brand-first hero with tagline and golden question (single h1)", () => {
+  it("renders a centered brand-first hero (single h1)", () => {
     render(<LandingPage />);
     const h1s = screen.getAllByRole("heading", { level: 1 });
     expect(h1s).toHaveLength(1);
@@ -35,12 +35,6 @@ describe("LandingPage", () => {
     expect(screen.getAllByText("NIRVA").length).toBeGreaterThanOrEqual(2);
     expect(
       screen.getByText(/From evidence to action — inside your walls/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Investigate why Pump P-204 has failed repeatedly/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/The offline industrial investigation workbench/i)
     ).toBeInTheDocument();
   });
 
@@ -57,37 +51,41 @@ describe("LandingPage", () => {
     expect(cta).toHaveAttribute("href", "/investigations");
   });
 
-  it("renders the five domain steps without backend jargon", () => {
-    render(<LandingPage />);
-    expect(
-      screen.getByText(/From question to signed-off action/i)
-    ).toBeInTheDocument();
-    for (const step of ["Ask", "Read", "Verify", "Propose", "Approve"]) {
-      expect(screen.getByText(step)).toBeInTheDocument();
-    }
-    // Story sections stay jargon-free; stack names live only under the hood.
-    expect(screen.queryByText(/Agent graph/i)).toBeNull();
-    expect(screen.queryByText(/LangGraph plans/i)).toBeNull();
-  });
-
-  it("renders the hero mock in human language (no internal node names)", () => {
+  it("carries the golden question inside the workbench mock", () => {
     render(<LandingPage />);
     expect(screen.getByText(/NIRVA — Investigating Pump P-204/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Investigate why Pump P-204 has failed repeatedly/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Reading maintenance history/i)).toBeInTheDocument();
-    expect(screen.getByText(/Checking the OEM manual/i)).toBeInTheDocument();
-    expect(screen.getByText(/Comparing work orders/i)).toBeInTheDocument();
     expect(
       screen.getByText(/waiting for a supervisor's decision/i)
     ).toBeInTheDocument();
   });
 
-  it("renders analytics, features, roles, band, metrics and footer", () => {
+  it("renders the flowchart journey: start pill, five nodes, branch chips, stop pill", () => {
     render(<LandingPage />);
-    expect(screen.getByText(/Measured, not claimed/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Authorized chunks retrieved per step/i)
+      screen.getByText(/From question to signed-off action/i)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Illustrative demo data/i)).toBeInTheDocument();
+    expect(screen.getByText(/An engineer asks a question/i)).toBeInTheDocument();
+    for (const step of ["Ask", "Read", "Verify", "Propose", "Approve"]) {
+      expect(screen.getByText(step)).toBeInTheDocument();
+    }
+    expect(
+      screen.getByText(/conflicting records\? → shown side-by-side/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/evidence too thin\? → NIRVA abstains honestly/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Signed-off action — full audit trail/i)).toBeInTheDocument();
+    // Story sections stay jargon-free
+    expect(screen.queryByText(/Agent graph/i)).toBeNull();
+    expect(screen.queryByText(/node_started/)).toBeNull();
+  });
+
+  it("renders features, roles, band and plain-language metrics", () => {
+    render(<LandingPage />);
     expect(screen.getByText("Grounded citations")).toBeInTheDocument();
     expect(screen.getByText("Read-only tools")).toBeInTheDocument();
     expect(screen.getByText("Contradiction surfacing")).toBeInTheDocument();
@@ -95,11 +93,10 @@ describe("LandingPage", () => {
     expect(screen.getByText("Tamper-evident audit")).toBeInTheDocument();
     expect(screen.getByText("Role-based access")).toBeInTheDocument();
     expect(screen.getByText(/Four roles, least privilege/i)).toBeInTheDocument();
-    expect(screen.getByText(/Under the hood/i)).toBeInTheDocument();
-    expect(screen.getByText(/100% LOCAL/)).toBeInTheDocument();
     expect(screen.getByText(/Runs inside your walls/i)).toBeInTheDocument();
-    expect(screen.getByText(/no data egress/i)).toBeInTheDocument();
-    expect(screen.getAllByText("0")).toHaveLength(3); // 2 metrics + chart axis label
+    expect(screen.getByText(/The numbers that matter/i)).toBeInTheDocument();
+    expect(screen.getByText(/cloud calls/i)).toBeInTheDocument();
+    expect(screen.getByText(/approval bypasses/i)).toBeInTheDocument();
     expect(
       screen.getByText(/NIRVA — SIH26117 · All demo data is synthetic/i)
     ).toBeInTheDocument();
