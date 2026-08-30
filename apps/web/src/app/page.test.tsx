@@ -33,13 +33,6 @@ describe("LandingPage", () => {
     expect(screen.getAllByText("NIRVA").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("renders the OFFLINE • SECURE • SUPERVISOR-CONTROLLED pill", () => {
-    render(<LandingPage />);
-    expect(screen.getByText("OFFLINE")).toBeInTheDocument();
-    expect(screen.getByText("SECURE")).toBeInTheDocument();
-    expect(screen.getByText("SUPERVISOR-CONTROLLED")).toBeInTheDocument();
-  });
-
   it("shows 'Try the demo' CTA -> /login when unauthenticated", () => {
     render(<LandingPage />);
     const cta = screen.getAllByRole("link", { name: /Try the demo/i });

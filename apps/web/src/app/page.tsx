@@ -286,15 +286,6 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           {/* Left column */}
           <div className="flex flex-col space-y-5">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-stone-700/70 bg-stone-900/50 px-4 py-1.5 w-fit">
-              <span className="size-1.5 rounded-full bg-[#c8f135]" />
-              <span className="text-[11px] font-semibold tracking-wide text-stone-300">OFFLINE</span>
-              <span className="text-stone-600">•</span>
-              <span className="text-[11px] font-semibold tracking-wide text-stone-300">SECURE</span>
-              <span className="text-stone-600">•</span>
-              <span className="text-[11px] font-semibold tracking-wide text-stone-300">SUPERVISOR-CONTROLLED</span>
-            </div>
-
             <div className="flex items-center gap-3">
               <NirvaLogo className="size-9" />
               <span className="text-white font-bold text-3xl tracking-tight">NIRVA</span>
