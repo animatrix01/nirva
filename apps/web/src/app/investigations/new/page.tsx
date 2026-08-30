@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ export default function NewInvestigationPage() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Case ID is generated client-side only (after mount) — Math.random() during
+  // Case ID is generated client-side only (after mount) â€” Math.random() during
   // SSR prerender would mismatch hydration and force a full client re-render.
   const caseIdRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -38,7 +38,7 @@ export default function NewInvestigationPage() {
       setMounted(true);
     }
   }, [mounted]);
-  const caseId = mounted ? (caseIdRef.current as string) : "INV-2026-…";
+  const caseId = mounted ? (caseIdRef.current as string) : "INV-2026-â€¦";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,47 +73,46 @@ export default function NewInvestigationPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader title="New investigation" />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-14">
         <div className="overflow-hidden rounded-xl border border-neutral-800 bg-card">
           {/* Header row */}
-          <div className="flex items-start justify-between gap-6 px-6 pt-6">
+          <div className="flex items-start justify-between gap-6 px-8 pt-8">
             <div>
               <h1 className="text-sm font-semibold uppercase tracking-wide text-white">
                 New investigation
               </h1>
-              <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-neutral-400">
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-neutral-400">
                 Describe what to investigate. NIRVA will plan the steps,
                 retrieve cited evidence, and pause for approval before any
                 consequential action.
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-[10px] uppercase tracking-wide text-neutral-500">
+              <p className="text-xs uppercase tracking-wide text-neutral-500">
                 Case ID
               </p>
-              <p className="mt-1 font-mono text-sm text-neutral-300">{caseId}</p>
+              <p className="mt-1 font-mono text-base text-neutral-300">{caseId}</p>
             </div>
           </div>
 
-          <div className="mt-5 border-t border-neutral-800" />
+          <div className="mt-6 border-t border-neutral-800" />
 
           <form onSubmit={handleSubmit}>
-            {/* 01 · Objective */}
-            <div className="flex gap-5 px-6 py-6">
-              <span className="shrink-0 font-mono text-xs text-sky-400">01</span>
+            {/* 01 Â· Objective */}
+            <div className="flex gap-6 px-8 py-8">
+              <span className="shrink-0 font-mono text-sm text-sky-400">01</span>
               <div className="min-w-0 flex-1 space-y-2.5">
                 <Label
                   htmlFor="objective"
-                  className="text-xs font-semibold uppercase tracking-wide text-neutral-200"
+                  className="text-sm font-semibold uppercase tracking-wide text-neutral-200"
                 >
                   Objective
                 </Label>
-                <p className="text-xs text-neutral-500">
-                  What are you investigating?
+                <p className="text-sm text-neutral-500">\n                  What are you investigating?
                 </p>
                 <textarea
                   id="objective"
-                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none focus-visible:ring-3"
+                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-44 w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none focus-visible:ring-3"
                   placeholder="e.g., Investigate why Pump P-204 has failed repeatedly. Compare maintenance history with the OEM manual and safety SOP."
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
@@ -127,11 +126,11 @@ export default function NewInvestigationPage() {
               </div>
             </div>
 
-            {/* 02 · Equipment */}
-            <div className="flex gap-5 border-t border-neutral-800/60 px-6 py-6">
-              <span className="shrink-0 font-mono text-xs text-sky-400">02</span>
+            {/* 02 Â· Equipment */}
+            <div className="flex gap-6 border-t border-neutral-800/60 px-8 py-8">
+              <span className="shrink-0 font-mono text-sm text-sky-400">02</span>
               <div className="min-w-0 flex-1 space-y-2.5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-200">
+                <p className="text-sm font-semibold uppercase tracking-wide text-neutral-200">
                   Equipment
                 </p>
                 <Label
@@ -160,7 +159,7 @@ export default function NewInvestigationPage() {
             )}
 
             {/* Footer action bar */}
-            <div className="flex items-center justify-between gap-4 border-t border-neutral-800 bg-neutral-900/40 px-6 py-4">
+            <div className="flex items-center justify-between gap-4 border-t border-neutral-800 bg-neutral-900/40 px-8 py-5">
               <div className="flex items-center gap-2.5">
                 <Shield className="size-4 shrink-0 text-neutral-500" />
                 <div className="text-[11px] leading-snug text-neutral-500">
@@ -178,7 +177,7 @@ export default function NewInvestigationPage() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={submitting}>
-                  {submitting ? "Starting…" : "Start investigation"}
+                  {submitting ? "Startingâ€¦" : "Start investigation"}
                 </Button>
               </div>
             </div>
