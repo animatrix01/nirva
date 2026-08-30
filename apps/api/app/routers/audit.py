@@ -30,7 +30,12 @@ def query_audit(
         query = query.filter(AuditEvent.actor == actor)
     if action is not None:
         query = query.filter(AuditEvent.action == action)
-    events = query.order_by(AuditEvent.ts.asc(), AuditEvent.id.asc()).limit(min(limit, 500)).all()
+    events = (
+        query.order_by(AuditEvent.ts.desc(), AuditEvent.id.desc())
+        .limit(min(limit, 500))
+        .all()
+    )
+    events = list(reversed(events))  # newest window, chronological display order
     global_events = db.query(AuditEvent).order_by(AuditEvent.ts.asc(), AuditEvent.id.asc()).all()
     return AuditResponse(
         chain_valid=verify_chain(global_events),

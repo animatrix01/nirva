@@ -8,10 +8,9 @@ os.environ.setdefault(
 )
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from qdrant_client import QdrantClient, models  # noqa: E402
-
 from app.db import SessionLocal  # noqa: E402
 from app.models import Document  # noqa: E402
+from qdrant_client import QdrantClient, models  # noqa: E402
 
 KEEP_TITLES = {
     "P-204 OEM Maintenance Manual",

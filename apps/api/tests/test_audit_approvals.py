@@ -160,6 +160,43 @@ def test_approval_for_equipmentless_job_creates_work_order(
         db.close()
 
 
+def test_audit_returns_newest_window_first(
+    client: TestClient,
+    auth_headers: AuthHeadersFn,
+) -> None:
+    """The default audit listing must include the MOST RECENT events — an
+    oldest-first page hides exactly the rows a reviewer needs (regression:
+    injection_blocked rows from fresh runs were beyond the window)."""
+    import time
+    import uuid
+
+    from app.audit import append_audit_event
+    from app.db import SessionLocal
+
+    marker = f"newest-window-marker-{uuid.uuid4().hex[:8]}"
+    db = SessionLocal()
+    try:
+        append_audit_event(
+            db,
+            actor="agent:test",
+            actor_role="system",
+            action="test.marker",
+            argument_summary=marker,
+        )
+    finally:
+        db.close()
+
+    time.sleep(0.05)
+    headers = auth_headers("admin")
+    body = client.get("/api/audit", params={"limit": 50}, headers=headers).json()
+    summaries = [e["argument_summary"] for e in body["events"]]
+    assert marker in summaries, "newest event missing from the default audit window"
+    assert body["chain_valid"] is True
+    # chronological display order within the returned window
+    timestamps = [e["ts"] for e in body["events"]]
+    assert timestamps == sorted(timestamps)
+
+
 @pytest.mark.parametrize("role", ["engineer"])
 def test_engineer_cannot_read_audit(
     client: TestClient, auth_headers: AuthHeadersFn, role: str

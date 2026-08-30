@@ -3,9 +3,8 @@
 import io
 import json
 
-from PIL import Image
-
 import httpx
+from PIL import Image
 
 c = httpx.Client(timeout=300.0, base_url="http://127.0.0.1:8000")
 eng = {
