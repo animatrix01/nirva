@@ -12,17 +12,14 @@ os.environ.setdefault(
 )
 sys.path.insert(0, os.path.abspath("apps/api"))
 
-from sqlalchemy import select  # noqa: E402
 
-from app.db import SessionLocal, engine  # noqa: E402
+from app.db import SessionLocal  # noqa: E402
 from app.models import (  # noqa: E402
     Approval,
-    AssetEvent,
     AuditEvent,
-    InventoryItem,
     Job,
-    JobEvidence,
     JobEvent,
+    JobEvidence,
     WorkOrder,
 )
 

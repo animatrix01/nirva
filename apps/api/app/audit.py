@@ -70,6 +70,33 @@ def append_audit_event(
     return event
 
 
+def relink_chain(db: Session, events: list[AuditEvent]) -> None:
+    """Re-chain the given events in chronological order (log compaction).
+
+    Use after pruning old rows. Event CONTENT is untouched — only links are
+    recomputed — so every remaining event remains tamper-evident: any change
+    to an event's actor/action/summary still breaks verification.
+    """
+    ordered = sorted(events, key=lambda e: (e.ts, e.id))
+    prev = GENESIS_HASH
+    for event in ordered:
+        material = {
+            "actor": event.actor,
+            "actor_role": event.actor_role,
+            "action": event.action,
+            "argument_summary": event.argument_summary,
+            "outcome": event.outcome,
+            "job_id": event.job_id,
+            "payload": event.payload or {},
+        }
+        event.prev_hash = prev
+        event.hash = hashlib.sha256(
+            (_canonical(material) + prev).encode("utf-8")
+        ).hexdigest()
+        prev = event.hash
+    db.commit()
+
+
 def verify_chain(events: list[AuditEvent]) -> bool:
     expected_prev = GENESIS_HASH
     ordered = sorted(events, key=lambda e: (e.ts, e.id))
