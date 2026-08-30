@@ -86,7 +86,7 @@ def _make_retriever(
             role=role or role_hint,
             query_dense=dense[0],
             query_sparse=sparse,
-            top_k=8,
+            top_k=12,
         )
         evidence: list[dict[str, Any]] = [
             {
@@ -261,7 +261,7 @@ def run_job(job_id: str) -> None:
             actor_role=user_role,
             action="retrieval.search_documents",
             argument_summary=(
-                f"hybrid dense+sparse retrieval (ACL-filtered, top_k=8); "
+                f"hybrid dense+sparse retrieval (ACL-filtered, top_k=12); "
                 f"{evidence_count} authorized evidence items accepted"
             ),
             job_id=job_id,

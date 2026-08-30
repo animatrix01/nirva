@@ -8,6 +8,10 @@ from app.schemas import envelope
 
 TERMINAL_EVENT_TYPES = frozenset({"completed", "failed", "blocked_injection"})
 
+# Events that truly END the SSE stream. blocked_injection is mid-flow: the
+# investigation continues after it, so the stream must keep streaming.
+STREAM_STOP_EVENT_TYPES = frozenset({"completed", "failed"})
+
 
 def next_seq(db: Session, job_id: str) -> int:
     db.flush()

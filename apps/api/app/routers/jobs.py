@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.audit import append_audit_event
 from app.db import SessionLocal, get_db
 from app.deps import CurrentUser
-from app.events import TERMINAL_EVENT_TYPES, fetch_events_after, render_envelope
+from app.events import STREAM_STOP_EVENT_TYPES, fetch_events_after, render_envelope
 from app.models import Job
 from app.runner import new_job_id, start_job_run
 from app.schemas import (
@@ -124,7 +124,7 @@ def _event_stream(job_id: str, after_seq: int) -> Generator[str, None, None]:
                 for event in events:
                     cursor = event.seq
                     yield _sse_format(render_envelope(event))
-                    if event.type in TERMINAL_EVENT_TYPES:
+                    if event.type in STREAM_STOP_EVENT_TYPES:
                         return
                 local_db.rollback()
             else:

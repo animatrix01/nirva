@@ -73,10 +73,16 @@ def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
             image_bytes=path.read_bytes(),
             image_format="png" if suffix == ".png" else "jpeg",
         )
+        # Context prefix gives the short VLM text searchable tokens (equipment
+        # id, "photo", "inspection") so retrieval can match photo questions.
+        observation_text = (
+            f"Equipment photo {base['equipment_id'] or ''} (vision inspection). "
+            f"Observations: {observation}"
+        )
         parsed = ParsedDocument(
             root=SectionNode(
                 title=str(base["document_title"]),
-                children=[SectionNode(title="Vision inspection", text=observation)],
+                children=[SectionNode(title="Vision inspection", text=observation_text)],
             ),
             **base,  # type: ignore[arg-type]
         )

@@ -54,6 +54,7 @@ jid = client.post("/api/jobs", json={"objective": OBJECTIVE, "equipment_id": "P-
 print(f"4. job created: {jid}")
 terminal = None
 contradiction_seen = False
+injection_blocked = False
 t0 = time.time()
 events: list[dict] = []
 with client.stream("GET", f"/api/jobs/{jid}/events", headers=eng) as resp:
@@ -63,10 +64,15 @@ with client.stream("GET", f"/api/jobs/{jid}/events", headers=eng) as resp:
             events.append(p)
             if p["type"] == "contradiction_found":
                 contradiction_seen = True
-            if p["type"] in ("completed", "failed", "awaiting_approval", "blocked_injection"):
+            if p["type"] == "blocked_injection":
+                injection_blocked = True
+            if p["type"] in ("completed", "failed", "awaiting_approval"):
                 terminal = p["type"]
                 break
-print(f"   streamed {len(events)} events in {time.time() - t0:.0f}s; terminal={terminal} contradiction_found={contradiction_seen}")
+print(
+    f"   streamed {len(events)} events in {time.time() - t0:.0f}s; "
+    f"terminal={terminal} contradiction={contradiction_seen} injection_blocked={injection_blocked}"
+)
 
 detail = client.get(f"/api/jobs/{jid}", headers=eng).json()
 for _ in range(40):
