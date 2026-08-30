@@ -41,7 +41,6 @@ export function AppHeader({ title }: { title: string }) {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/documents">Documents</Link>
           </Button>
-          <HealthIndicator />
           {auth.user.role === "supervisor" || auth.user.role === "admin" ? (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/approvals">Approvals</Link>
@@ -68,6 +67,7 @@ export function AppHeader({ title }: { title: string }) {
           >
             Sign out
           </Button>
+          <HealthIndicator />
         </div>
       </div>
     </header>

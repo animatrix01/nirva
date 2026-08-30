@@ -49,7 +49,7 @@ export function HealthIndicator() {
             : "Checking local services…"
       }
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium",
         allUp
           ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
           : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
@@ -58,7 +58,7 @@ export function HealthIndicator() {
       <span
         aria-hidden
         className={cn(
-          "size-1.5 rounded-full",
+          "size-2 rounded-full",
           allUp ? "bg-emerald-600 dark:bg-emerald-400" : "animate-pulse bg-amber-600 dark:bg-amber-400"
         )}
       />
