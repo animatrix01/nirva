@@ -57,7 +57,6 @@ export function AppHeader({ title }: { title: string }) {
               <Link href="/admin/system">System</Link>
             </Button>
           ) : null}
-          <span className="text-sm font-medium">{auth.user.username}</span>
           <RoleBadge role={auth.user.role} />
           <Button
             variant="ghost"
