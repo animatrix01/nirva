@@ -73,10 +73,10 @@ export default function NewInvestigationPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader title="New investigation" />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-14">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-16">
         <div className="overflow-hidden rounded-xl border border-neutral-800 bg-card">
           {/* Header row */}
-          <div className="flex items-start justify-between gap-6 px-8 pt-8">
+          <div className="flex items-start justify-between gap-6 px-10 pt-9">
             <div>
               <h1 className="text-sm font-semibold uppercase tracking-wide text-white">
                 New investigation
@@ -99,7 +99,7 @@ export default function NewInvestigationPage() {
 
           <form onSubmit={handleSubmit}>
             {/* 01 Â· Objective */}
-            <div className="flex gap-6 px-8 py-8">
+            <div className="flex gap-6 px-10 py-10">
               <span className="shrink-0 font-mono text-sm text-sky-400">01</span>
               <div className="min-w-0 flex-1 space-y-2.5">
                 <Label
@@ -112,7 +112,7 @@ export default function NewInvestigationPage() {
                 </p>
                 <textarea
                   id="objective"
-                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-44 w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none focus-visible:ring-3"
+                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-52 w-full rounded-lg border bg-transparent px-3 py-2.5 text-sm outline-none focus-visible:ring-3"
                   placeholder="e.g., Investigate why Pump P-204 has failed repeatedly. Compare maintenance history with the OEM manual and safety SOP."
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
@@ -127,7 +127,7 @@ export default function NewInvestigationPage() {
             </div>
 
             {/* 02 Â· Equipment */}
-            <div className="flex gap-6 border-t border-neutral-800/60 px-8 py-8">
+            <div className="flex gap-6 border-t border-neutral-800/60 px-10 py-10">
               <span className="shrink-0 font-mono text-sm text-sky-400">02</span>
               <div className="min-w-0 flex-1 space-y-2.5">
                 <p className="text-sm font-semibold uppercase tracking-wide text-neutral-200">
