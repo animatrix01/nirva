@@ -50,9 +50,11 @@ Phase 1 — Skeleton
 
 - 2026-08-30: TIER 2 EXIT GATE — partial pass, two backend issues filed below (both Terminal A). Web-side verified: image hint renders; quarantined/0-chunk outcomes render truthfully; security artifact rendering proven by component test (60 tests, build green).
 
+- 2026-08-30: U1 — public landing page at `/`: hydration-safe auth read (`useMounted` via useSyncExternalStore server=false/client=true; localStorage only consulted post-hydration); slim public header (wordmark + Sign in, no AppHeader); hero (single h1, spec copy, auth-aware CTA "Open workbench"→/investigations vs "Try it now"→/login, "SIH26117 · MRPL · demo build"); 6 feature cards (lucide icons, 3-col desktop → 1-col mobile); how-it-works flex pipeline Console→API→Agent graph→[Ollama·Qdrant·Tools] + 100% LOCAL badge; differentiator band; 4-metric strip; footer. Default shadcn styling only (no palette changes). Live dev server renders it unauthenticated (all sections verified via HTTP). 64 tests green; production build 10 routes.
+
 ## In Progress
 
-- Waiting on Terminal A fixes for the two blocked items; note: API now also emits contradiction_found events with payload_ref "contradiction" (artifact exists per d2d7ba6) — ContradictionView is ready, wiring it is the next web unit on Terminal A's word.
+- U2 (login RBAC) queued — awaiting operator review of the landing page.
 
 ## Blocked (reason + which lane must act)
 
