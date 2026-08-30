@@ -4,9 +4,14 @@
 
 ## Current Phase
 
-TIER 1 COMPLETE (both units) — operator browser test pending, then Tier 2 decision (vision + injection blocking).
+TIER 2 COMPLETE (both features, verified live) — operator browser test pending, then rehearsal.
 
 ## Done (list with dates + file paths)
+
+- 2026-08-30 | TIER 2 Feature 1 — injection blocking: security.py detection (tight regexes + false-positive guards), suspect chunks excluded from evidence before the model, blocked_injection SSE event + security.injection_blocked audit rows with structured payload, security artifact (payload_ref), vendor note re-indexed all-roles, tests. Verified live: golden flow shows blocked_injection then completes citing unaffected records (`68cc224`, `e16d2c1`)
+- 2026-08-30 | TIER 2 Feature 2 — image inspection: vision.py describe_image (OpenAI-compatible image message; /v1 verified against native Ollama qwen2.5vl:3b on first attempt), upload accepts .jpg/.jpeg/.png with observations-only prompt, enriched observation chunk text, /api/documents/{id}/file preview endpoint, synthetic P204_photo.jpg generator, tests. Verified live: photo indexed -> "visible leakage" investigation cites the vision chunk with score (`36a34f5`, `c493e31`, `cca8304`)
+- 2026-08-30 | SSE stream-stop fix: blocked_injection is mid-flow, not stream-terminal — stream now continues through it to awaiting_approval (15+ events in one connection, verified) (`cca8304`)
+- 2026-08-30 | top_k raised 8 -> 12 per plan ("approximately 12 candidates"); short vision chunk now reliably retrieved
 
 - 2026-08-30 | TIER 1 COMPLETE (both units): web exit gate verified on real API (upload indexed + chunk viewer, duplicate=info, 403 matrix exact string, uploaded doc cited in fresh investigation, live score 0.67 with graceful degradation on pre-patch chunks). Joint validation: 84/84 py + 58/58 web tests, lint/tsc/build green. B-side commits `ad6c9d0`, `5e1f268`.
 
