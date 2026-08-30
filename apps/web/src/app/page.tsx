@@ -4,21 +4,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
+  BookOpen,
   ClipboardCheck,
-  Cpu,
-  Database,
   FileSearch,
+  FileText,
   GitCompare,
   KeyRound,
   Link2,
-  Monitor,
+  MessageSquarePlus,
   Quote,
-  Server,
+  Scale,
   ShieldCheck,
+  Stamp,
   UserCog,
   UserShield,
   Wrench,
-  Workflow,
 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,19 @@ function useMounted(): boolean {
   );
 }
 
+// --- Brand monogram ------------------------------------------------------------
+
+function Monogram() {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex size-10 items-center justify-center rounded-lg border-2 border-zinc-800 text-xl font-bold tracking-tight"
+    >
+      N
+    </span>
+  );
+}
+
 // --- Hero workbench mock -----------------------------------------------------
 
 function WorkbenchMock() {
@@ -46,25 +59,26 @@ function WorkbenchMock() {
         <span aria-hidden className="size-2.5 rounded-full bg-zinc-600" />
         <span aria-hidden className="size-2.5 rounded-full bg-zinc-600" />
         <p className="text-muted-foreground ml-2 font-mono text-xs">
-          NIRVA — Investigation P-204
+          NIRVA — Investigating Pump P-204
         </p>
       </div>
       <div className="space-y-3 p-4 font-mono text-xs">
-        <div className="space-y-1.5" aria-label="Node timeline preview">
+        <div className="space-y-1.5" aria-label="Investigation progress preview">
           <p className="flex items-center gap-2">
             <BadgeCheck aria-hidden className="size-3.5 text-emerald-400" />
-            intake <span className="text-zinc-500">finished</span>
-          </p>
-          <p className="flex items-center gap-2">
-            <BadgeCheck aria-hidden className="size-3.5 text-emerald-400" />
-            retrieve <span className="text-zinc-500">5 authorized chunks</span>
+            Reading maintenance history{" "}
+            <span className="text-zinc-500">done</span>
           </p>
           <p className="flex items-center gap-2">
             <span
               aria-hidden
               className="size-3.5 animate-pulse rounded-full border-2 border-zinc-500 border-t-blue-400"
             />
-            answer <span className="text-zinc-500">composing cited findings…</span>
+            Checking the OEM manual…
+          </p>
+          <p className="flex items-center gap-2">
+            <span aria-hidden className="size-3.5 rounded-full border-2 border-zinc-600" />
+            Comparing work orders
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5 pt-1" aria-label="Citation chips">
@@ -86,80 +100,78 @@ function WorkbenchMock() {
         </div>
         <p className="inline-flex items-center gap-1.5 rounded border border-amber-800 bg-amber-950/60 px-2 py-0.5 text-amber-300">
           <ClipboardCheck aria-hidden className="size-3.5" />
-          awaiting_approval — supervisor decision required
+          waiting for a supervisor&apos;s decision
         </p>
       </div>
     </div>
   );
 }
 
-// --- Workflow step cards ------------------------------------------------------
+// --- Question-to-action steps --------------------------------------------------
 
-const STEPS = [
+const JOURNEY = [
   {
     n: "01",
-    icon: Monitor,
-    name: "Console",
-    caption: "The investigator submits a bounded objective with the asset in scope.",
-    bullets: ["ACL-checked from the first keystroke", "Equipment-scoped requests"],
+    icon: MessageSquarePlus,
+    name: "Ask",
+    caption:
+      "An engineer describes the problem in plain words — no query syntax, no checkboxes.",
   },
   {
     n: "02",
-    icon: Server,
-    name: "API",
-    caption: "FastAPI issues JWTs, filters documents by role, and streams every event.",
-    bullets: ["SSE envelope, seq-ordered", "Approvals with zero bypass"],
+    icon: BookOpen,
+    name: "Read",
+    caption:
+      "NIRVA reads the manuals, work orders and logs — only the documents that person is allowed to see.",
   },
   {
     n: "03",
-    icon: Workflow,
-    name: "Agent graph",
-    caption: "A checkpointed LangGraph plans, retrieves, answers, and proposes.",
-    bullets: ["Citations on every claim", "Abstains when evidence is thin"],
+    icon: Scale,
+    name: "Verify",
+    caption:
+      "Conflicting records are flagged side-by-side, never silently resolved.",
   },
   {
     n: "04",
-    icon: Database,
-    name: "Ollama · Qdrant · Tools",
-    caption: "Local inference, local vectors, and least-privilege read-only tools.",
-    bullets: ["No cloud, no egress", "Parameterized queries only"],
+    icon: FileText,
+    name: "Propose",
+    caption:
+      "A cited recommendation with confidence, assumptions and gaps — or an honest abstention.",
+  },
+  {
+    n: "05",
+    icon: Stamp,
+    name: "Approve",
+    caption:
+      "Nothing consequential happens until a supervisor signs off — and everything is logged.",
   },
 ];
 
-function StepCards() {
+function JourneyCards() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {STEPS.map((s, i) => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {JOURNEY.map((s, i) => (
         <div
           key={s.n}
           className={`relative rounded-xl border p-4 ${
-            i === STEPS.length - 1 ? "border-emerald-500/40" : ""
+            i === JOURNEY.length - 1 ? "border-emerald-500/40" : ""
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="font-mono text-lg font-semibold text-zinc-400">
               {s.n}
             </span>
             <s.icon aria-hidden className="size-5" />
-            <h3 className="text-sm font-semibold">{s.name}</h3>
-            {i === STEPS.length - 1 && (
+            {i === JOURNEY.length - 1 && (
               <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                <Cpu aria-hidden className="size-3" />
                 100% LOCAL
               </span>
             )}
           </div>
-          <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
+          <h3 className="mt-2 text-sm font-semibold">{s.name}</h3>
+          <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
             {s.caption}
           </p>
-          <ul className="mt-2 flex flex-col gap-1">
-            {s.bullets.map((b) => (
-              <li key={b} className="flex items-center gap-1.5 text-xs">
-                <ArrowRight aria-hidden className="size-3 shrink-0 text-zinc-400" />
-                {b}
-              </li>
-            ))}
-          </ul>
         </div>
       ))}
     </div>
@@ -221,7 +233,6 @@ function ChunksChart() {
 }
 
 function AuditDonut() {
-  // 100% verified arc
   const c = 2 * Math.PI * 36;
   return (
     <div className="flex-1">
@@ -254,7 +265,6 @@ function AuditDonut() {
 }
 
 function ConfidenceGauge() {
-  // Semicircle gauge at 0.87
   const arc = Math.PI * 34;
   return (
     <div className="flex-1">
@@ -304,7 +314,7 @@ function AnalyticsSection() {
   );
 }
 
-// --- Terminal card --------------------------------------------------------------
+// --- Under the hood --------------------------------------------------------------
 
 const SSE_ROWS = [
   { seq: 0, type: "node_started", node: "intake" },
@@ -409,7 +419,10 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col">
       <header className="border-b">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
-          <span className="text-lg font-semibold tracking-tight">NIRVA</span>
+          <span className="flex items-center gap-2">
+            <Monogram />
+            <span className="text-lg font-semibold tracking-tight">NIRVA</span>
+          </span>
           <nav aria-label="Main">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/login">Sign in</Link>
@@ -422,16 +435,28 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="grid grid-cols-1 items-center gap-8 py-14 lg:grid-cols-2 lg:py-20">
           <div className="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              NIRVA
-            </h1>
-            <p className="max-w-xl text-xl font-medium sm:text-2xl">
-              The offline industrial investigation workbench
+            <p className="flex items-center gap-2">
+              <Monogram />
+              <span className="text-2xl font-bold tracking-tight">NIRVA</span>
             </p>
+            <p className="text-muted-foreground text-sm font-medium uppercase tracking-wide">
+              From evidence to action — inside your walls
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              The offline industrial investigation workbench
+            </h1>
             <p className="text-muted-foreground max-w-xl text-sm sm:text-base">
               Sovereign evidence-to-action for confidential refinery work —
               every answer cited, every action approved, every byte local.
             </p>
+            <blockquote className="rounded-lg border-l-4 border-zinc-400 bg-muted/40 px-4 py-3 text-left text-sm italic leading-relaxed">
+              “Investigate why Pump P-204 has failed repeatedly. Check the
+              manual, the work orders, spare-part availability — and propose a
+              safe next action.”
+              <footer className="text-muted-foreground mt-1 text-xs not-italic">
+                — the question NIRVA answers live, in under two minutes
+              </footer>
+            </blockquote>
             <Button size="lg" asChild>
               <Link href={authed ? "/investigations" : "/login"}>
                 {authed ? "Open workbench" : "Try it now"}
@@ -445,15 +470,15 @@ export default function LandingPage() {
           <WorkbenchMock />
         </section>
 
-        {/* Workflow steps */}
-        <section aria-labelledby="how-heading" className="py-10">
+        {/* Question to action */}
+        <section aria-labelledby="journey-heading" className="py-10">
           <h2
-            id="how-heading"
+            id="journey-heading"
             className="mb-4 text-sm font-semibold uppercase tracking-wide"
           >
-            How it works
+            From question to signed-off action
           </h2>
-          <StepCards />
+          <JourneyCards />
         </section>
 
         {/* Analytics */}
@@ -465,17 +490,6 @@ export default function LandingPage() {
             Measured, not claimed
           </h2>
           <AnalyticsSection />
-        </section>
-
-        {/* Terminal */}
-        <section aria-labelledby="terminal-heading" className="py-10">
-          <h2
-            id="terminal-heading"
-            className="mb-4 text-sm font-semibold uppercase tracking-wide"
-          >
-            Every event, streamed and auditable
-          </h2>
-          <TerminalCard />
         </section>
 
         {/* Features */}
@@ -518,6 +532,21 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Under the hood */}
+        <section aria-labelledby="hood-heading" className="py-10">
+          <h2
+            id="hood-heading"
+            className="mb-1 text-sm font-semibold uppercase tracking-wide"
+          >
+            Under the hood
+          </h2>
+          <p className="text-muted-foreground mb-4 text-xs">
+            A real FastAPI + LangGraph + Qdrant + Ollama stack — every
+            investigation streams its events, ordered and auditable.
+          </p>
+          <TerminalCard />
         </section>
 
         {/* Differentiator band */}
