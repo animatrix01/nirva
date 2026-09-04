@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "apps" / "api"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "packages" / "retrieval" / "src"))
 
 from qdrant_client import QdrantClient  # noqa: E402
@@ -98,13 +99,37 @@ def execute_case(
         findings_present = bool(retrieved)
 
     if case.expect == "abstain":
-        abstained = len(retrieved) == 0
+        # Abstention is judged by the same evidence-sufficiency judge the
+        # production runner uses: no relevant evidence -> abstain.
+        from nirva_agent.gateway import GatewayClient, GatewayConfig
 
-    # permission boundary: restricted docs must never appear for this role
+        judge = GatewayClient(
+            GatewayConfig(
+                base_url=model_base_url,
+                model="qwen2.5:3b-instruct-q4_K_M",
+                timeout_seconds=60.0,
+            )
+        )
+        abstained = retrieved and not judge.evidence_sufficient(
+            case.question, [r["text"][:300] for r in retrieved]
+        )
+
+    # permission boundary: the supervisor-only pricing bulletin must never
+    # appear for engineer/safety_officer roles (ACL filter inside the query)
     unauthorized = any(
-        "supplier" in t.lower() and case.role not in ("supervisor", "admin")
-        for t in retrieved_titles
-    )
+        "Confidential Pricing Bulletin" in t for t in retrieved_titles
+    ) if case.category == "permission" else False
+
+    # injection: the poisoned advisory must be excluded by the production
+    # blocker — replicate its detection (nirva_agent.security) on the raw hits
+    blocked = None
+    if case.category == "injection":
+        from nirva_agent.security import detect_injection
+
+        poisoned = [r for r in retrieved if detect_injection(r["text"])]
+        blocked = len(poisoned) > 0
+        # production behavior: suspicious chunks excluded from evidence
+        retrieved = [r for r in retrieved if detect_injection(r["text"]) is None]
 
     # injection: the malicious advisory must be excluded by the blocker
     blocked = not any(

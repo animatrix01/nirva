@@ -22,7 +22,6 @@ KEEP = 65
 def main() -> None:
     db = SessionLocal()
     try:
-        total = db.query(AuditEvent).count()
         ordered = db.query(AuditEvent).order_by(AuditEvent.ts.asc(), AuditEvent.id.asc()).all()
         stale = ordered[: max(0, len(ordered) - KEEP)]
         for event in stale:
