@@ -1,0 +1,31 @@
+[project]
+name = "nirva-evals"
+version = "0.1.0"
+description = "NIRVA evaluation harness: golden dataset, runner, metric calculators"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["nirva_evals"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
