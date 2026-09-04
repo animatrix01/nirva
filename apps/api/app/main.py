@@ -17,6 +17,7 @@ from app.routers import (
     evidence,
     health,
     jobs,
+    memories,
 )
 from app.seed import seed_users_if_empty
 
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router)
     app.include_router(artifacts.router)
     app.include_router(evidence.router)
+    app.include_router(memories.router)
     app.include_router(documents.router)
     app.include_router(approvals.router)
     app.include_router(audit.router)

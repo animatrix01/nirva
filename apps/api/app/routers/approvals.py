@@ -89,6 +89,7 @@ def decide_approval(
     )
     from app.events import emit_event
     from app.models import Job as JobModel
+    from app.models import MemoryEntry
     from app.models import utcnow as _utcnow
 
     job = db.get(JobModel, approval.job_id)
@@ -107,6 +108,22 @@ def decide_approval(
             ),
             job_id=approval.job_id,
         )
+        # A3: episodic memory write after approval — approved findings only
+        if (
+            body.decision == "approved"
+            and job.final_report
+            and isinstance(job.final_report, dict)
+        ):
+            findings = str(job.final_report.get("findings", ""))[:500]
+            mem = MemoryEntry(
+                id=f"mem-{uuid.uuid4().hex[:12]}",
+                kind="episodic",
+                equipment_id=job.equipment_id,
+                content=f"Approved investigation: {findings}",
+                author_id=user.id,
+                job_id=job.id,
+            )
+            db.add(mem)
     emit_event(db, approval.job_id, "completed", "approve", None)
     db.commit()
     assert approval.decided_at is not None

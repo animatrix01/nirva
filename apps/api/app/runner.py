@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.events import emit_event
 from app.graph_client import GraphRunContext
-from app.models import Approval, AssetEvent, InventoryItem, Job, User, utcnow
+from app.models import Approval, AssetEvent, InventoryItem, Job, MemoryEntry, User, utcnow
 
 QDRANT_TIMEOUT_SECONDS = 30.0
 
@@ -26,6 +26,25 @@ def _lookup_asset_events(equipment_id: str) -> list[AssetEvent]:
             select(AssetEvent)
             .where(AssetEvent.equipment_id == equipment_id)
             .order_by(AssetEvent.source_timestamp.asc())
+        )
+        return list(session.scalars(stmt))
+    finally:
+        session.close()
+
+
+def _lookup_memories(equipment_id: str) -> list[MemoryEntry]:
+    from sqlalchemy import select
+
+    session = SessionLocal()
+    try:
+        stmt = (
+            select(MemoryEntry)
+            .where(
+                MemoryEntry.kind == "episodic",
+                MemoryEntry.equipment_id == equipment_id,
+            )
+            .order_by(MemoryEntry.created_at.desc())
+            .limit(3)
         )
         return list(session.scalars(stmt))
     finally:
@@ -181,6 +200,23 @@ def _make_retriever(
                     source="tool",
                 ).model_dump()
             )
+
+            # A3: episodic memories — approved findings from prior investigations
+            memories = _lookup_memories("P-204")
+            for mem in memories:
+                evidence.append(
+                    EvidenceItem(
+                        chunk_id=f"tool-memory-{mem.id[:12]}",
+                        document_id=f"memory-{mem.id[:12]}",
+                        document_title="Episodic Memory (prior investigation)",
+                        document_type="data",
+                        revision="1",
+                        section=mem.equipment_id or "",
+                        text=mem.content,
+                        score=1.0,
+                        source="tool",
+                    ).model_dump()
+                )
         finally:
             tool_session.close()
 
