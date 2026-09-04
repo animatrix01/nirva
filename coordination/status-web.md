@@ -59,7 +59,15 @@ Phase 1 — Skeleton
 
 ## In Progress
 
-- U2 (login RBAC) queued — awaiting operator review of the landing page.
+- B-series (Terminal B final completion): B0/B1/B2/B3/B5 DONE. B4 (evaluations dashboard) BLOCKED on Terminal A announcing GET /api/evals in status-api.md (404 live as of 2026-08-31; packages/evals result JSONs exist so the endpoint should land soon — poll, don't guess). Remaining: B6 polish sweep.
+
+## Done (this phase)
+
+- 2026-08-30: B0 — baseline repair: prior session's in-flight work was broken (29 react-hooks/static-components lint errors, 6 failing tests). Hoisted inline components (page.tsx JourneyWorkflow Node/ArrR/ArrD/Badge/BranchCard; CitationLink MetaRow), fixed render purity (Date.now in useMemo → cutoff state via queueMicrotask), set-state-in-effect (featured confidence), new/page caseId → event-handler generation, restored role="alert" on login error, rewrote stale landing tests for the modal-login dark design. [PROPOSAL] filed in DECISIONS.md: additive JobSummary fields (equipment_id/sources/confidence) — VERIFIED live against the real API (fields present in GET /api/jobs responses). 73 tests green.
+- 2026-08-30: B1 — role workbench homes: new `/workbench` route (src/app/workbench/page.tsx): engineer (recent investigations + New investigation CTA + Documents shortcut), supervisor (pending approvals front-and-center with inline Approve/Reject via decideApproval + recently decided w/ work-order ids), safety_officer (hash-chain badge, recent audit events with outcome badges, evidence review links), admin (service health grid, model registry loaded-state, library indexed/quarantined counts). All real-API; hydration-safe; POST-login redirects switched to /workbench (login page, landing modal, all Open-workbench links, header logo). 4 role tests.
+- 2026-08-30: B2 — sidebar shell: new `src/components/app-shell.tsx` replaces AppHeader on ALL app routes: fixed left sidebar w-60 bg-neutral-900 (role-gated nav w/ lucide icons; active = lime left border + white text via usePathname), slim sticky topbar (hamburger <lg, page title, HealthIndicator far right, role badge, sign out), mobile drawer overlay; new `back-to.tsx` (ArrowLeft + Back) on investigation detail + new-investigation pages; single-h1 preserved per page (topbar title is a <p>); dead app-header.tsx unimported (kept in tree — terminal deny-rule blocks git rm).
+- 2026-08-30: B3 — documents image preview: `api.getDocumentFile()` (authed blob fetch of GET /api/documents/{id}/file — verified live endpoint in api router) + ChunkViewer renders the stored original above the observation text when the blob is an image; object-URL revoked on close; non-image/404 degrade silently to chunks-only.
+- 2026-08-30: B5 — login RBAC cards: demo chips upgraded to 2×2 capability cards (engineer: investigate & upload — cannot approve; supervisor: the only role that can approve actions; safety_officer: audit everything — cannot upload or approve; admin: publish & manage models — cannot approve); selected card lime-bordered; selection still fills the form. 78 tests green; build green (as of B3/B5).
 
 ## Blocked (reason + which lane must act)
 
