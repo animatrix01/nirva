@@ -85,14 +85,54 @@ def test_sse_replays_from_last_event_id(client: TestClient, auth_headers: AuthHe
     assert seqs == sorted(seqs)
 
 
-def test_other_user_cannot_view_engineers_job(
+def test_safety_officer_reviews_all_investigations(
     client: TestClient,
     auth_headers: AuthHeadersFn,
 ) -> None:
+    """DECISIONS.md 2026-08-30: safety_officer has read-visibility of all
+    investigations (audit persona) — write powers remain restricted."""
     job_id = _create_job(client, auth_headers, "Privacy test.")
-    other = auth_headers("safety_officer")
-    assert client.get(f"/api/jobs/{job_id}", headers=other).status_code == 403
-    assert client.get(f"/api/jobs/{job_id}/events", headers=other).status_code == 403
+    so_headers = auth_headers("safety_officer")
+    assert client.get(f"/api/jobs/{job_id}", headers=so_headers).status_code == 200
+
+
+def test_non_owner_engineer_cannot_view_engineers_job(
+    client: TestClient,
+    auth_headers: AuthHeadersFn,
+) -> None:
+    """Ownership boundary: a second engineer (non-owner) is still blocked."""
+    from app.db import SessionLocal
+    from app.models import User
+    from app.security import hash_password
+
+    db = SessionLocal()
+    try:
+        if db.query(User).filter(User.username == "engineer2").first() is None:
+            db.add(
+                User(
+                    id="00000000-0000-0000-0000-00000000e002",
+                    username="engineer2",
+                    password_hash=hash_password("nirva-demo-pass"),
+                    display_name="Second Engineer",
+                    role="engineer",
+                )
+            )
+            db.commit()
+    finally:
+        db.close()
+
+    job_id = _create_job(client, auth_headers, "Privacy test.")
+    eng2 = {
+        "Authorization": "Bearer "
+        + client.post(
+            "/api/auth/login",
+            json={"username": "engineer2", "password": "nirva-demo-pass"},
+        ).json()["access_token"]
+    }
+    assert client.get(f"/api/jobs/{job_id}", headers=eng2).status_code == 403
+    assert (
+        client.get(f"/api/jobs/{job_id}/events", headers=eng2).status_code == 403
+    )
 
 
 def test_unknown_job_404(client: TestClient, auth_headers: AuthHeadersFn) -> None:

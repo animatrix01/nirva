@@ -28,7 +28,11 @@ POLL_INTERVAL_SECONDS = 0.1
 
 
 def _can_view(user: CurrentUser, job: Job) -> bool:
-    return user.role in ("supervisor", "admin") or job.created_by == user.id
+    # safety_officer reviews all investigations (read-only audit persona)
+    return (
+        user.role in ("supervisor", "admin", "safety_officer")
+        or job.created_by == user.id
+    )
 
 
 @router.post("", response_model=JobCreatedResponse, status_code=status.HTTP_201_CREATED)
@@ -67,7 +71,9 @@ def list_jobs(
     limit: int = 50,
 ) -> list[JobSummary]:
     query = db.query(Job)
-    if user.role not in ("supervisor", "admin"):
+    # safety_officer has read-visibility of all investigations (audit persona,
+    # DECISIONS.md 2026-08-30); engineers see only their own
+    if user.role not in ("supervisor", "admin", "safety_officer"):
         query = query.filter(Job.created_by == user.id)
     if status_filter is not None:
         query = query.filter(Job.status == status_filter)

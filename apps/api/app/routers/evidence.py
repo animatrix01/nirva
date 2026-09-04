@@ -25,7 +25,11 @@ _WHY_RETRIEVED = (
 
 
 def _can_view(user: CurrentUser, job: Job) -> bool:
-    return user.role in ("supervisor", "admin") or job.created_by == user.id
+    # safety_officer reviews all investigations (read-only audit persona)
+    return (
+        user.role in ("supervisor", "admin", "safety_officer")
+        or job.created_by == user.id
+    )
 
 
 @router.get("/{job_id}/evidence/{chunk_id}")
