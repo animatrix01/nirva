@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
 from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from nirva_agent.config import GatewayConfig, load_gateway_config
 from nirva_agent.gateway import GatewayClient
 from nirva_agent.graph import build_investigation_graph
@@ -52,10 +53,13 @@ class LangGraphInvestigationGraph:
         self,
         gateway: GatewayClient,
         retriever: Callable[[str, str], list[dict[str, Any]]] | None = None,
+        checkpointer: BaseCheckpointSaver[Any] | None = None,
     ) -> None:
         self._gateway = gateway
         self._retriever = retriever
-        self._graph = build_investigation_graph(gateway, retriever=retriever)
+        self._graph = build_investigation_graph(
+            gateway, retriever=retriever, checkpointer=checkpointer
+        )
 
     def run(self, ctx: GraphRunContext) -> dict[str, Any]:
         state: dict[str, Any] = {
@@ -117,7 +121,21 @@ class LangGraphInvestigationGraph:
         return dict(final_state)
 
 
-def get_graph(retriever: Callable[[str, str], list[dict[str, Any]]] | None = None) -> InvestigationGraph:
+def _select_checkpointer(database_url: str) -> BaseCheckpointSaver[Any] | None:
+    """Wire the Postgres checkpointer when the DB supports it (durable resume);
+    SQLite dev runs without one (no resume across restarts)."""
+    if database_url.startswith("postgresql"):
+        from nirva_agent.checkpointer import postgres_checkpointer
+
+        return postgres_checkpointer(database_url)
+    return None
+
+
+def get_graph(
+    retriever: Callable[[str, str], list[dict[str, Any]]] | None = None,
+    *,
+    database_url: str | None = None,
+) -> InvestigationGraph:
     config = load_gateway_config(model=DEFAULT_MODEL)
     gateway = GatewayClient(
         GatewayConfig(
@@ -126,4 +144,7 @@ def get_graph(retriever: Callable[[str, str], list[dict[str, Any]]] | None = Non
             timeout_seconds=GATEWAY_TIMEOUT_SECONDS,
         )
     )
-    return LangGraphInvestigationGraph(gateway, retriever)
+    checkpointer = (
+        _select_checkpointer(database_url) if database_url is not None else None
+    )
+    return LangGraphInvestigationGraph(gateway, retriever, checkpointer)

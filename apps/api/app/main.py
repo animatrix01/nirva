@@ -29,6 +29,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         seed_users_if_empty(db)
     finally:
         db.close()
+    from app.runner import recover_running_jobs
+
+    recover_running_jobs()
     yield
 
 

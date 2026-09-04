@@ -371,6 +371,26 @@ def run_job(job_id: str) -> None:
         db.close()
 
 
+def recover_running_jobs() -> int:
+    """On API startup: re-invoke jobs stuck in 'running' after a crash.
+
+    With the Postgres checkpointer wired, the graph resumes from the last
+    checkpoint without repeating completed steps. Without one (SQLite dev),
+    the run restarts cleanly from the beginning.
+    """
+    recovered = 0
+    db: Session = SessionLocal()
+    try:
+        stuck = db.query(Job).filter(Job.status == "running").all()
+        for job in stuck:
+            print(f"[recovery] re-invoking running job {job.id}")
+            start_job_run(job.id)
+            recovered += 1
+    finally:
+        db.close()
+    return recovered
+
+
 def start_job_run(job_id: str) -> threading.Thread:
     thread = threading.Thread(target=run_job, args=(job_id,), daemon=True)
     thread.start()
