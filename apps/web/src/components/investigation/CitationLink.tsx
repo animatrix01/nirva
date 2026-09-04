@@ -20,6 +20,23 @@ interface CitationLinkProps {
   jobId: string;
 }
 
+function MetaRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-[180px_1fr] gap-4 py-2.5 border-b border-border/50 last:border-0">
+      <dt className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground self-start pt-0.5">{label}</dt>
+      <dd className={cn("text-sm text-foreground leading-relaxed", mono && "font-mono text-xs break-all bg-muted/40 rounded px-2.5 py-1.5")}>{value}</dd>
+    </div>
+  );
+}
+
 export function CitationLink({ citation, jobId }: CitationLinkProps) {
   const [open, setOpen] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceReference | null>(null);
@@ -47,7 +64,6 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
         const doc = await getDocumentContent(chunk.document_id);
         setDocChunks(doc.chunks);
       } catch {
-        // Tool-sourced citations have no backing document — passage only.
         setDocUnavailable(true);
       }
     } catch (e: unknown) {
@@ -69,102 +85,121 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
       >
         [{citation.title}, {citation.revision}, {citation.locator}]
       </Button>
+
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="text-base">{citation.title}</DialogTitle>
-            <DialogDescription>
+        <DialogContent
+          className="p-0 overflow-hidden flex flex-col !max-w-none"
+          style={{ width: "min(95vw, 860px)", maxHeight: "88vh" }}
+        >
+          {/* Header */}
+          <DialogHeader className="px-8 pt-6 pb-4 border-b border-border shrink-0">
+            <DialogTitle className="text-base font-semibold">{citation.title}</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
               Source inspector — revision {citation.revision}
             </DialogDescription>
           </DialogHeader>
 
-          {loading && (
-            <div className="h-24 animate-pulse rounded bg-muted/50" aria-busy="true" />
-          )}
-          {error && (
-            <p role="alert" className="text-destructive text-sm">
-              {error}
-            </p>
-          )}
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
 
-          {evidence && (
-            <>
-              <p className="rounded bg-amber-50 p-2 text-sm leading-relaxed dark:bg-amber-950/40">
-                <mark className="bg-transparent text-inherit">
-                  {evidence.passage_text}
-                </mark>
-              </p>
-              <dl className="text-xs">
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Source</dt>
-                  <dd>{isToolSource ? "tool (read-only result)" : "retrieval"}</dd>
-                </div>
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Chunk ID</dt>
-                  <dd className="font-mono break-all">{evidence.chunk_id}</dd>
-                </div>
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Page/section</dt>
-                  <dd>
-                    {evidence.page !== null ? `page ${evidence.page}` : ""}
-                    {evidence.section ? ` §${evidence.section}` : ""}
-                  </dd>
-                </div>
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Classification</dt>
-                  <dd>{evidence.confidentiality_level}</dd>
-                </div>
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Content hash</dt>
-                  <dd className="font-mono break-all">{evidence.content_hash}</dd>
-                </div>
-                <div className="flex gap-2 py-0.5">
-                  <dt className="w-32 shrink-0 font-medium">Why retrieved</dt>
-                  <dd>
-                    {evidence.why_retrieved}
-                    {typeof evidence.score === "number" && (
-                      <span className="text-muted-foreground">
-                        {" "}
-                        — score {evidence.score.toFixed(2)}, hybrid dense+sparse,
-                        rank-fused
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              </dl>
-              <Separator />
-              {docUnavailable && (
-                <p className="text-muted-foreground text-xs">
-                  Full document view is not available for this source — tool
-                  results are shown as passage only.
-                </p>
-              )}
-              {docChunks.length > 0 && (
-                <div className="max-h-40 overflow-y-auto">
-                  <p className="text-muted-foreground mb-1 text-xs font-semibold uppercase">
-                    Document context ({docChunks.length} chunks)
+            {loading && (
+              <div className="h-32 animate-pulse rounded bg-muted/50" aria-busy="true" />
+            )}
+            {error && (
+              <p role="alert" className="text-destructive text-sm">{error}</p>
+            )}
+
+            {evidence && (
+              <>
+                {/* ── Source Passage ── */}
+                <section>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                    Source Passage
                   </p>
-                  <ul className="flex flex-col gap-1">
-                    {docChunks.map((c) => (
-                      <li
-                        key={c.chunk_id}
-                        className={cn(
-                          "rounded border p-1.5 text-xs",
-                          c.chunk_id === evidence.chunk_id &&
-                            "border-amber-400 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40"
-                        )}
-                      >
-                        <span className="text-muted-foreground font-mono">
-                          p.{c.page ?? "?"} {c.section ?? ""}
-                        </span>{" "}
-                        {c.text}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
+                  <div className="rounded-lg border border-amber-700/30 bg-amber-950/20 px-5 py-4">
+                    <p className="text-sm leading-relaxed text-amber-100/90 whitespace-pre-wrap">
+                      {evidence.passage_text}
+                    </p>
+                  </div>
+                </section>
+
+                <Separator />
+
+                {/* ── Metadata table ── */}
+                <section>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                    Chunk Metadata
+                  </p>
+                  <dl className="flex flex-col">
+                    <MetaRow label="Source" value={isToolSource ? "tool (read-only result)" : "retrieval"} />
+                    <MetaRow
+                      label="Page / Section"
+                      value={
+                        <>
+                          {evidence.page !== null ? `Page ${evidence.page}` : "—"}
+                          {evidence.section ? ` · §${evidence.section}` : ""}
+                        </>
+                      }
+                    />
+                    <MetaRow label="Classification" value={<span className="capitalize">{evidence.confidentiality_level}</span>} />
+                    <MetaRow
+                      label="Why Retrieved"
+                      value={
+                        <>
+                          {evidence.why_retrieved}
+                          {typeof evidence.score === "number" && (
+                            <span className="text-muted-foreground text-xs block mt-1">
+                              Score {evidence.score.toFixed(2)} · hybrid dense+sparse · rank-fused
+                            </span>
+                          )}
+                        </>
+                      }
+                    />
+                    <MetaRow label="Chunk ID" value={evidence.chunk_id} mono />
+                    <MetaRow label="Content Hash" value={evidence.content_hash} mono />
+                  </dl>
+                </section>
+
+                {/* ── Document context chunks ── */}
+                {(docChunks.length > 0 || docUnavailable) && (
+                  <>
+                    <Separator />
+                    <section>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                        {docUnavailable
+                          ? "Document Context"
+                          : `Document Context (${docChunks.length} chunks)`}
+                      </p>
+                      {docUnavailable ? (
+                        <p className="text-muted-foreground text-sm">
+                          Full document view is not available for this source — tool results are shown as passage only.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {docChunks.map((c) => (
+                            <div
+                              key={c.chunk_id}
+                              className={cn(
+                                "rounded-lg border px-4 py-3 text-sm leading-relaxed",
+                                c.chunk_id === evidence.chunk_id
+                                  ? "border-amber-600/50 bg-amber-950/30"
+                                  : "border-border bg-muted/20"
+                              )}
+                            >
+                              <span className="text-[10px] font-mono text-muted-foreground block mb-1">
+                                p.{c.page ?? "?"}{c.section ? ` · §${c.section}` : ""}
+                              </span>
+                              {c.text}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

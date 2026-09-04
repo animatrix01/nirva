@@ -173,9 +173,12 @@ export function ChunkViewer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="text-base">
+      <DialogContent
+        className="p-0 overflow-hidden flex flex-col !max-w-none"
+        style={{ width: "min(95vw, 860px)", maxHeight: "88vh" }}
+      >
+        <DialogHeader className="px-8 pt-6 pb-4 border-b border-border shrink-0">
+          <DialogTitle className="text-base font-semibold">
             {shown?.document.title ?? "Document"}
           </DialogTitle>
           <DialogDescription>
@@ -184,29 +187,33 @@ export function ChunkViewer({
               : "Loading chunks…"}
           </DialogDescription>
         </DialogHeader>
-        {error && (
-          <p role="alert" className="text-destructive text-sm">
-            {error}
-          </p>
-        )}
-        {shown && shown.chunks.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            No indexed chunks for this document.
-          </p>
-        )}
-        {shown && shown.chunks.length > 0 && (
-          <div className="max-h-80 space-y-2 overflow-y-auto">
-            {shown.chunks.map((c) => (
-              <div key={c.chunk_id} className="rounded border p-2 text-xs">
-                <p className="text-muted-foreground font-mono">
-                  p.{c.page ?? "?"} {c.section ?? ""} ·{" "}
-                  <span className="break-all">{c.chunk_id}</span>
-                </p>
-                <p className="mt-1 leading-relaxed">{c.text}</p>
+
+        <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4">
+          {error && (
+            <p role="alert" className="text-destructive text-sm">{error}</p>
+          )}
+          {shown && shown.chunks.length === 0 && (
+            <p className="text-muted-foreground text-sm">No indexed chunks for this document.</p>
+          )}
+          {shown && shown.chunks.length > 0 && shown.chunks.map((c) => (
+            <div key={c.chunk_id} className="rounded-lg border border-border bg-muted/20 px-5 py-4 flex flex-col gap-2.5">
+              {/* Chunk header */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Page {c.page ?? "?"}
+                  {c.section ? ` · §${c.section}` : ""}
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground/60 break-all">
+                  {c.chunk_id}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
+              {/* Chunk text */}
+              <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                {c.text}
+              </p>
+            </div>
+          ))}
+        </div>
       </DialogContent>
     </Dialog>
   );

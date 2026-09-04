@@ -161,10 +161,6 @@ export default function InvestigationsPage() {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(true);
 
-  const [featuredConfidence, setFeaturedConfidence] = useState<number | null>(
-    null
-  );
-
   const load = useCallback(async (signal?: { cancelled: boolean }) => {
     try {
       const data = await listJobs();
@@ -191,7 +187,19 @@ export default function InvestigationsPage() {
     };
   }, [load]);
 
-  const all = jobs ?? [];
+  const all = useMemo(() => jobs ?? [], [jobs]);
+
+  // Time-window cutoff is derived from wall clock — kept out of render via
+  // state so the purity rule is satisfied; updated asynchronously per filter.
+  const [cutoff, setCutoff] = useState(0);
+  useEffect(() => {
+    if (timeFilter === "all") {
+      queueMicrotask(() => setCutoff(0));
+      return;
+    }
+    const span = timeFilter === "24h" ? 1 : timeFilter === "7d" ? 7 : 30;
+    queueMicrotask(() => setCutoff(Date.now() - span * 86400000));
+  }, [timeFilter]);
 
   // Workspace-level stats (unfiltered)
   const countBy = (s: JobStatus) => all.filter((j) => j.status === s).length;
@@ -204,11 +212,6 @@ export default function InvestigationsPage() {
   // Filters (applied to everything below)
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const cutoff =
-      timeFilter === "all"
-        ? 0
-        : Date.now() -
-          (timeFilter === "24h" ? 1 : timeFilter === "7d" ? 7 : 30) * 86400000;
     return all.filter((j) => {
       if (statusFilter !== "all" && j.status !== statusFilter) return false;
       if (assetFilter !== "all" && (j.equipment_id ?? "") !== assetFilter)
@@ -217,7 +220,7 @@ export default function InvestigationsPage() {
       if (q && !j.objective_summary.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [all, statusFilter, assetFilter, timeFilter, search]);
+  }, [all, statusFilter, assetFilter, cutoff, search]);
 
   const needs = filtered.filter((j) => j.status === "awaiting_approval");
   const active = filtered.filter((j) => j.status === "running");
@@ -231,11 +234,11 @@ export default function InvestigationsPage() {
 
   // Fetch confidence for the featured needs-attention card
   const featured = needs[0];
+  const [featuredConfidence, setFeaturedConfidence] = useState<number | null>(
+    null
+  );
   useEffect(() => {
-    if (!featured) {
-      setFeaturedConfidence(null);
-      return;
-    }
+    if (!featured) return;
     const signal = { cancelled: false };
     void getJob(featured.job_id)
       .then((d) => {
@@ -251,7 +254,7 @@ export default function InvestigationsPage() {
   }, [featured]);
 
   return (
-    <div className="min-h-screen bg-neutral-950 font-sans">
+    <div className="min-h-screen bg-background font-sans">
       <AppHeader title="Investigations" />
       <main className="mx-auto max-w-6xl px-6 py-8">
         {/* 1. Page header & stats */}

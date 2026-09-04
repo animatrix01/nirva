@@ -25,20 +25,9 @@ export default function NewInvestigationPage() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Case ID is generated client-side only (after mount) â€” Math.random() during
-  // SSR prerender would mismatch hydration and force a full client re-render.
-  const caseIdRef = useRef<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (!mounted) {
-      caseIdRef.current = `INV-2026-${Math.random()
-        .toString(16)
-        .slice(2, 6)
-        .toUpperCase()}`;
-      setMounted(true);
-    }
-  }, [mounted]);
-  const caseId = mounted ? (caseIdRef.current as string) : "INV-2026-â€¦";
+  // Case ID placeholder until the form is submitted (random generation is
+  // event-handler-only so SSR prerender and hydration stay deterministic).
+  const [caseId, setCaseId] = useState("INV-2026-…");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,6 +36,9 @@ export default function NewInvestigationPage() {
     setClientError(invalid);
     if (invalid) return;
 
+    setCaseId(
+      `INV-2026-${Math.random().toString(16).slice(2, 6).toUpperCase()}`
+    );
     setSubmitting(true);
     try {
       const job = await createJob(
