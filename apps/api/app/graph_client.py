@@ -24,7 +24,7 @@ from nirva_agent.state import NirvaState
 DEFAULT_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 GATEWAY_TIMEOUT_SECONDS = 90.0
 
-NODE_SEQUENCE: tuple[str, ...] = ("intake", "retrieve", "answer", "finalize", "propose")
+NODE_SEQUENCE: tuple[str, ...] = ("intake", "plan", "retrieve", "answer", "finalize", "propose")
 
 
 @dataclass

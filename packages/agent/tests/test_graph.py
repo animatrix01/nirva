@@ -206,7 +206,7 @@ def test_detect_contradictions_requires_both_sides() -> None:
 def test_full_run_end_to_end_without_checkpointer() -> None:
     graph = build_investigation_graph(FakeGateway(reply="Findings with [chunk-9]."))
     final = graph.invoke(_base_state())
-    assert final["completed_steps"] == ["intake", "retrieve", "answer", "finalize", "propose"]
+    assert final["completed_steps"] == ["intake", "plan", "retrieve", "answer", "finalize", "propose"]
     assert final["final_report"].confidence >= 0.5
     assert final["current_node"] is None
 
@@ -220,10 +220,10 @@ def test_resume_from_fake_checkpointer_accumulates_progress() -> None:
     final = graph.invoke(_base_state(), config=config)
     snapshot = graph.get_state(config)
     assert snapshot.values["request_id"] == "job-42"
-    assert snapshot.values["completed_steps"] == ["intake", "retrieve", "answer", "finalize", "propose"]
+    assert snapshot.values["completed_steps"] == ["intake", "plan", "retrieve", "answer", "finalize", "propose"]
 
     graph.update_state(config, {"objective": "Updated objective: also check spares."})
     resumed = graph.get_state(config)
     assert resumed.values["objective"].startswith("Updated objective")
-    assert resumed.values["completed_steps"] == ["intake", "retrieve", "answer", "finalize", "propose"]
+    assert resumed.values["completed_steps"] == ["intake", "plan", "retrieve", "answer", "finalize", "propose"]
     assert final["last_event_seq"] == 5

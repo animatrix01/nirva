@@ -11,13 +11,14 @@ that can only execute after human approval.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from nirva_agent.gateway import ChatMessage, ChatResponse
+from nirva_agent.planner import planner_messages
 from nirva_agent.state import Citation, Contradiction, EvidenceItem, FinalReport, NirvaState, ProposedAction
 
 SYSTEM_RULES = (
@@ -283,6 +284,29 @@ def propose_node(state: NirvaState) -> dict[str, object]:
     }
 
 
+def plan_node(state: NirvaState, gateway: GatewayLike | None) -> dict[str, object]:
+    """A4: model-proposed retrieval plan, strictly whitelist-validated.
+
+    Failure of any kind (gateway down, malformed output) deterministically
+    falls back to the default plan — planning never blocks a run.
+    """
+    from nirva_agent.planner import DEFAULT_PLAN, validate_plan
+
+    raw: str | None = None
+    if gateway is not None:
+        try:
+            messages = [
+                ChatMessage(role=cast(Any, role), content=content)
+                for role, content in planner_messages(state.get("objective", ""))
+            ]
+            response = gateway.chat(messages, temperature=0.0, max_tokens=120)
+            raw = response.content
+        except Exception:  # noqa: BLE001 — planner is best-effort by design
+            raw = None
+    plan = validate_plan(raw) if raw else list(DEFAULT_PLAN)
+    return {"plan": plan, "completed_steps": ["plan"]}
+
+
 def build_investigation_graph(
     gateway: GatewayLike,
     *,
@@ -292,12 +316,14 @@ def build_investigation_graph(
     """Compile the deterministic graph; checkpointer enables resume."""
     builder = StateGraph(NirvaState)
     builder.add_node("intake", intake_node)
+    builder.add_node("plan", lambda state: plan_node(state, gateway))
     builder.add_node("retrieve", lambda state: retrieve_node(state, retriever))
     builder.add_node("answer", lambda state: answer_node(state, gateway))
     builder.add_node("finalize", finalize_node)
     builder.add_node("propose", propose_node)
     builder.add_edge(START, "intake")
-    builder.add_edge("intake", "retrieve")
+    builder.add_edge("intake", "plan")
+    builder.add_edge("plan", "retrieve")
     builder.add_edge("retrieve", "answer")
     builder.add_edge("answer", "finalize")
     builder.add_edge("finalize", "propose")
