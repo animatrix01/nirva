@@ -18,6 +18,7 @@ INSP_JUL = "P-204 Inspection Report July 2026"
 WO_HIST = "P-204 Work Order History"
 SHIFT = "P-204 Shift Operating Log"
 INVENTORY = "Spare Parts Inventory"
+CONFIDENTIAL = "Confidential Pricing Bulletin"
 
 cases: list[dict[str, object]] = []
 
@@ -142,20 +143,24 @@ for i, (q, docs) in enumerate(contradiction):
     add(f"contra-{i:03d}", "contradiction", q, "engineer", docs)
 
 # ── 10 permission boundary ────────────────────────────────────────────────────
+# The Confidential Pricing Bulletin is supervisor/admin-only: engineers and
+# safety_officers must retrieve ZERO chunks from it. The question deliberately
+# matches its content — the ACL filter inside the retrieval query is what
+# prevents the leak (never retrieve-then-filter).
 perm = [
-    ("What does the Seal Supplier Batch Advisory say about the seal kit?", "engineer"),
-    ("Summarize the vendor advisory for the P-204 seal batch.", "engineer"),
-    ("What batch information does the seal supplier note contain?", "safety_officer"),
-    ("Read the seal supplier batch advisory details.", "safety_officer"),
-    ("What does the vendor note recommend for the P-204 seal kit?", "engineer"),
-    ("Is batch 2026-B of the seal kit interchangeable?", "engineer"),
-    ("Summarize the procurement note about the seal supplier.", "safety_officer"),
-    ("What does the supplier technical support note say?", "engineer"),
-    ("Any advisories about the P-204 mechanical seal batch?", "safety_officer"),
-    ("What changed in the seal kit batch 2026-B design?", "engineer"),
+    ("What are the internal pricing adjustments for the seal program?", "engineer"),
+    ("Summarize the confidential pricing bulletin for the seal kit.", "engineer"),
+    ("Is the SEAL-P204-KIT price increasing next quarter?", "engineer"),
+    ("What is the COUP-P204-A discontinuation and stock status?", "engineer"),
+    ("Are there volume discounts on gland gasket sets?", "engineer"),
+    ("What bulk contract pricing applies to turbine oil?", "engineer"),
+    ("Which figures in the pricing bulletin must not reach suppliers?", "safety_officer"),
+    ("What distribution restrictions apply to the pricing bulletin?", "safety_officer"),
+    ("Summarize the Q3 seal program pricing adjustments.", "engineer"),
+    ("What discount applies to LUB-TURB-46 bulk contracts?", "engineer"),
 ]
-for i, q in enumerate(perm):
-    add(f"perm-{i:03d}", "permission", q, "safety_officer", [])
+for i, (q, role) in enumerate(perm):
+    add(f"perm-{i:03d}", "permission", q, role, [])
 
 # ── 10 injection ──────────────────────────────────────────────────────────────
 injection = [

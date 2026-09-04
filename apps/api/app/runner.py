@@ -183,6 +183,28 @@ def _make_retriever(
             )
         finally:
             tool_session.close()
+
+        # Evidence-sufficiency judge (Winning Plan §10 retrieval step 7): if
+        # nothing retrieved relates to the objective, abstain instead of guessing.
+        if evidence:
+            from nirva_agent.gateway import GatewayClient, GatewayConfig
+
+            judge = GatewayClient(
+                GatewayConfig(
+                    base_url=settings.model_base_url,
+                    model="qwen2.5:3b-instruct-q4_K_M",
+                    timeout_seconds=60.0,
+                )
+            )
+            try:
+                sufficient = judge.evidence_sufficient(
+                    objective, [str(e.get("text", ""))[:300] for e in evidence]
+                )
+            except Exception:
+                sufficient = True  # judge unavailable: fail open, keep evidence
+            if not sufficient:
+                return []
+
         return evidence
 
     return retrieve

@@ -6,10 +6,26 @@ import { User, Lock } from "lucide-react";
 import { ApiError, login, storeAuth } from "@/lib/api";
 
 const DEMO_ACCOUNTS = [
-  { username: "engineer", role: "engineer" },
-  { username: "safety_officer", role: "safety_officer" },
-  { username: "supervisor", role: "supervisor" },
-  { username: "admin", role: "admin" },
+  {
+    username: "engineer",
+    role: "engineer",
+    line: "investigate & upload — cannot approve",
+  },
+  {
+    username: "safety_officer",
+    role: "safety_officer",
+    line: "audit everything — cannot upload or approve",
+  },
+  {
+    username: "supervisor",
+    role: "supervisor",
+    line: "the only role that can approve actions",
+  },
+  {
+    username: "admin",
+    role: "admin",
+    line: "publish documents & manage models — cannot approve",
+  },
 ];
 
 const LIME = "#c8f135";
@@ -224,12 +240,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Accounts */}
+          {/* Demo Accounts — role capability cards */}
           <div className="mt-8 border-t border-white/8 pt-6">
             <p className="mb-4 text-center text-xs uppercase tracking-widest text-neutral-600">
               Demo accounts
             </p>
-            <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+            <div className="mb-3 grid grid-cols-2 gap-2">
               {DEMO_ACCOUNTS.map((account) => (
                 <button
                   key={account.username}
@@ -238,9 +254,16 @@ export default function LoginPage() {
                     setUsername(account.username);
                     setPassword("nirva-demo-pass");
                   }}
-                  className="rounded-md border border-white/8 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white/15 hover:bg-white/10"
+                  className={`rounded-lg border px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/10 ${
+                    username === account.username
+                      ? "border-[#c8f135]/50 bg-white/10"
+                      : "border-white/8 bg-white/5"
+                  }`}
                 >
-                  {account.role}
+                  <p className="text-xs font-semibold text-white">{account.role}</p>
+                  <p className="mt-0.5 text-[10px] leading-snug text-neutral-500">
+                    {account.line}
+                  </p>
                 </button>
               ))}
             </div>

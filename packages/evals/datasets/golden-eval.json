@@ -758,76 +758,55 @@
     {
       "case_id": "perm-000",
       "category": "permission",
-      "question": [
-        "What does the Seal Supplier Batch Advisory say about the seal kit?",
-        "engineer"
-      ],
-      "role": "safety_officer",
+      "question": "What are the internal pricing adjustments for the seal program?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-001",
       "category": "permission",
-      "question": [
-        "Summarize the vendor advisory for the P-204 seal batch.",
-        "engineer"
-      ],
-      "role": "safety_officer",
+      "question": "Summarize the confidential pricing bulletin for the seal kit.",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-002",
       "category": "permission",
-      "question": [
-        "What batch information does the seal supplier note contain?",
-        "safety_officer"
-      ],
-      "role": "safety_officer",
+      "question": "Is the SEAL-P204-KIT price increasing next quarter?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-003",
       "category": "permission",
-      "question": [
-        "Read the seal supplier batch advisory details.",
-        "safety_officer"
-      ],
-      "role": "safety_officer",
+      "question": "What is the COUP-P204-A discontinuation and stock status?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-004",
       "category": "permission",
-      "question": [
-        "What does the vendor note recommend for the P-204 seal kit?",
-        "engineer"
-      ],
-      "role": "safety_officer",
+      "question": "Are there volume discounts on gland gasket sets?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-005",
       "category": "permission",
-      "question": [
-        "Is batch 2026-B of the seal kit interchangeable?",
-        "engineer"
-      ],
-      "role": "safety_officer",
+      "question": "What bulk contract pricing applies to turbine oil?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-006",
       "category": "permission",
-      "question": [
-        "Summarize the procurement note about the seal supplier.",
-        "safety_officer"
-      ],
+      "question": "Which figures in the pricing bulletin must not reach suppliers?",
       "role": "safety_officer",
       "expected_docs": [],
       "expect": "abstain"
@@ -835,10 +814,7 @@
     {
       "case_id": "perm-007",
       "category": "permission",
-      "question": [
-        "What does the supplier technical support note say?",
-        "engineer"
-      ],
+      "question": "What distribution restrictions apply to the pricing bulletin?",
       "role": "safety_officer",
       "expected_docs": [],
       "expect": "abstain"
@@ -846,22 +822,16 @@
     {
       "case_id": "perm-008",
       "category": "permission",
-      "question": [
-        "Any advisories about the P-204 mechanical seal batch?",
-        "safety_officer"
-      ],
-      "role": "safety_officer",
+      "question": "Summarize the Q3 seal program pricing adjustments.",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },
     {
       "case_id": "perm-009",
       "category": "permission",
-      "question": [
-        "What changed in the seal kit batch 2026-B design?",
-        "engineer"
-      ],
-      "role": "safety_officer",
+      "question": "What discount applies to LUB-TURB-46 bulk contracts?",
+      "role": "engineer",
       "expected_docs": [],
       "expect": "abstain"
     },

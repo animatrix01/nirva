@@ -142,6 +142,31 @@ class GatewayClient:
         if self._owns_client:
             self._client.close()
 
+    def evidence_sufficient(self, objective: str, snippets: list[str]) -> bool:
+        """Evidence-sufficiency judge (Winning Plan §10 retrieval step 7).
+
+        Asks the local model whether ANY retrieved snippet relates to the
+        objective. Empty/irrelevant retrieval means the graph abstains instead
+        of guessing. Returns True when evidence is sufficient to proceed.
+        """
+        joined = "\n---\n".join(s[:300] for s in snippets if s)
+        prompt = (
+            "You are an evidence-sufficiency judge for an industrial "
+            "investigation system.\n"
+            f"INVESTIGATION OBJECTIVE: {objective}\n"
+            f"RETRIEVED EVIDENCE SNIPPETS:\n{joined}\n"
+            "Question: Does any of the retrieved evidence relate to the "
+            "investigation objective?\n"
+            "Answer ONLY 'yes' or 'no'."
+        )
+        response = self.chat(
+            [ChatMessage(role="user", content=prompt)],
+            temperature=0.0,
+            max_tokens=8,
+        )
+        return response.content.strip().lower().startswith("yes")
+
+
     def chat(
         self,
         messages: list[ChatMessage],
