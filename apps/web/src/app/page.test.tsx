@@ -50,7 +50,7 @@ describe("LandingPage", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("signs in through the modal and routes to investigations", async () => {
+  it("signs in through the modal and routes to workbench", async () => {
     const user = userEvent.setup();
     render(<LandingPage />);
     await user.click(screen.getAllByRole("link", { name: /Try the demo/i })[0]);
@@ -58,7 +58,7 @@ describe("LandingPage", () => {
     await user.type(screen.getByLabelText(/username/i), "engineer");
     await user.type(screen.getByLabelText(/password/i), "nirva-demo-pass");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/investigations"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/workbench"));
     const stored = JSON.parse(
       window.localStorage.getItem("nirva.auth") ?? "null"
     ) as { user: { role: string } } | null;

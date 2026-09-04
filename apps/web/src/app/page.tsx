@@ -560,7 +560,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await login(username.trim(), password);
       storeAuth({ token: res.access_token, user: res.user });
-      router.push("/investigations");
+      router.push("/workbench");
     } catch (err) {
       setError(err instanceof ApiError ? err.body.detail : "Login failed. Try again.");
       setSubmitting(false);
@@ -712,7 +712,7 @@ export default function LandingPage() {
               <a href="#demo" className="hover:text-white transition">Demo</a>
             </div>
             <Link
-              href={authed ? "/investigations" : "#"}
+              href={authed ? "/workbench" : "#"}
               onClick={!authed ? (e) => { e.preventDefault(); setShowLogin(true); } : undefined}
               className="flex items-center gap-2 rounded-lg bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-white transition"
             >
@@ -768,7 +768,7 @@ export default function LandingPage() {
             {/* CTA Buttons */}
             <div className="flex items-center gap-3">
               <Link
-                href={authed ? "/investigations" : "#"}
+                href={authed ? "/workbench" : "#"}
                 onClick={!authed ? (e) => { e.preventDefault(); setShowLogin(true); } : undefined}
                 className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-stone-950 shadow-lg transition hover:brightness-110"
                 style={{ backgroundColor: LIME }}
@@ -972,7 +972,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-8">
             <Link
-              href={authed ? "/investigations" : "#"}
+              href={authed ? "/workbench" : "#"}
               onClick={!authed ? (e) => { e.preventDefault(); setShowLogin(true); } : undefined}
               className="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold text-stone-950 shadow-lg transition hover:brightness-110"
               style={{ backgroundColor: LIME }}

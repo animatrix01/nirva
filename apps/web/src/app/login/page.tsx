@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       const res = await login(username.trim(), password);
       storeAuth({ token: res.access_token, user: res.user });
-      router.push("/investigations");
+      router.push("/workbench");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.body.detail);

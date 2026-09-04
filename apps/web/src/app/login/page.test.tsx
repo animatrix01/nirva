@@ -26,13 +26,13 @@ describe("LoginPage", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("logs in a demo engineer and routes to investigations", async () => {
+  it("logs in a demo engineer and routes to workbench", async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
     await user.type(screen.getByLabelText(/username/i), "engineer");
     await user.type(screen.getByLabelText(/password/i), "nirva-demo-pass");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/investigations"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/workbench"));
     const stored = JSON.parse(
       window.localStorage.getItem("nirva.auth") ?? "null"
     ) as { token: string; user: { role: string } } | null;

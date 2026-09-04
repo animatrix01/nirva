@@ -31,7 +31,7 @@ export function AppHeader({ title }: { title: string }) {
       <div className="flex h-16 w-full items-center px-6">
 
         {/* Left — NIRVA logo + name */}
-        <Link href="/investigations" className="flex items-center gap-2.5 shrink-0">
+        <Link href="/workbench" className="flex items-center gap-2.5 shrink-0">
           <img
             src="/nirva_logo_-removebg-preview.png"
             alt="NIRVA"
