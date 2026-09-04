@@ -5,6 +5,7 @@ import DocumentsPage, { ChunkViewer, isImageFile } from "./page";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({}),
+  usePathname: () => "/documents",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

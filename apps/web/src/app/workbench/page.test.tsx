@@ -6,6 +6,7 @@ import { buildScript, createMockJob } from "@/test-mocks/db";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({}),
+  usePathname: () => "/workbench",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 

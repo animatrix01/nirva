@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
@@ -442,8 +442,7 @@ export default function DocumentsPage() {
   }, [load]);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader title="Document library" />
+    <AppShell title="Document library">
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         {error && (
           <p role="alert" className="text-destructive text-sm">
@@ -499,6 +498,6 @@ export default function DocumentsPage() {
         }}
         documentId={viewerId}
       />
-    </div>
+    </AppShell>
   );
 }

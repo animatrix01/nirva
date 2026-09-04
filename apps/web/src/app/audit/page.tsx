@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, ChevronRight, Search, Shield } from "lucide-react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, getAudit } from "@/lib/api";
 import type { AuditResponse } from "@/lib/types";
@@ -100,9 +100,7 @@ export default function AuditPage() {
     "rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 outline-none transition focus:border-neutral-600";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader title="Audit log" />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+    <AppShell title="Audit log">
         {!canView ? (
           <p role="alert" className="text-destructive text-sm">
             Audit access is restricted to admins and safety officers.
@@ -304,7 +302,6 @@ export default function AuditPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

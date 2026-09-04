@@ -1,15 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import DetailPage from "./page";
 import type { SseEvent } from "@/lib/types";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/investigations/job-seed-0001",
   useParams: () => ({ jobId: "job-seed-0001" }),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
 // Mock the SSE transport module (fetch-streaming can't run in jsdom); the
-// events below use the exact frozen §c.2 envelope shapes.
+// events below use the exact frozen Â§c.2 envelope shapes.
 vi.mock("@/lib/sse", () => ({
   openJobStream: (
     _jobId: string,

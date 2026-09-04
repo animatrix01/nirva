@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, decideApproval, listApprovals } from "@/lib/api";
 import type { ApprovalRequest } from "@/lib/artifacts";
@@ -551,9 +551,7 @@ export default function ApprovalsPage() {
   const isSupervisor = role === "supervisor";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader title="" />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
+    <AppShell title="Approvals">
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold tracking-tight text-white">APPROVALS</h1>
@@ -896,7 +894,6 @@ export default function ApprovalsPage() {
             )}
           </>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

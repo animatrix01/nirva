@@ -12,7 +12,7 @@ import {
   Plus,
   XCircle,
 } from "lucide-react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
@@ -636,22 +636,17 @@ export default function WorkbenchPage() {
   if (!auth) {
     return (
       <div className="min-h-screen bg-background" aria-busy="true">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <LoadingBlock />
-        </div>
+        <div className="flex items-center gap-2 p-6 text-sm text-neutral-500">Loading…</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <AppHeader title="Workbench" />
-      <main className="mx-auto max-w-6xl px-6 py-8">
-        {auth.user.role === "engineer" && <EngineerHome />}
-        {auth.user.role === "supervisor" && <SupervisorHome />}
-        {auth.user.role === "safety_officer" && <SafetyHome />}
-        {auth.user.role === "admin" && <AdminHome />}
-      </main>
-    </div>
+    <AppShell title="Workbench">
+      {auth.user.role === "engineer" && <EngineerHome />}
+      {auth.user.role === "supervisor" && <SupervisorHome />}
+      {auth.user.role === "safety_officer" && <SafetyHome />}
+      {auth.user.role === "admin" && <AdminHome />}
+    </AppShell>
   );
 }

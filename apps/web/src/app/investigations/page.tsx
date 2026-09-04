@@ -14,7 +14,7 @@ import {
   Search,
   TriangleAlert,
 } from "lucide-react";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 
 import { ApiError, getJob, listJobs } from "@/lib/api";
 import type { JobStatus, JobSummary } from "@/lib/types";
@@ -254,8 +254,7 @@ export default function InvestigationsPage() {
   }, [featured]);
 
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <AppHeader title="Investigations" />
+    <AppShell title="Investigations">
       <main className="mx-auto max-w-6xl px-6 py-8">
         {/* 1. Page header & stats */}
         <div className="flex items-start justify-between">
@@ -673,6 +672,6 @@ export default function InvestigationsPage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }

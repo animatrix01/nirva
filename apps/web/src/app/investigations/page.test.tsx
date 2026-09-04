@@ -5,6 +5,7 @@ import InvestigationsPage from "./page";
 import { createMockJob, mockJobs } from "@/test-mocks/db";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/investigations",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

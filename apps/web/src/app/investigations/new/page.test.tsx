@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NewInvestigationPage, { validateObjective } from "./page";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/investigations/new",
   useRouter: () => ({ push, replace: vi.fn(), back: vi.fn() }),
 }));
 

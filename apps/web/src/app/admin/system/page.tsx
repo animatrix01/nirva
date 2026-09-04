@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, getAdminModels } from "@/lib/api";
 
@@ -43,9 +43,7 @@ export default function AdminSystemPage() {
   }, [isAdmin]);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader title="System" />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+    <AppShell title="System">
         {!isAdmin ? (
           <p role="alert" className="text-destructive text-sm">
             Model registry is restricted to admins.
@@ -92,7 +90,6 @@ export default function AdminSystemPage() {
             </table>
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

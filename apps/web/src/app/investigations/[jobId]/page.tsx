@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
+import { BackTo } from "@/components/back-to";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { EventTimeline } from "@/components/investigation/EventTimeline";
 import { CitationLink } from "@/components/investigation/CitationLink";
@@ -122,26 +123,24 @@ export default function InvestigationDetailPage() {
 
   if (jobError) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <AppHeader title="Investigation" />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-          <p role="alert" className="text-destructive text-sm">
-            {jobError}
-          </p>
-        </main>
-      </div>
+      <AppShell title="Investigation">
+        <BackTo href="/investigations" />
+        <p role="alert" className="text-destructive text-sm">
+          {jobError}
+        </p>
+      </AppShell>
     );
   }
 
   if (!job) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <AppHeader title="Investigation" />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6" aria-busy="true">
+      <AppShell title="Investigation">
+        <BackTo href="/investigations" />
+        <div aria-busy="true">
           <div className="h-8 w-2/3 animate-pulse rounded bg-muted/50" />
           <div className="mt-4 h-40 animate-pulse rounded bg-muted/50" />
-        </main>
-      </div>
+        </div>
+      </AppShell>
     );
   }
 
@@ -195,10 +194,9 @@ export default function InvestigationDetailPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader title="Investigation" />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <header className="flex flex-col gap-2">
+    <AppShell title="Investigation">
+      <BackTo href="/investigations" />
+      <header className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <JobStatusBadge status={job.status} />
             {job.current_node && (
@@ -332,7 +330,6 @@ export default function InvestigationDetailPage() {
             </section>
           </aside>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
