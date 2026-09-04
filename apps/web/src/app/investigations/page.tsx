@@ -367,6 +367,14 @@ export default function InvestigationsPage() {
           </div>
         )}
 
+        {jobs === null && !error && (
+          <div className="mt-8 space-y-3" aria-busy="true">
+            <div className="h-24 animate-pulse rounded-xl bg-neutral-800/50" />
+            <div className="h-16 animate-pulse rounded-xl bg-neutral-800/50" />
+            <div className="h-40 animate-pulse rounded-xl bg-neutral-800/50" />
+          </div>
+        )}
+
         {jobs !== null && (
           <div className="mt-8 space-y-10">
             {/* 3. NEEDS ATTENTION */}

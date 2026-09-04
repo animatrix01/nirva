@@ -491,7 +491,13 @@ export default function DocumentsPage() {
                 List is ACL-filtered by the API for your role — you only see
                 documents you are allowed to see.
               </p>
-              {documents && (
+              {documents && documents.length === 0 && (
+                <p className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-5 py-6 text-sm text-neutral-500">
+                  No documents visible for your role yet — engineers and admins
+                  can upload the first one.
+                </p>
+              )}
+              {documents && documents.length > 0 && (
                 <DocumentsTable
                   documents={documents}
                   onOpen={(d) => setViewerId(d.document_id)}
