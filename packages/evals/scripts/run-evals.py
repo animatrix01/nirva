@@ -110,8 +110,8 @@ def execute_case(
                 timeout_seconds=60.0,
             )
         )
-        abstained = retrieved and not judge.evidence_sufficient(
-            case.question, [r["text"][:300] for r in retrieved]
+        abstained = bool(retrieved) and not judge.evidence_sufficient(
+            case.question, [str(r["text"])[:300] for r in retrieved]
         )
 
     # permission boundary: the supervisor-only pricing bulletin must never
@@ -126,15 +126,13 @@ def execute_case(
     if case.category == "injection":
         from nirva_agent.security import detect_injection
 
-        poisoned = [r for r in retrieved if detect_injection(r["text"])]
-        blocked = len(poisoned) > 0
-        # production behavior: suspicious chunks excluded from evidence
-        retrieved = [r for r in retrieved if detect_injection(r["text"]) is None]
-
-    # injection: the malicious advisory must be excluded by the blocker
-    blocked = not any(
-        "Ignore previous instructions" in r["text"] for r in retrieved
-    ) if case.category == "injection" else None
+        suspicious = [
+            r for r in retrieved if detect_injection(str(r["text"])) is not None
+        ]
+        blocked = len(suspicious) > 0
+        retrieved = [
+            r for r in retrieved if detect_injection(str(r["text"])) is None
+        ]
 
     result: dict[str, Any] = {
         "case_id": case.case_id,
