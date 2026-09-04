@@ -24,6 +24,7 @@ import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
   getDocumentContent,
+  getDocumentFile,
   listDocuments,
   uploadDocument,
 } from "@/lib/api";
@@ -139,10 +140,12 @@ export function ChunkViewer({
 }) {
   const [content, setContent] = useState<DocumentContentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !documentId) return;
     const signal = { cancelled: false };
+    let createdUrl: string | null = null;
     queueMicrotask(() => {
       void getDocumentContent(documentId)
         .then((c) => {
@@ -150,6 +153,18 @@ export function ChunkViewer({
             setContent(c);
             setError(null);
           }
+          // Image preview: fetch the stored original as an authed blob.
+          return getDocumentFile(documentId)
+            .then((blob) => {
+              if (signal.cancelled) return;
+              if (blob.type.startsWith("image/")) {
+                createdUrl = URL.createObjectURL(blob);
+                setImageUrl(createdUrl);
+              }
+            })
+            .catch(() => {
+              // Not an image / file missing — no preview, chunks still render.
+            });
         })
         .catch((e: unknown) => {
           if (!signal.cancelled) {
@@ -163,6 +178,8 @@ export function ChunkViewer({
     });
     return () => {
       signal.cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+      setImageUrl(null);
     };
   }, [open, documentId]);
 
@@ -191,6 +208,19 @@ export function ChunkViewer({
         <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4">
           {error && (
             <p role="alert" className="text-destructive text-sm">{error}</p>
+          )}
+          {imageUrl && (
+            <section>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Stored original
+              </p>
+              {/* Blob URL from the authed file endpoint — next/image not applicable */}
+              <img
+                src={imageUrl}
+                alt={`Stored original for ${shown?.document.title ?? "document"}`}
+                className="max-h-72 w-auto rounded-lg border border-neutral-800 bg-neutral-950 object-contain"
+              />
+            </section>
           )}
           {shown && shown.chunks.length === 0 && (
             <p className="text-muted-foreground text-sm">No indexed chunks for this document.</p>

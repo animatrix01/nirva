@@ -88,6 +88,18 @@ describe("DocumentsPage role gating", () => {
     expect(screen.getByText(/chunk_oem_p41/)).toBeInTheDocument();
   });
 
+  it("renders the stored original image preview for image documents", async () => {
+    setAuth("engineer");
+    render(
+      <ChunkViewer open onOpenChange={vi.fn()} documentId="doc-oem-pumps" />
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/Stored original/i)).toBeInTheDocument()
+    );
+    const img = screen.getByAltText(/Stored original for/i);
+    expect(img).toHaveAttribute("src", expect.stringContaining("blob:"));
+  });
+
   it("shows the vision-inspection hint only for image selections", async () => {
     setAuth("engineer");
     render(<DocumentsPage />);

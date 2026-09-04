@@ -158,6 +158,27 @@ export function getDocumentContent(
   );
 }
 
+// Binary stored original (images) — fetched as an authed blob so the UI can
+// render it via an object URL (img tags cannot send Authorization headers).
+export async function getDocumentFile(documentId: string): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(
+    `${BASE_URL}/api/documents/${encodeURIComponent(documentId)}/file`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
 export function listDocuments(): Promise<DocumentOut[]> {
   return request<DocumentOut[]>("GET", "/api/documents");
 }
