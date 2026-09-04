@@ -4,9 +4,15 @@
 
 ## Current Phase
 
-TIER 2 COMPLETE (both features, verified live) — operator browser test pending, then rehearsal.
+100% of the Winning Plan MVP + differentiators scope COMPLETE. A0–A3 + A7 landed; A5 reranker skipped by gate (Recall@5=1.0); A6 model routing unnecessary (single local model verified). Remaining: operator browser pass + rehearsal.
 
 ## Done (list with dates + file paths)
+
+- 2026-09-05 | A7: pre-judging checklist written from the verified reset ritual (`docs/pre-judging-checklist.md`); Docker images nirva-api/nirva-web exist. (`6cddc8f`)
+- 2026-09-04 | A3: episodic memory store — write after supervisor approval, read as tool-sourced evidence, admin list/delete, migration 0006. (`fe7a8f2`)
+- 2026-09-04 | A2: checkpointer wiring — postgres_checkpointer when DATABASE_URL is postgres, startup recovery for stuck running jobs, py.typed markers, serialization round-trip tests (pydantic state survives JsonPlusSerializer). (`8c0d825`)
+- 2026-09-04 | A1: eval harness — 105-case golden dataset, runner + metrics, all gates green: Recall@5 1.0, citation validity 1.0, abstention 1.0, unauthorized 0, injection block 1.0 (`683e7b1`, results `c8204f4`)
+- 2026-09-04 | A0: safety_officer read-visibility of all investigations + evidence/artifacts; ownership test uses second engineer. (`947dabe` + follow-ups)
 
 - 2026-08-30 | TIER 2 Feature 1 — injection blocking: security.py detection (tight regexes + false-positive guards), suspect chunks excluded from evidence before the model, blocked_injection SSE event + security.injection_blocked audit rows with structured payload, security artifact (payload_ref), vendor note re-indexed all-roles, tests. Verified live: golden flow shows blocked_injection then completes citing unaffected records (`68cc224`, `e16d2c1`)
 - 2026-08-30 | TIER 2 Feature 2 — image inspection: vision.py describe_image (OpenAI-compatible image message; /v1 verified against native Ollama qwen2.5vl:3b on first attempt), upload accepts .jpg/.jpeg/.png with observations-only prompt, enriched observation chunk text, /api/documents/{id}/file preview endpoint, synthetic P204_photo.jpg generator, tests. Verified live: photo indexed -> "visible leakage" investigation cites the vision chunk with score (`36a34f5`, `c493e31`, `cca8304`)
