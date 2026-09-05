@@ -16,6 +16,11 @@ def make_engine(url: str) -> Engine:
     kwargs: dict[str, Any] = {}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
+    elif url.startswith("postgresql://"):
+        # SQLAlchemy's bare postgresql:// dialect is psycopg2 (not installed);
+        # we ship psycopg3, so point the engine at it explicitly. Raw
+        # postgresql:// URLs still reach the checkpointer pool untouched.
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
     return create_engine(url, **kwargs)
 
 

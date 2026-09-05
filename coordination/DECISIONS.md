@@ -32,3 +32,10 @@
 - Three Docker Desktop crashes, each during heavy pip I/O inside image builds; pip logs show [Errno 5] I/O errors and Bus error core dumps; site-packages files written as null bytes (uvicorn main.py 0 bytes / null-filled).
 - Policy: NO heavy image builds on this host. Surgical path only: run container, force-reinstall uvicorn in-place, docker commit, then compose up. Dockerfile carries the equivalent repair layer for healthy hosts/CI.
 - Compose fixes landed: container-internal hostnames, native Ollama via host.docker.internal, qdrant bash TCP healthcheck (no wget in image), distroless otel-collector as started-dep (no shell, no healthcheck possible).
+
+## [DECISION] 2026-09-05 — W3 COMPLETE: golden flow verified through the compose stack
+- Surgical repair of the api image: in-container force-reinstall of 13 corrupted dists (click/typer/typing-*/urllib3/websockets/xlsxwriter/xxhash/zstandard/truststore/pyyaml/uuid-utils), triton leftovers deleted (broken RECORD prevented clean uninstall), torch reinstalled CPU-only 2.14.0+cpu (corrupt CUDA torch segfaulted at import). Committed as nirva-api:latest.
+- docker commit entrypoint pitfall: commit captured the repair container's sleep entrypoint, and PS 5.1 mangles JSON --change args into shell form. Fix: compose-level entrypoint/command override for the api service (YAML, no quoting issues). Image remains boot-able only via compose override until a clean build on a healthy host (Dockerfile repair layer already in place).
+- db.py: bare postgresql:// now rewritten to postgresql+psycopg:// for the engine (psycopg2 not shipped); raw postgresql:// still reaches the checkpointer pool untouched.
+- Compose-stack golden flow PASS: engineer submit -> hybrid retrieval 13 artifacts + asset-history + inventory tools -> contradiction detected -> awaiting_approval -> supervisor approved -> WO-541f19f7 created -> audit chain_valid True (8 events) -> A3 episodic memory written. Web served on :3000 by container.
+- Teardown: compose down (volumes kept); qdrant/postgres/otel restarted as dev support; dev API :8000 + web :3000 restored.
