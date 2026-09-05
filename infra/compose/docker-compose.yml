@@ -63,7 +63,8 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/readyz | grep -q ok"]
+      # image ships bash but no wget/curl — TCP probe instead of /readyz
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/6333'"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -92,15 +93,11 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel/config.yaml:ro
       - otel-data:/var/lib/otelcol
+    # distroless image — no shell, so no CMD-SHELL healthcheck is possible;
+    # api treats it as a started dependency (OTLP export failure is non-fatal)
     ports:
       - "127.0.0.1:4317:4317"   # OTLP gRPC
       - "127.0.0.1:4318:4318"   # OTLP http
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:13133/ | grep -q OK"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 10s
     restart: unless-stopped
 
   api:
@@ -112,6 +109,12 @@ services:
       - ../../.env
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      # container-internal service hostnames override the dev .env values;
+      # Ollama stays NATIVE on the host (models live outside Docker), reached
+      # via Docker Desktop's host.docker.internal.
+      DATABASE_URL: postgresql://nirva:nirva@postgres:5432/nirva
+      QDRANT_URL: http://qdrant:6333
+      MODEL_BASE_URL: http://host.docker.internal:11434/v1
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -121,10 +124,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
       otel-collector:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health',timeout=3).status==200 else 1)\""]
       interval: 15s
