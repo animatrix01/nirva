@@ -33,9 +33,26 @@ def postgres_checkpointer(database_url: str) -> BaseCheckpointSaver[Any]:
     from langgraph.checkpoint.postgres import PostgresSaver
 
     pool = _make_pool(database_url)
-    saver = PostgresSaver(pool)  # type: ignore[arg-type]
+    saver = PostgresSaver(pool, serde=_make_serializer())  # type: ignore[arg-type]
     saver.setup()
     return saver
+
+
+def _make_serializer() -> Any:
+    """Explicit msgpack allowlist for our state models (future-compat:
+    LangGraph will block unregistered pydantic deserialization)."""
+    from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+
+    return JsonPlusSerializer(
+        allowed_msgpack_modules=[
+            ("nirva_agent.state", "EvidenceItem"),
+            ("nirva_agent.state", "FinalReport"),
+            ("nirva_agent.state", "ProposedAction"),
+            ("nirva_agent.state", "Citation"),
+            ("nirva_agent.state", "Contradiction"),
+            ("nirva_agent.state", "ToolResult"),
+        ]
+    )
 
 
 def _make_pool(database_url: str) -> object:
