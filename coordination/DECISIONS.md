@@ -27,3 +27,8 @@
 - Live check against docker compose Postgres (scripts/postgres_checkpointer_live_check.py): setup() DDL ok, 8 checkpoints persisted per thread, fresh-process resume returns identical completed_steps with no restart from scratch.
 - PostgresSaver wired with explicit serde allowlist (JsonPlusSerializer allowed_msgpack_modules) for all nirva_agent.state pydantic models — removes LangGraph 'unregistered type' future-compat warning.
 - Re-run after planner node: Recall@5 1.0, citation validity 1.0, abstention 1.0, unauthorized 0, injection block 1.0 (results-20260905-105044).
+
+## [DECISION] 2026-09-05 — W3: Docker VM disk instability on the demo laptop
+- Three Docker Desktop crashes, each during heavy pip I/O inside image builds; pip logs show [Errno 5] I/O errors and Bus error core dumps; site-packages files written as null bytes (uvicorn main.py 0 bytes / null-filled).
+- Policy: NO heavy image builds on this host. Surgical path only: run container, force-reinstall uvicorn in-place, docker commit, then compose up. Dockerfile carries the equivalent repair layer for healthy hosts/CI.
+- Compose fixes landed: container-internal hostnames, native Ollama via host.docker.internal, qdrant bash TCP healthcheck (no wget in image), distroless otel-collector as started-dep (no shell, no healthcheck possible).
