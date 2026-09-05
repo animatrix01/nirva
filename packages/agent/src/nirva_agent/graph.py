@@ -10,6 +10,7 @@ that can only execute after human approval.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from typing import Any, Protocol, cast
 
@@ -123,6 +124,69 @@ def retrieve_node(state: NirvaState, retriever: RetrieverLike | None) -> dict[st
     return {
         "retrieved_evidence": [EvidenceItem.model_validate(item) for item in evidence],
         "completed_steps": ["retrieve"],
+        "current_node": "answer",
+        "last_event_seq": _seq(state),
+    }
+
+
+_STOPWORDS = frozenset(
+    [
+        "the", "a", "an", "is", "are", "was", "were", "why", "has", "have",
+        "had", "of", "in", "on", "for", "to", "and", "or", "it", "its",
+        "this", "that", "with", "be", "been", "by", "at", "from", "do",
+        "does", "did", "not", "no", "yes", "what", "when", "how",
+    ]
+)
+
+
+def refine_query(objective: str) -> str:
+    """Deterministic keyword reformulation for the second evidence pass.
+
+    The planner may schedule a refined retrieval; this variant query changes
+    hybrid ranking enough to surface chunks beyond the first pass without
+    consulting the model.
+    """
+    tokens = re.findall(r"[a-z0-9][\w-]*", objective.lower())
+    keywords = [t for t in tokens if t not in _STOPWORDS]
+    return " ".join(keywords) if keywords else objective
+
+
+def route_after_retrieve(state: NirvaState) -> str:
+    """Pure routing decision honoring the validated planner whitelist."""
+    plan = state.get("plan", [])
+    if "retrieve_refine" in plan and "retrieve_refine" not in state.get(
+        "completed_steps", []
+    ):
+        return "retrieve_refine"
+    return "answer"
+
+
+def _chunk_id_of(item: object) -> str | None:
+    """State channels hold EvidenceItem models mid-run but dicts on resume."""
+    if isinstance(item, dict):
+        return item.get("chunk_id")
+    return getattr(item, "chunk_id", None)
+
+
+def retrieve_refine_node(
+    state: NirvaState, retriever: RetrieverLike | None
+) -> dict[str, object]:
+    """Second evidence pass with a reformulated query, deduped by chunk_id."""
+    if retriever is None:
+        return {
+            "completed_steps": ["retrieve_refine"],
+            "current_node": "answer",
+            "last_event_seq": _seq(state),
+        }
+    seen = {_chunk_id_of(item) for item in state.get("retrieved_evidence", [])}
+    fresh = [
+        item
+        for item in retriever(state["user_role"], refine_query(state["objective"]))
+        if item.get("chunk_id") not in seen
+    ]
+    return {
+        "retrieved_evidence": [EvidenceItem.model_validate(item) for item in fresh],
+        "completed_steps": ["retrieve_refine"],
         "current_node": "answer",
         "last_event_seq": _seq(state),
     }
@@ -318,13 +382,21 @@ def build_investigation_graph(
     builder.add_node("intake", intake_node)
     builder.add_node("plan", lambda state: plan_node(state, gateway))
     builder.add_node("retrieve", lambda state: retrieve_node(state, retriever))
+    builder.add_node(
+        "retrieve_refine", lambda state: retrieve_refine_node(state, retriever)
+    )
     builder.add_node("answer", lambda state: answer_node(state, gateway))
     builder.add_node("finalize", finalize_node)
     builder.add_node("propose", propose_node)
     builder.add_edge(START, "intake")
     builder.add_edge("intake", "plan")
     builder.add_edge("plan", "retrieve")
-    builder.add_edge("retrieve", "answer")
+    builder.add_conditional_edges(
+        "retrieve",
+        route_after_retrieve,
+        {"retrieve_refine": "retrieve_refine", "answer": "answer"},
+    )
+    builder.add_edge("retrieve_refine", "answer")
     builder.add_edge("answer", "finalize")
     builder.add_edge("finalize", "propose")
     builder.add_edge("propose", END)

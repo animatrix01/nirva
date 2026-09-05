@@ -16,7 +16,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from nirva_agent.config import GatewayConfig, load_gateway_config
 from nirva_agent.gateway import GatewayClient
-from nirva_agent.graph import build_investigation_graph
+from nirva_agent.graph import build_investigation_graph, route_after_retrieve
 from nirva_agent.state import NirvaState
 
 # Model name is a constructor arg (AI lane decision); matches the registry in
@@ -24,7 +24,15 @@ from nirva_agent.state import NirvaState
 DEFAULT_MODEL = "qwen2.5:3b-instruct-q4_K_M"
 GATEWAY_TIMEOUT_SECONDS = 90.0
 
-NODE_SEQUENCE: tuple[str, ...] = ("intake", "plan", "retrieve", "answer", "finalize", "propose")
+NODE_SEQUENCE: tuple[str, ...] = (
+    "intake",
+    "plan",
+    "retrieve",
+    "retrieve_refine",
+    "answer",
+    "finalize",
+    "propose",
+)
 
 
 @dataclass
@@ -105,10 +113,17 @@ class LangGraphInvestigationGraph:
                     else:
                         ctx.emit("completed", "propose", None)
                     return dict(final_state)
-                idx = NODE_SEQUENCE.index(finished) if finished in NODE_SEQUENCE else -1
-                if 0 <= idx < len(NODE_SEQUENCE) - 1:
-                    pending = NODE_SEQUENCE[idx + 1]
+                if finished == "retrieve":
+                    # honor the planner's route decision — no false SSE event
+                    pending = route_after_retrieve(cast(NirvaState, final_state))
                     ctx.emit("node_started", pending, None)
+                else:
+                    idx = (
+                        NODE_SEQUENCE.index(finished) if finished in NODE_SEQUENCE else -1
+                    )
+                    if 0 <= idx < len(NODE_SEQUENCE) - 1:
+                        pending = NODE_SEQUENCE[idx + 1]
+                        ctx.emit("node_started", pending, None)
         except Exception as exc:
             cast(Any, exc).node = pending
             raise
