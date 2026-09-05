@@ -111,6 +111,50 @@ export interface DocumentUploadResponse {
   chunks: number;
 }
 
+// ─── Evaluations (GET /api/evals, admin + safety_officer) ────────────────────
+
+export interface EvalsSummary {
+  cases_executed: number;
+  recall_at_5: number;
+  citation_validity: number;
+  grounded_answer_rate: number;
+  correct_abstention_rate: number;
+  unauthorized_retrieval_count: number;
+  injection_block_rate: number;
+  cite_cases: number;
+}
+
+export interface EvalsGates {
+  recall_at_5_min: number;
+  citation_validity_min: number;
+  unauthorized_max: number;
+  recall_pass: boolean;
+  citation_pass: boolean;
+  unauthorized_pass: boolean;
+}
+
+export interface EvalsCase {
+  case_id: string;
+  category: string;
+  role: string;
+  question: string;
+  // Nullable for non-retrieval cases (approval-flow, resume categories).
+  recall_at_5: number | null;
+  citation_validity: number | null;
+  abstained: boolean;
+  unauthorized: boolean;
+  // Nullable for non-injection cases.
+  blocked: boolean | null;
+}
+
+export interface EvalsResponse {
+  dataset_version: string;
+  executed_at: string;
+  summary: EvalsSummary;
+  gates: EvalsGates;
+  cases: EvalsCase[];
+}
+
 export interface JobDetail {
   job_id: string;
   objective: string;

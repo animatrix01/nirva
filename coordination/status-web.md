@@ -59,9 +59,12 @@ Phase 1 â€” Skeleton
 
 ## In Progress
 
+- (none — B-series 6/6 complete; Terminal B at 100% of the assigned work order)
+
 - B-series (Terminal B final completion): B0/B1/B2/B3/B5 DONE. B4 (evaluations dashboard) BLOCKED on Terminal A announcing GET /api/evals in status-api.md (404 live as of 2026-08-31; packages/evals result JSONs exist so the endpoint should land soon â€” poll, don't guess). Remaining: B6 polish sweep.
 
 ## Done (this phase)
+- 2026-08-31: B4 — evaluations dashboard (endpoint LIVE, verified e245425): `/evaluations` (admin + safety_officer; others restricted) — header w/ dataset_version + executed_at (font-mono), six metric cards (Recall@5 100% / Citation validity 100% / Grounded 100% / Abstention 100% / Unauthorized 0 / Injection-block 100%, each with per-gate pass tag), gates banner ("All gates passed" or failed-gate list w/ thresholds), per-case table (105 rows, scrollable; null recall/citation/blocked render "—" per Terminal A nullability notes), honest "No evaluation run yet" state on 404, loading skeleton + error/retry. `getEvals()` in lib/api.ts; AppShell nav "Evals" (BarChart3, admin+safety). Live-verified: admin 200, safety 200, engineer 403, unauth 401 BEFORE building. 81 tests green; build 11 routes; /evaluations live 200.
 - 2026-08-30: B6 — polish sweep: global lime focus-visible ring (globals.css :where(a,button,input,textarea,select,summary,[tabindex])), investigations loading skeleton when jobs===null (was blank), documents empty-library message for roles with no visible docs; verified approvals/audit/admin-system/workbench all carry loading+error+empty states; spacing standardized via AppShell (max-w-6xl, responsive px) — 1366x768 + mobile widths hold. Poll status-api.md again before B4: /api/evals still not announced (404 live).
 
 - 2026-08-30: B0 â€” baseline repair: prior session's in-flight work was broken (29 react-hooks/static-components lint errors, 6 failing tests). Hoisted inline components (page.tsx JourneyWorkflow Node/ArrR/ArrD/Badge/BranchCard; CitationLink MetaRow), fixed render purity (Date.now in useMemo â†’ cutoff state via queueMicrotask), set-state-in-effect (featured confidence), new/page caseId â†’ event-handler generation, restored role="alert" on login error, rewrote stale landing tests for the modal-login dark design. [PROPOSAL] filed in DECISIONS.md: additive JobSummary fields (equipment_id/sources/confidence) â€” VERIFIED live against the real API (fields present in GET /api/jobs responses). 73 tests green.

@@ -5,6 +5,7 @@ import type {
   DocumentOut,
   DocumentType,
   DocumentUploadResponse,
+  EvalsResponse,
   HealthResponse,
   JobDetail,
   JobListQuery,
@@ -273,4 +274,8 @@ export function getAdminModels(): Promise<
   }>
 > {
   return request("GET", "/api/admin/models");
+}
+
+export function getEvals(): Promise<EvalsResponse> {
+  return request<EvalsResponse>("GET", "/api/evals");
 }

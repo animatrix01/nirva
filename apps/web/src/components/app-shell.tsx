@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
+  BarChart3,
   ClipboardCheck,
   FileText,
   FolderOpen,
@@ -64,6 +65,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: ScrollText,
     roles: ["admin", "safety_officer"],
     match: (p) => p.startsWith("/audit"),
+  },
+  {
+    href: "/evaluations",
+    label: "Evals",
+    icon: BarChart3,
+    roles: ["admin", "safety_officer"],
+    match: (p) => p.startsWith("/evaluations"),
   },
   {
     href: "/admin/system",
