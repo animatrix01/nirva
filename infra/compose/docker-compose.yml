@@ -123,6 +123,9 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - nirva-storage:/data/nirva-storage
+      # eval results are host artifacts (produced by run-evals.py on the
+      # host); serve them read-only into the api container
+      - ../../packages/evals/results:/srv/packages/evals/results:ro
     depends_on:
       postgres:
         condition: service_healthy

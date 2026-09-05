@@ -163,6 +163,46 @@ class HealthResponse(BaseModel):
     version: str
 
 
+class EvalsSummary(BaseModel):
+    cases_executed: int
+    recall_at_5: float
+    citation_validity: float
+    grounded_answer_rate: float
+    correct_abstention_rate: float
+    unauthorized_retrieval_count: int
+    injection_block_rate: float
+    cite_cases: int
+
+
+class EvalsGates(BaseModel):
+    recall_at_5_min: float
+    citation_validity_min: float
+    unauthorized_max: int
+    recall_pass: bool
+    citation_pass: bool
+    unauthorized_pass: bool
+
+
+class EvalsCase(BaseModel):
+    case_id: str
+    category: str
+    role: str
+    question: str
+    recall_at_5: float | None
+    citation_validity: float | None
+    abstained: bool
+    unauthorized: bool
+    blocked: bool | None
+
+
+class EvalsResponse(BaseModel):
+    dataset_version: str
+    executed_at: str
+    summary: EvalsSummary
+    gates: EvalsGates
+    cases: list[EvalsCase]
+
+
 def to_iso_utc(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 

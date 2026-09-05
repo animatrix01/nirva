@@ -8,6 +8,8 @@
 
 ## Done (list with dates + file paths)
 
+- 2026-09-05 | GET /api/evals LIVE — shape = {dataset_version, executed_at, summary, gates, cases}, roles admin+safety_officer, latest-run semantics. Per-case recall/citation_validity nullable (non-retrieval categories); `blocked` nullable (non-injection cases). Infra paths/URLs stripped by response model. Compose api service mounts packages/evals/results read-only. Verified live: admin 200, safety_officer 200, engineer 403, unauth 401, leak scan clean. 124 tests green. (`see evals commit`)
+
 - 2026-09-05 | A7: pre-judging checklist written from the verified reset ritual (`docs/pre-judging-checklist.md`); Docker images nirva-api/nirva-web exist. (`6cddc8f`)
 - 2026-09-04 | A3: episodic memory store — write after supervisor approval, read as tool-sourced evidence, admin list/delete, migration 0006. (`fe7a8f2`)
 - 2026-09-04 | A2: checkpointer wiring — postgres_checkpointer when DATABASE_URL is postgres, startup recovery for stuck running jobs, py.typed markers, serialization round-trip tests (pydantic state survives JsonPlusSerializer). (`8c0d825`)
