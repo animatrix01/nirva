@@ -14,6 +14,11 @@ COPY apps/api/ ./apps/api/
 
 RUN pip install --no-cache-dir /srv/packages/agent "/srv/packages/retrieval[parse,store]" /srv/packages/tools /srv/apps/api
 
+# Repair layer: an engine crash mid-build once left null-byte-corrupted
+# site-packages files; force-reinstall the entrypoint deps so the console
+# script is guaranteed intact (small, cached-base rebuild).
+RUN pip install --no-cache-dir --force-reinstall uvicorn==0.52.4
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
