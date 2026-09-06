@@ -36,6 +36,7 @@ uploads/
 .DS_Store
 _phase*_out.txt
 _live_storage/
+apps/api/storage/
 
 # generated demo corpus (regenerate via data/synthetic/generate_corpus.py)
 data/synthetic/generated/
