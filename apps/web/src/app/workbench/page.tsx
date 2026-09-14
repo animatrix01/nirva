@@ -10,6 +10,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  TriangleAlert,
   XCircle,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -119,15 +120,17 @@ function EngineerHome() {
     };
   }, [load]);
 
-  const recent = (jobs ?? []).slice(0, 6);
+  const latestJob = jobs && jobs.length > 0 ? jobs[0] : null;
+  const recentJobs = (jobs ?? []).slice(0, 8);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-white">Engineer workbench</h1>
-          <p className="mt-1 text-sm text-neutral-400">
-            Your investigations and evidence library.
+          <h1 className="text-2xl font-bold text-white">Engineer Workbench</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Submit equipment-failure questions and review findings.
           </p>
         </div>
         <Link
@@ -139,48 +142,185 @@ function EngineerHome() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Last Investigation */}
+      {latestJob && (
+        <div className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-5">
+          <p className="text-[10px] uppercase tracking-widest text-neutral-600 mb-3">
+            Last Investigation
+          </p>
+          
+          <div className="flex items-start gap-4">
+            {/* Image preview if available */}
+            {latestJob.equipment_id && (
+              <div className="size-20 shrink-0 rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
+                <img
+                  src={`/api/jobs/${latestJob.job_id}/image`}
+                  className="size-full object-cover"
+                  alt={latestJob.equipment_id}
+                  onError={(e) => {
+                    // Hide image on error
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
+            <div className="flex-1 min-w-0">
+              {/* Equipment ID */}
+              {latestJob.equipment_id && (
+                <p className="text-xs font-mono text-neutral-500">
+                  {latestJob.equipment_id}
+                </p>
+              )}
+              
+              {/* Objective */}
+              <p className="text-base font-semibold text-white mt-1">
+                {latestJob.objective_summary}
+              </p>
+              
+              {/* Status row */}
+              <div className="flex items-center gap-3 mt-2 text-sm">
+                <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+                  latestJob.status === "completed"
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : latestJob.status === "failed"
+                      ? "bg-red-500/10 text-red-400"
+                      : "bg-blue-500/10 text-blue-400"
+                }`}>
+                  {latestJob.status}
+                </span>
+                <span className="text-neutral-400 text-xs">
+                  {latestJob.sources} source{latestJob.sources !== 1 ? 's' : ''}
+                </span>
+                {latestJob.confidence !== null && (
+                  <span className="text-neutral-400 text-xs">
+                    {latestJob.confidence}% confidence
+                  </span>
+                )}
+              </div>
+              
+              {/* Action */}
+              <Link
+                href={`/investigations/${latestJob.job_id}`}
+                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#c8f135] hover:text-[#c8f135]/80 transition"
+              >
+                {latestJob.status === "completed" ? "Review" : "Continue"} investigation
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="flex items-center gap-3 text-sm">
+        <Link
+          href="/investigations/new"
+          className="flex items-center gap-2 text-neutral-300 hover:text-white transition"
+        >
+          <Plus className="size-4" />
+          Start investigation
+        </Link>
+        <span className="text-neutral-800">·</span>
         <Link
           href="/documents"
-          className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 transition hover:border-neutral-600"
+          className="flex items-center gap-2 text-neutral-300 hover:text-white transition"
         >
-          <FileSearch className="size-5 text-neutral-400" />
-          <div>
-            <p className="text-sm font-medium text-white">Document library</p>
-            <p className="text-xs text-neutral-500">
-              Upload manuals and review indexed sources
-            </p>
-          </div>
-        </Link>
-        <Link
-          href="/investigations"
-          className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 transition hover:border-neutral-600"
-        >
-          <FileText className="size-5 text-neutral-400" />
-          <div>
-            <p className="text-sm font-medium text-white">All investigations</p>
-            <p className="text-xs text-neutral-500">Filters, search and history</p>
-          </div>
+          <FileSearch className="size-4" />
+          Open document library
         </Link>
       </div>
 
-      <Panel label="Recent investigations">
+      {/* Recent Investigations - Table */}
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden">
+        <p className="border-b border-neutral-800 px-5 py-3 text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+          Recent Investigations
+        </p>
+        
         {error ? (
-          <ErrorBlock message={error} onRetry={() => void load()} />
+          <div className="p-5">
+            <ErrorBlock message={error} onRetry={() => void load()} />
+          </div>
         ) : jobs === null ? (
-          <LoadingBlock />
-        ) : recent.length === 0 ? (
-          <p className="py-4 text-sm text-neutral-500">
+          <div className="p-5">
+            <LoadingBlock />
+          </div>
+        ) : recentJobs.length === 0 ? (
+          <p className="px-5 py-6 text-sm text-neutral-500">
             No investigations yet — start one above.
           </p>
         ) : (
-          <div className="space-y-2">
-            {recent.map((j) => (
-              <JobRow key={j.job_id} job={j} />
-            ))}
-          </div>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-800">
+                    <th className="px-5 py-3 text-left text-xs font-medium text-neutral-500">
+                      Equipment
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-neutral-500">
+                      Investigation
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-neutral-500">
+                      Status
+                    </th>
+                    <th className="px-5 py-3 text-left text-xs font-medium text-neutral-500">
+                      Sources
+                    </th>
+                    <th className="px-5 py-3 text-right text-xs font-medium text-neutral-500">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentJobs.map((job) => (
+                    <tr key={job.job_id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition">
+                      <td className="px-5 py-3 font-mono text-xs text-neutral-400">
+                        {job.equipment_id || "—"}
+                      </td>
+                      <td className="px-5 py-3 text-neutral-200">
+                        <p className="truncate max-w-md">{job.objective_summary}</p>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+                          job.status === "completed"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : job.status === "failed"
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-blue-500/10 text-blue-400"
+                        }`}>
+                          {job.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-xs text-neutral-400">
+                        {job.sources} {job.confidence !== null ? `· ${job.confidence}%` : ''}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <Link
+                          href={`/investigations/${job.job_id}`}
+                          className="text-[#c8f135] hover:text-[#c8f135]/80 transition text-xs font-medium"
+                        >
+                          Open
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="border-t border-neutral-800 px-5 py-3">
+              <Link
+                href="/investigations"
+                className="text-xs text-neutral-400 hover:text-neutral-200 transition inline-flex items-center gap-1"
+              >
+                View all investigations
+                <ArrowRight className="size-3" />
+              </Link>
+            </div>
+          </>
         )}
-      </Panel>
+      </div>
     </div>
   );
 }
@@ -249,8 +389,8 @@ function SupervisorHome() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Supervisor workbench</h1>
-        <p className="mt-1 text-sm text-neutral-400">
+        <h1 className="text-2xl font-bold text-white">Supervisor Workbench</h1>
+        <p className="mt-1 text-sm text-neutral-500">
           Approve or reject consequential actions — nothing executes without you.
         </p>
       </div>
@@ -261,60 +401,71 @@ function SupervisorHome() {
         </p>
       )}
 
-      <Panel label={`Pending approvals (${pending.length})`}>
-        {error ? (
-          <ErrorBlock message={error} onRetry={() => void load()} />
-        ) : approvals === null ? (
-          <LoadingBlock />
-        ) : pending.length === 0 ? (
-          <p className="py-4 text-sm text-neutral-500">
-            Nothing awaiting your decision.
+      {/* Pending approvals - prominent */}
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-amber-500/30 px-5 py-3">
+          <TriangleAlert className="size-4 text-amber-400" />
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">
+            Pending Approval ({pending.length})
           </p>
-        ) : (
-          <div className="space-y-3">
-            {pending.map((a) => (
-              <div
-                key={a.approval_id}
-                className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-4"
-              >
-                <p className="text-[11px] font-semibold tracking-wide text-amber-400">
-                  {a.action.toUpperCase()} · RISK {a.risk_level.toUpperCase()}
-                </p>
-                <p className="mt-1 text-sm text-neutral-100">
-                  {a.arguments_summary}
-                </p>
-                <p className="mt-1 font-mono text-xs text-neutral-500">
-                  evidence: {a.evidence_refs.join(", ") || "—"}
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={decidingId === a.approval_id}
-                    onClick={() => decide(a.approval_id, "approved")}
-                    className="flex items-center gap-1.5 rounded-md bg-[#C4F135] px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
-                  >
-                    <CheckCircle2 className="size-3.5" />
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={decidingId === a.approval_id}
-                    onClick={() => decide(a.approval_id, "rejected")}
-                    className="flex items-center gap-1.5 rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
-                  >
-                    <XCircle className="size-3.5" />
-                    Reject
-                  </button>
-                  {decidingId === a.approval_id && (
-                    <Loader2 className="size-4 animate-spin text-neutral-500" />
-                  )}
+        </div>
+        
+        <div className="p-5">
+          {error ? (
+            <ErrorBlock message={error} onRetry={() => void load()} />
+          ) : approvals === null ? (
+            <LoadingBlock />
+          ) : pending.length === 0 ? (
+            <p className="py-4 text-sm text-neutral-500">
+              Nothing awaiting your decision.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {pending.map((a) => (
+                <div
+                  key={a.approval_id}
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/[0.04] p-4"
+                >
+                  <p className="text-[11px] font-semibold tracking-wide text-amber-400">
+                    {a.action.toUpperCase()} · RISK {a.risk_level.toUpperCase()}
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-100">
+                    {a.arguments_summary}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-neutral-500">
+                    evidence: {a.evidence_refs.join(", ") || "—"}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={decidingId === a.approval_id}
+                      onClick={() => decide(a.approval_id, "approved")}
+                      className="flex items-center gap-1.5 rounded-md bg-[#C4F135] px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={decidingId === a.approval_id}
+                      onClick={() => decide(a.approval_id, "rejected")}
+                      className="flex items-center gap-1.5 rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      <XCircle className="size-3.5" />
+                      Reject
+                    </button>
+                    {decidingId === a.approval_id && (
+                      <Loader2 className="size-4 animate-spin text-neutral-500" />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
+      {/* Recently decided - compact */}
       <Panel label="Recently decided">
         {approvals === null ? (
           <LoadingBlock />
@@ -389,9 +540,9 @@ function SafetyHome() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Safety workbench</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Tamper-evident audit trail and evidence review.
+        <h1 className="text-2xl font-bold text-white">Safety Workbench</h1>
+        <p className="mt-1 text-neutral-500 text-sm">
+          Review tamper-evident audit trail and investigation evidence.
         </p>
       </div>
 
@@ -516,9 +667,9 @@ function AdminHome() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Admin workbench</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Service health, local models and the document library.
+        <h1 className="text-2xl font-bold text-white">Admin Workbench</h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          Service health, local models and document library.
         </p>
       </div>
 

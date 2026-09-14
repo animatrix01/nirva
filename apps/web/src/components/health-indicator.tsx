@@ -5,7 +5,7 @@ import { getHealth } from "@/lib/api";
 import type { HealthResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Local/Offline system-status indicator backed by real GET /api/health data.
+// Simple system-status indicator (Online / Degraded)
 export function HealthIndicator() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [down, setDown] = useState(false);
@@ -38,21 +38,14 @@ export function HealthIndicator() {
     health.status === "ok" &&
     Object.values(health.services).every((s) => s === "up");
 
-  // Core services (postgres + storage) are up — app is functional even if
-  // Qdrant/model_gateway are down (offline dev or cold-start).
   const coreUp =
     !down &&
     health !== null &&
     health.services.postgres === "up" &&
     health.services.storage === "up";
 
-  const label = allUp
-    ? "Local / Offline"
-    : down
-      ? "Health unreachable"
-      : coreUp
-        ? "Online"
-        : "Degraded";
+  const label = allUp || coreUp ? "Online" : "Degraded";
+  const isHealthy = allUp || coreUp;
 
   return (
     <span
@@ -62,25 +55,20 @@ export function HealthIndicator() {
           ? "Health endpoint unreachable"
           : health
             ? `postgres:${health.services.postgres} qdrant:${health.services.qdrant} model_gateway:${health.services.model_gateway} storage:${health.services.storage}`
-            : "Checking local services…"
+            : "Checking services…"
       }
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium",
-        allUp
-          ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-          : coreUp
-            ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-            : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
-      )}
+      className="inline-flex items-center gap-1.5 text-xs"
     >
       <span
         aria-hidden
         className={cn(
-          "size-2 rounded-full",
-          allUp || coreUp ? "bg-emerald-600 dark:bg-emerald-400" : "animate-pulse bg-amber-600 dark:bg-amber-400"
+          "size-1.5 rounded-full",
+          isHealthy ? "bg-[#c8f135]" : "animate-pulse bg-amber-500"
         )}
       />
-      {label}
+      <span className={isHealthy ? "text-neutral-500" : "text-amber-500"}>
+        {label}
+      </span>
     </span>
   );
 }

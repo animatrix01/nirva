@@ -70,7 +70,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/evaluations",
     label: "Evals",
     icon: BarChart3,
-    roles: ["admin", "safety_officer"],
+    roles: ["admin"],
     match: (p) => p.startsWith("/evaluations"),
   },
   {
@@ -87,28 +87,53 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
   const role = auth?.user.role;
   const effectivePath = pathname === "" ? "/workbench" : pathname;
 
+  // Group navigation items by section
+  const coreItems = NAV_ITEMS.filter(item => 
+    ["Workbench", "Investigations", "Documents"].includes(item.label)
+  );
+  const adminItems = NAV_ITEMS.filter(item => 
+    !["Workbench", "Investigations", "Documents"].includes(item.label)
+  );
+
+  const renderNavItem = (item: NavItem) => {
+    if (item.roles && (!role || !item.roles.includes(role))) return null;
+    const active = item.match(effectivePath);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={`flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition-colors ${
+          active
+            ? "border-[#C4F135] bg-neutral-800/60 font-medium text-white"
+            : "border-transparent text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200"
+        }`}
+      >
+        <item.icon className="size-4 shrink-0" />
+        {item.label}
+      </Link>
+    );
+  };
+
+  const hasAdminItems = adminItems.some(item => 
+    !item.roles || (role && item.roles.includes(role))
+  );
+
   return (
-    <nav aria-label="Main" className="flex flex-col gap-0.5 px-3 py-2">
-      {NAV_ITEMS.map((item) => {
-        if (item.roles && (!role || !item.roles.includes(role))) return null;
-        const active = item.match(effectivePath);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition-colors ${
-              active
-                ? "border-[#C4F135] bg-neutral-800/60 font-medium text-white"
-                : "border-transparent text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200"
-            }`}
-          >
-            <item.icon className="size-4 shrink-0" />
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Main" className="flex flex-col gap-0.5 px-3 py-3">
+      {coreItems.map(renderNavItem)}
+      
+      {hasAdminItems && (
+        <>
+          <div className="px-3 pt-4 pb-2">
+            <p className="text-[10px] uppercase tracking-widest text-neutral-600">
+              {role === "safety_officer" ? "Compliance" : "Administration"}
+            </p>
+          </div>
+          {adminItems.map(renderNavItem)}
+        </>
+      )}
     </nav>
   );
 }
@@ -144,7 +169,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
           <img
             src="/nirva_logo_-removebg-preview.png"
             alt="NIRVA"
-            className="size-16 object-contain"
+            className="size-10 object-contain"
           />
           <span className="text-base font-bold tracking-tight text-white">NIRVA</span>
         </div>
@@ -184,7 +209,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
       <div className="lg:pl-60">
         {/* Slim topbar */}
         <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-          <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
+          <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
             <button
               type="button"
               aria-label="Open navigation"
@@ -194,7 +219,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
               <Menu className="size-5" />
             </button>
             <p className="text-sm font-semibold text-neutral-200">{title}</p>
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-4">
               <HealthIndicator />
               <RoleBadge role={auth.user.role} />
               <button
