@@ -533,10 +533,10 @@ function FaqAccordion() {
 
 // ─── Login Modal ──────────────────────────────────────────────────────────────
 const DEMO_ACCOUNTS = [
-  { username: "engineer" },
-  { username: "safety_officer" },
-  { username: "supervisor" },
-  { username: "admin" },
+  { username: "engineer",       role: "engineer",       line: "investigate & upload — cannot approve" },
+  { username: "safety_officer", role: "safety_officer", line: "audit everything — cannot upload or approve" },
+  { username: "supervisor",     role: "supervisor",     line: "the only role that can approve actions" },
+  { username: "admin",          role: "admin",          line: "publish documents & manage models — cannot approve" },
 ];
 
 function LoginModal({ onClose }: { onClose: () => void }) {
@@ -546,7 +546,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Close on Escape
   useEffect(() => {
     const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", fn);
@@ -572,16 +571,16 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
       role="dialog" aria-modal="true" aria-label="Sign in"
     >
-      {/* Backdrop — blurs the real landing page behind */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0 cursor-pointer"
-        style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", background: "rgba(10,11,12,0.45)" }}
+        style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", background: "rgba(10,11,12,0.50)" }}
         onClick={onClose}
       />
 
-      {/* Glass card */}
+      {/* Card — matches /login page width and style */}
       <div
-        className="relative z-10 w-full max-w-[460px] rounded-[20px] border p-10 shadow-2xl"
+        className="relative z-10 w-full max-w-[480px] rounded-[20px] border p-10 shadow-2xl"
         style={{
           background: "rgba(18, 19, 21, 0.70)",
           backdropFilter: "blur(28px) saturate(160%)",
@@ -590,7 +589,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           boxShadow: `0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 60px ${LIME}06, 0 24px 60px rgba(0,0,0,0.6)`,
         }}
       >
-        {/* Close button */}
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute right-4 top-4 flex size-7 items-center justify-center rounded-full border border-white/8 bg-white/5 text-stone-500 hover:text-white hover:bg-white/10 transition-colors"
@@ -602,65 +601,74 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         </button>
 
         {/* Branding */}
-        <div className="mb-7 flex flex-col items-center gap-3">
-          <NirvaLogo className="size-12" />
-          <h1 className="text-xl font-bold tracking-[0.12em] text-white">NIRVA</h1>
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <NirvaLogo className="size-14" />
+          <h1 className="text-2xl font-bold tracking-[0.12em] text-white">NIRVA</h1>
         </div>
 
         {/* Description */}
-        <div className="mb-7 text-center">
+        <div className="mb-8 text-center">
           <p className="text-sm leading-relaxed text-neutral-500">Offline industrial investigation workbench.</p>
           <p className="mt-1 text-sm leading-relaxed text-neutral-600">Sign in with your organization account.</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
             <label htmlFor="modal-username" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Username</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
               <input id="modal-username" name="username" type="text" autoComplete="username"
                 value={username} onChange={e => setUsername(e.target.value)}
                 placeholder="Enter your username" required
-                className="w-full rounded-lg border border-white/8 bg-white/5 py-3 pl-11 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/50 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/30 transition-colors"
+                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label htmlFor="modal-password" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
               <input id="modal-password" name="password" type="password" autoComplete="current-password"
                 value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Enter your password" required
-                className="w-full rounded-lg border border-white/8 bg-white/5 py-3 pl-11 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/50 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/30 transition-colors"
+                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
               />
             </div>
           </div>
           {error && (
-            <div className="rounded-lg border border-red-900/40 bg-red-950/30 px-4 py-2.5 text-sm text-red-400">{error}</div>
+            <div role="alert" className="rounded-lg border border-red-900/40 bg-red-950/30 px-4 py-3 text-sm text-red-400">{error}</div>
           )}
           <button type="submit" disabled={submitting}
-            className="mt-1 w-full rounded-lg py-3.5 text-[15px] font-semibold text-black transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-2 w-full rounded-lg py-[14px] text-[15px] font-semibold text-black transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: LIME, boxShadow: `0 4px 12px ${LIME}25` }}>
             {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
-        {/* Demo accounts */}
-        <div className="mt-7 border-t border-white/8 pt-5">
-          <p className="mb-3 text-center text-[10px] uppercase tracking-widest text-neutral-600">Demo accounts</p>
-          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-            {DEMO_ACCOUNTS.map(a => (
-              <button key={a.username} type="button"
+        {/* Demo accounts — 2×2 role cards, identical to /login page */}
+        <div className="mt-8 border-t border-white/8 pt-6">
+          <p className="mb-4 text-center text-xs uppercase tracking-widest text-neutral-600">Demo accounts</p>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {DEMO_ACCOUNTS.map((a) => (
+              <button
+                key={a.username}
+                type="button"
                 onClick={() => { setUsername(a.username); setPassword("nirva-demo-pass"); }}
-                className="rounded-md border border-white/8 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white/15 hover:bg-white/10">
-                {a.username}
+                className={`rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-white/20 hover:bg-white/10 ${
+                  username === a.username
+                    ? "border-[#c8f135]/50 bg-white/10"
+                    : "border-white/8 bg-white/5"
+                }`}
+              >
+                <p className="text-xs font-semibold text-white">{a.role}</p>
+                <p className="mt-0.5 text-[10px] leading-snug text-neutral-500">{a.line}</p>
               </button>
             ))}
           </div>
           <p className="text-center text-xs text-neutral-600">
-            password: <code className="rounded bg-white/8 px-2 py-0.5 font-mono text-xs text-white">nirva-demo-pass</code>
+            password:{" "}
+            <code className="rounded bg-white/8 px-2 py-0.5 font-mono text-xs text-white">nirva-demo-pass</code>
           </p>
         </div>
       </div>

@@ -38,6 +38,22 @@ export function HealthIndicator() {
     health.status === "ok" &&
     Object.values(health.services).every((s) => s === "up");
 
+  // Core services (postgres + storage) are up — app is functional even if
+  // Qdrant/model_gateway are down (offline dev or cold-start).
+  const coreUp =
+    !down &&
+    health !== null &&
+    health.services.postgres === "up" &&
+    health.services.storage === "up";
+
+  const label = allUp
+    ? "Local / Offline"
+    : down
+      ? "Health unreachable"
+      : coreUp
+        ? "Online"
+        : "Degraded";
+
   return (
     <span
       role="status"
@@ -52,17 +68,19 @@ export function HealthIndicator() {
         "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium",
         allUp
           ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-          : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+          : coreUp
+            ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+            : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
       )}
     >
       <span
         aria-hidden
         className={cn(
           "size-2 rounded-full",
-          allUp ? "bg-emerald-600 dark:bg-emerald-400" : "animate-pulse bg-amber-600 dark:bg-amber-400"
+          allUp || coreUp ? "bg-emerald-600 dark:bg-emerald-400" : "animate-pulse bg-amber-600 dark:bg-amber-400"
         )}
       />
-      {allUp ? "Local / Offline" : down ? "Health unreachable" : "Degraded"}
+      {label}
     </span>
   );
 }

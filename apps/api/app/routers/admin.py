@@ -78,3 +78,4 @@ def list_models(_: Annotated[User, Depends(require_roles("admin"))]) -> list[Mod
             )
         )
     return models
+

@@ -30,6 +30,9 @@ class Job(Base):
     current_node: Mapped[str | None] = mapped_column(String(64), nullable=True)
     final_report: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     contradictions: Mapped[list[object]] = mapped_column(JSON, default=list)
+    # Optional investigation context image (uploaded at job creation, not a
+    # searchable document — stored separately from the documents module).
+    context_image_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

@@ -94,6 +94,20 @@ def _make_retriever(
         from nirva_retrieval.embed import dense_embeddings, sparse_embedding
         from nirva_retrieval.search import search_documents
 
+        # DEV MODE: gracefully skip retrieval when Qdrant/Ollama are unavailable.
+        # The investigation still runs through all nodes; it just has no retrieved
+        # evidence (confidence will be 0.1 but the full UI flow is exercisable).
+        if settings.demo_mode:
+            import httpx as _httpx
+            try:
+                _httpx.get(settings.qdrant_url.rstrip("/") + "/healthz", timeout=1.0)
+            except (_httpx.HTTPError, OSError):
+                return []
+            try:
+                _httpx.get(settings.model_base_url.rstrip("/") + "/models", timeout=1.0)
+            except (_httpx.HTTPError, OSError):
+                return []
+
         if client is None:
             client = QdrantClient(
                 url=settings.qdrant_url, timeout=30, check_compatibility=False
@@ -246,6 +260,135 @@ def _make_retriever(
     return retrieve
 
 
+# ---------------------------------------------------------------------------
+# Demo-mode mock evidence — realistic P-204 investigation data injected when
+# Qdrant/Ollama are not available. Mirrors what production retrieval produces.
+# ---------------------------------------------------------------------------
+_MOCK_EVIDENCE = [
+    {
+        "chunk_id": "chk-mock-p204-0001",
+        "document_id": "doc-mock-maintenance-sop",
+        "document_title": "Pump P-204 Maintenance SOP",
+        "document_type": "sop",
+        "revision": "Rev-3",
+        "page": 4,
+        "section": "Mechanical Seal Replacement",
+        "equipment_id": "P-204",
+        "confidentiality_level": "internal",
+        "allowed_roles": ["engineer", "safety_officer", "supervisor", "admin"],
+        "text": (
+            "Mechanical seal replacement for P-204: Isolate pump electrically and apply "
+            "lockout-tagout per SOP-014 before any maintenance. Depressurise and drain "
+            "suction and discharge lines. Replace seal kit SEAL-P204-KIT; torque gland "
+            "bolts to 45 Nm in a star pattern. Restore flush line and run 30-minute "
+            "acceptance test at rated flow."
+        ),
+        "score": 0.91,
+        "source": "retrieval",
+    },
+    {
+        "chunk_id": "chk-mock-p204-0002",
+        "document_id": "doc-mock-incident-log",
+        "document_title": "Incident Log — Refinery Unit 4",
+        "document_type": "incident",
+        "revision": "Rev-1",
+        "page": 12,
+        "section": "P-204 Seal Failure 2026-07",
+        "equipment_id": "P-204",
+        "confidentiality_level": "internal",
+        "allowed_roles": ["engineer", "safety_officer", "supervisor", "admin"],
+        "text": (
+            "2026-07-14: P-204 reported hydrocarbon leak from mechanical seal. Operator "
+            "observed seal face wear exceeding 0.8 mm (limit 0.3 mm per OEM spec). Pump "
+            "isolated and tagged out. Root cause: coupling misalignment caused axial "
+            "loading on seal faces. Corrective action: seal replaced, coupling realigned "
+            "to 0.04 mm runout. Pump returned to service 2026-07-16."
+        ),
+        "score": 0.87,
+        "source": "retrieval",
+    },
+    {
+        "chunk_id": "chk-mock-p204-0003",
+        "document_id": "doc-mock-inspection-report",
+        "document_title": "Monthly Inspection Report — August 2026",
+        "document_type": "work_order",
+        "revision": "Rev-2",
+        "page": 7,
+        "section": "Rotating Equipment",
+        "equipment_id": "P-204",
+        "confidentiality_level": "internal",
+        "allowed_roles": ["engineer", "safety_officer", "supervisor", "admin"],
+        "text": (
+            "P-204 vibration reading: 4.2 mm/s RMS (alert threshold 3.5 mm/s, shutdown "
+            "7.0 mm/s). Bearing temperature: 68 °C (normal range ≤75 °C). Seal flush "
+            "flow: 1.8 L/min (spec 2.0 L/min — slightly below spec, monitor). "
+            "Recommendation: schedule seal inspection within 14 days. Alignment check "
+            "was returned to service still misaligned per work order WO-2026-0892."
+        ),
+        "score": 0.83,
+        "source": "retrieval",
+    },
+    {
+        "chunk_id": "tool-asset-2026-07-14T08:30",
+        "document_id": "asset-history-db",
+        "document_title": "Asset History (read-only tool)",
+        "document_type": "data",
+        "revision": "1",
+        "page": None,
+        "section": "seal_failure",
+        "equipment_id": "P-204",
+        "confidentiality_level": "internal",
+        "allowed_roles": ["engineer", "safety_officer", "supervisor", "admin"],
+        "text": "2026-07-14T08:30: Mechanical seal failure — hydrocarbon leak detected at gland. Pump P-204 isolated.",
+        "score": 1.0,
+        "source": "tool",
+    },
+    {
+        "chunk_id": "tool-inventory-SEAL-P204-KIT",
+        "document_id": "inventory-db",
+        "document_title": "Spare Parts Inventory (read-only tool)",
+        "document_type": "data",
+        "revision": "1",
+        "page": None,
+        "section": "SEAL-P204-KIT",
+        "equipment_id": "P-204",
+        "confidentiality_level": "internal",
+        "allowed_roles": ["engineer", "safety_officer", "supervisor", "admin"],
+        "text": "Part SEAL-P204-KIT: 3 available (last updated 2026-09-01)",
+        "score": 1.0,
+        "source": "tool",
+    },
+]
+
+_MOCK_FINDINGS = """## Root Cause Analysis — Pump P-204
+
+**Primary finding:** Recurring mechanical seal failure on pump P-204 is caused by coupling misalignment producing axial loading on seal faces beyond the OEM tolerance of 0.3 mm wear limit.
+
+**Supporting evidence:**
+- Incident log (2026-07-14) confirms seal face wear of 0.8 mm at last failure, with root cause attributed to coupling misalignment [chunk_id=chk-mock-p204-0002].
+- Monthly inspection (August 2026) records vibration at 4.2 mm/s RMS — above the 3.5 mm/s alert threshold — and seal flush flow below spec at 1.8 L/min [chunk_id=chk-mock-p204-0003].
+- Maintenance SOP requires coupling realignment to below 0.05 mm runout after any seal replacement [chunk_id=chk-mock-p204-0001].
+- Asset history tool confirms pump was returned to service without completed alignment (WO-2026-0892).
+
+**Contradiction detected:** Inspection report states alignment was completed successfully; asset history records pump returned to service still misaligned. Human verification required.
+
+**Recommended action:** Replace seal kit SEAL-P204-KIT (3 units in stock) and perform laser coupling alignment to ≤0.05 mm runout before restoring service. Follow SOP-014 lockout-tagout procedures throughout."""
+
+
+def _inject_mock_evidence(db: Session, job_id: str, user_role: str) -> None:
+    """Inject realistic P-204 mock evidence when Qdrant/Ollama are unavailable (DEMO_MODE=1)."""
+    from app.models import JobEvidence
+    for item in _MOCK_EVIDENCE:
+        existing = (
+            db.query(JobEvidence)
+            .filter(JobEvidence.job_id == job_id, JobEvidence.chunk_id == item["chunk_id"])
+            .first()
+        )
+        if existing is None:
+            db.add(JobEvidence(job_id=job_id, chunk_id=item["chunk_id"], payload=item))
+    db.commit()
+
+
 def run_job(job_id: str) -> None:
     db: Session = SessionLocal()
     failing_node = "intake"
@@ -292,6 +435,58 @@ def run_job(job_id: str) -> None:
         if job is None:
             return
         from app.models import JobEvidence
+
+        # DEV MODE: if no evidence was retrieved (Qdrant/Ollama unavailable),
+        # inject realistic mock P-204 evidence so the full UI is exercisable.
+        settings = get_settings()
+        retrieved = (result or {}).get("retrieved_evidence") or []
+        if settings.demo_mode and not retrieved:
+            _inject_mock_evidence(db, job_id, user_role)
+            # Also replace the ABSTAIN placeholder report with realistic findings
+            mock_citations = [
+                {"title": e["document_title"], "revision": e["revision"],
+                 "locator": f"page {e['page']}" if e.get("page") else e.get("section", "n/a"),
+                 "chunk_id": e["chunk_id"]}
+                for e in _MOCK_EVIDENCE
+                if e.get("source") == "retrieval"
+            ]
+            job.final_report = {
+                "findings": _MOCK_FINDINGS,
+                "confidence": 0.78,
+                "assumptions": [
+                    "Coupling alignment was not completed before last return to service (per asset history tool).",
+                    "Seal kit SEAL-P204-KIT is compatible with P-204 per OEM documentation.",
+                ],
+                "gaps": [
+                    "Vibration spectrum analysis not available — only RMS value recorded.",
+                    "Root cause of misalignment recurrence not yet identified.",
+                ],
+                "citations": mock_citations,
+            }
+            job.contradictions = [
+                {
+                    "topic": "Coupling alignment completion",
+                    "source_a": {"title": "Monthly Inspection Report — August 2026", "revision": "Rev-2",
+                                 "locator": "page 7", "chunk_id": "chk-mock-p204-0003"},
+                    "source_b": {"title": "Asset History (read-only tool)", "revision": "1",
+                                 "locator": "seal_failure", "chunk_id": "tool-asset-2026-07-14T08:30"},
+                    "claim_a": "alignment was completed successfully",
+                    "claim_b": "pump returned to service still misaligned",
+                }
+            ]
+            job.status = "completed"
+            job.current_node = None
+            job.updated_at = utcnow()
+            emit("completed", "propose", None)
+            db.commit()
+            append_audit_event(
+                db, actor="agent:retrieve", actor_role=user_role,
+                action="retrieval.search_documents",
+                argument_summary="dev-mode mock evidence injected (Qdrant unavailable)",
+                job_id=job_id,
+            )
+            db.commit()
+            return
 
         for item in (result or {}).get("retrieved_evidence") or []:
             existing = (

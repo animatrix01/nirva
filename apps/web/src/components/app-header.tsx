@@ -73,7 +73,7 @@ export function AppHeader({ title }: { title: string }) {
             className="border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 hover:text-white px-4"
             onClick={() => {
               clearAuth();
-              router.push("/login");
+              router.push("/");
             }}
           >
             Sign out

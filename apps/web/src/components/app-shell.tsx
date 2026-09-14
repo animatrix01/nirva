@@ -144,7 +144,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
           <img
             src="/nirva_logo_-removebg-preview.png"
             alt="NIRVA"
-            className="size-8 object-contain"
+            className="size-16 object-contain"
           />
           <span className="text-base font-bold tracking-tight text-white">NIRVA</span>
         </div>
@@ -201,7 +201,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
                 type="button"
                 onClick={() => {
                   clearAuth();
-                  router.push("/login");
+                  router.push("/");
                 }}
                 className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-200 transition hover:bg-neutral-800 hover:text-white"
               >
@@ -211,7 +211,7 @@ export function AppShell({ title, children }: { title: string; children: React.R
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">{children}</main>
+        <main className="w-full px-4 py-4 lg:px-6">{children}</main>
       </div>
     </div>
   );

@@ -145,6 +145,53 @@ body {
   position: relative;
 }
 
+/* ─── NIRVA logo breathing animation ───────────────────────────────────────
+   Subtle 3s scale + opacity breath. No glow, no color shift, no spin.
+   Used on the upload processing overlay.                                   */
+@keyframes nirva-breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.80; }
+  50%       { transform: scale(1.06); opacity: 1;    }
+}
+
+.animate-nirva-breathe {
+  animation: nirva-breathe 3.2s ease-in-out infinite;
+}
+
+/* ─── Scan ring — single slow arc rotation around the logo ─────────────────
+   A thin conic-gradient border that rotates once every 4s.
+   No glow. Serves as a restrained "working" signal.                        */
+@keyframes nirva-scan {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-nirva-scan {
+  animation: nirva-scan 4s linear infinite;
+}
+
+/* ─── Stage row entrance ────────────────────────────────────────────────────
+   Each processing stage fades in from 4px below.                           */
+@keyframes nirva-stage-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-stage-in {
+  animation: nirva-stage-in 0.35s ease-out forwards;
+  opacity: 0;
+}
+
+/* ─── Result panel fade-in ──────────────────────────────────────────────────
+   Slightly slower entrance for the result/summary view.                    */
+@keyframes nirva-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-fade-up {
+  animation: nirva-fade-up 0.4s ease-out forwards;
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -155,25 +202,25 @@ body::before {
     linear-gradient(to right, rgba(168, 162, 158, 0.13) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(168, 162, 158, 0.13) 1px, transparent 1px);
   background-size: 40px 40px;
-  /* Mask: visible on sides (~20%), fades to near-zero in center (~60–100%) */
+  /* Mask: visible on sides, softly present in center at reduced opacity */
   -webkit-mask-image: linear-gradient(
     to right,
     rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.8) 12%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.02) 50%,
-    rgba(0,0,0,0.08) 72%,
-    rgba(0,0,0,0.8) 88%,
+    rgba(0,0,0,0.9) 12%,
+    rgba(0,0,0,0.40) 28%,
+    rgba(0,0,0,0.25) 50%,
+    rgba(0,0,0,0.40) 72%,
+    rgba(0,0,0,0.9) 88%,
     rgba(0,0,0,1.0) 100%
   );
   mask-image: linear-gradient(
     to right,
     rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.8) 12%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.02) 50%,
-    rgba(0,0,0,0.08) 72%,
-    rgba(0,0,0,0.8) 88%,
+    rgba(0,0,0,0.9) 12%,
+    rgba(0,0,0,0.40) 28%,
+    rgba(0,0,0,0.25) 50%,
+    rgba(0,0,0,0.40) 72%,
+    rgba(0,0,0,0.9) 88%,
     rgba(0,0,0,1.0) 100%
   );
 }

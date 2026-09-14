@@ -110,6 +110,8 @@ export function toJobDetail(job: MockJobRecord): JobDetail {
     objective: job.objective,
     status: job.status,
     current_node: job.current_node,
+    equipment_id: null,
+    context_image_path: null,
     created_by: job.created_by,
     created_at: job.created_at,
     updated_at: job.updated_at,
