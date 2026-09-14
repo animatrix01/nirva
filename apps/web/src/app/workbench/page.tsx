@@ -150,16 +150,20 @@ function EngineerHome() {
           </p>
           
           <div className="flex items-start gap-4">
-            {/* Image preview if available */}
+            {/* Image preview if available - only show if equipment_id exists */}
             {latestJob.equipment_id && (
-              <div className="size-20 shrink-0 rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
+              <div className="size-20 shrink-0 rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden flex items-center justify-center">
                 <img
                   src={`/api/jobs/${latestJob.job_id}/image`}
                   className="size-full object-cover"
                   alt={latestJob.equipment_id}
+                  loading="lazy"
                   onError={(e) => {
-                    // Hide image on error
-                    e.currentTarget.style.display = 'none';
+                    // Replace with placeholder or hide
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `<div class="text-neutral-700 text-xs">${latestJob.equipment_id}</div>`;
+                    }
                   }}
                 />
               </div>
