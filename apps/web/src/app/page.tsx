@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BadgeCheck,
-  CheckCircle2,
   ClipboardCheck,
   FileSearch,
-  KeyRound,
   Link2,
   Lock,
   Shield,
+  ShieldCheck,
   TriangleAlert,
   User,
   UserCog,
@@ -713,10 +712,8 @@ export default function LandingPage() {
           </Link>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-8 text-sm text-stone-400">
-              <a href="#overview" className="hover:text-white transition">Overview</a>
               <a href="#how-it-works" className="hover:text-white transition">How it works</a>
               <a href="#roles" className="hover:text-white transition">Roles</a>
-              <a href="#faq" className="hover:text-white transition">FAQ</a>
               <a href="#demo" className="hover:text-white transition">Demo</a>
             </div>
             <Link
@@ -747,27 +744,26 @@ export default function LandingPage() {
               <div className="w-14 h-1 rounded-full" style={{ backgroundColor: LIME }} />
             </div>
 
-            {/* Description */}
-            <p className="text-[0.9375rem] leading-[1.7] text-stone-400 max-w-[500px]">
-              Submit a plain-language question about any equipment failure. NIRVA plans the
-              investigation, retrieves only what your role is cleared to read, surfaces contradictions,
-              and drafts a cited recommendation — pausing for a supervisor&apos;s sign-off before any
-              action executes.
+            {/* Product statement */}
+            <p className="text-[15px] leading-[1.7] text-stone-400 max-w-[520px]">
+              Submit an equipment-failure question. NIRVA investigates across plant documents, 
+              surfaces contradictions, and drafts a cited recommendation — pausing for supervisor 
+              approval before any action.
             </p>
 
-            {/* Role cards */}
-            <div className="grid grid-cols-4 gap-2">
+            {/* Trust anchors - 2x2 grid */}
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: FileSearch,     label: "Engineer",       sub: "investigates" },
-                { icon: ClipboardCheck, label: "Supervisor",     sub: "approves" },
-                { icon: UserShield,     label: "Safety Officer", sub: "audits" },
-                { icon: UserCog,        label: "Admin",          sub: "manages" },
-              ].map((r) => (
-                <div key={r.label} className="flex flex-col gap-1.5 rounded-lg border border-stone-800/60 bg-stone-900/30 px-2.5 py-2.5 hover:border-stone-700 hover:bg-stone-900/50 transition cursor-pointer">
-                  <r.icon className="size-4 text-stone-500" />
+                { icon: Shield, title: "Works offline", sub: "Zero cloud dependency" },
+                { icon: ShieldCheck, title: "ACL-enforced retrieval", sub: "Never retrieve-then-filter" },
+                { icon: Link2, title: "Evidence-backed", sub: "Every claim sourced" },
+                { icon: ClipboardCheck, title: "Human approval", sub: "No bypass, ever" },
+              ].map((anchor) => (
+                <div key={anchor.title} className="flex items-start gap-2.5 rounded-lg border border-stone-700/60 bg-stone-900/40 px-3 py-3 hover:border-stone-700 hover:-translate-y-0.5 transition-all duration-200">
+                  <anchor.icon className="size-4 shrink-0 mt-0.5" style={{ color: LIME }} />
                   <div>
-                    <p className="text-xs font-medium text-stone-200 leading-tight">{r.label}</p>
-                    <p className="text-[10px] text-stone-600 leading-tight mt-0.5">{r.sub}</p>
+                    <p className="text-[13px] font-semibold text-stone-200 leading-tight">{anchor.title}</p>
+                    <p className="text-[11px] text-stone-500 leading-tight mt-0.5">{anchor.sub}</p>
                   </div>
                 </div>
               ))}
@@ -792,23 +788,7 @@ export default function LandingPage() {
               </a>
             </div>
 
-            {/* Live Pipeline — 3 panels */}
-            <LivePipeline />
 
-            {/* Four principles */}
-            <div className="grid grid-cols-4 gap-4 pt-8 pb-16">
-              {[
-                "Zero cloud calls — verified with network disconnected",
-                "ACL enforced inside retrieval — never retrieve-then-filter",
-                "Every answer cites its source passage or is labeled an assumption",
-                "No consequential action executes without supervisor sign-off",
-              ].map((t) => (
-                <div key={t} className="flex items-start gap-1.5">
-                  <CheckCircle2 className="size-3.5 shrink-0 mt-0.5" style={{ color: LIME }} />
-                  <span className="text-xs leading-[1.45] text-stone-500">{t}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right column */}
@@ -821,9 +801,9 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* ── How it works ── */}
+      {/* ── Differentiation ── */}
       <div id="how-it-works" className="border-t border-stone-800/60 py-24">
-        <div style={{ maxWidth: "min(92vw, 1500px)", margin: "0 auto", paddingLeft: "2rem", paddingRight: "2rem" }}>
+        <div className="max-w-4xl mx-auto px-8">
 
           {/* Header */}
           <div className="mb-12 text-center">
@@ -833,17 +813,97 @@ export default function LandingPage() {
               <div className="size-1 rounded-full" style={{ backgroundColor: LIME }} />
               <div className="h-px w-8 bg-gradient-to-l from-transparent to-stone-700" />
             </div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500 mb-4">The Journey</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500 mb-4">Differentiation</p>
             <h2 className="text-3xl font-bold text-white">
-              From question to{" "}
-              <span style={{ color: LIME }}>signed-off action</span>
+              Why this isn&apos;t a chatbot
             </h2>
-            <p className="mt-4 max-w-lg mx-auto text-stone-400 text-sm leading-relaxed">
-              Every path is visible. Conflicts are surfaced, never buried. Thin evidence means NIRVA abstains honestly instead of guessing.
+            <p className="mt-4 max-w-xl mx-auto text-stone-400 text-sm leading-relaxed">
+              Three moments that separate investigation from conversation.
             </p>
           </div>
 
-          <JourneyWorkflow />
+          {/* Three proof moments */}
+          <div className="space-y-6">
+            {/* 1. Thin evidence */}
+            <div className="rounded-2xl border border-stone-700/50 bg-stone-900/30 px-8 py-6 hover:border-stone-700 transition-colors duration-300">
+              <div className="flex items-start gap-6">
+                <div className="shrink-0 flex items-center justify-center size-12 rounded-xl border border-blue-800/40 bg-blue-950/20">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] uppercase tracking-widest text-stone-500 mb-1">1. Thin Evidence</p>
+                  <h3 className="text-lg font-bold text-white mb-2">NIRVA abstains honestly</h3>
+                  <p className="text-[13px] leading-relaxed text-stone-400 mb-3">
+                    When retrieved evidence is insufficient to answer with confidence, NIRVA says so 
+                    explicitly and cites the gap — no hallucinated filler.
+                  </p>
+                  <div className="border-l-2 border-lime-500/40 pl-3">
+                    <p className="text-xs font-mono text-stone-500 italic">
+                      Example: &ldquo;Cannot determine bearing replacement schedule — OEM manual section 4.2 
+                      is missing from corpus.&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Conflicting records */}
+            <div className="rounded-2xl border border-stone-700/50 bg-stone-900/30 px-8 py-6 hover:border-stone-700 transition-colors duration-300">
+              <div className="flex items-start gap-6">
+                <div className="shrink-0 flex items-center justify-center size-12 rounded-xl border border-amber-800/40 bg-amber-950/20">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] uppercase tracking-widest text-stone-500 mb-1">2. Conflicting Records</p>
+                  <h3 className="text-lg font-bold text-white mb-2">Surfaces contradictions, never resolves silently</h3>
+                  <p className="text-[13px] leading-relaxed text-stone-400 mb-3">
+                    When sources disagree, NIRVA presents both side-by-side with full citations — 
+                    engineers decide which to trust.
+                  </p>
+                  <div className="border-l-2 border-lime-500/40 pl-3">
+                    <p className="text-xs font-mono text-stone-500 italic">
+                      Example: &ldquo;OEM p.41 specifies 4.2kN bearing load. WO-88712 records 5.8kN installation. 
+                      Mismatch flagged.&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Consequential action */}
+            <div className="rounded-2xl border border-stone-700/50 bg-stone-900/30 px-8 py-6 hover:border-stone-700 transition-colors duration-300">
+              <div className="flex items-start gap-6">
+                <div className="shrink-0 flex items-center justify-center size-12 rounded-xl border border-orange-800/40 bg-orange-950/20">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth="1.5" strokeLinecap="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] uppercase tracking-widest text-stone-500 mb-1">3. Consequential Action</p>
+                  <h3 className="text-lg font-bold text-white mb-2">Waits for supervisor approval</h3>
+                  <p className="text-[13px] leading-relaxed text-stone-400 mb-3">
+                    NIRVA drafts work orders and recommendations but never executes them. Supervisors 
+                    review, approve, or reject — with full audit trail.
+                  </p>
+                  <div className="border-l-2 border-lime-500/40 pl-3">
+                    <p className="text-xs font-mono text-stone-500 italic">
+                      Example: &ldquo;Recommendation ready: Replace bearing per OEM spec. Status: Awaiting 
+                      supervisor sign-off.&rdquo;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -927,7 +987,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Band + metrics ── */}
+      {/* ── Band + on-premise ── */}
       <div className="border-t border-stone-800/60 py-24">
         <div className="max-w-7xl mx-auto px-8">
           <div className="rounded-2xl border border-stone-700/60 bg-stone-900/40 px-8 py-10 text-center">
@@ -938,35 +998,6 @@ export default function LandingPage() {
               No cloud LLM. No data egress. No telemetry leaving the building. The entire pipeline — model, vectors, tools, audit — lives on your hardware and keeps working with the internet disconnected.
             </p>
           </div>
-          <div className="mt-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-stone-500 mb-6">The numbers that matter</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { n: "100%", label: "cloud calls eliminated" },
-                { n: "0",    label: "unauthorized chunks retrieved" },
-                { n: "0",    label: "approval bypasses recorded" },
-                { n: "5/5",  label: "golden runs, supervisor-approved" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl border border-stone-700/60 bg-stone-900/40 px-4 py-6">
-                  <p className="text-3xl font-bold text-white">{s.n}</p>
-                  <p className="mt-2 text-xs text-stone-500">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── FAQ ── */}
-      <div id="faq" className="border-t border-stone-800/60 py-20">
-        <div className="max-w-3xl mx-auto px-8">
-          <div className="mb-12 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500 mb-4">Frequently Asked Questions</p>
-            <h2 className="text-2xl font-bold text-white">Built for investigation.{" "}
-              <span style={{ color: LIME }}>Designed for trust.</span>
-            </h2>
-          </div>
-          <FaqAccordion />
         </div>
       </div>
 
@@ -975,8 +1006,9 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto px-8 text-center">
           <NirvaLogo className="size-16 mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-white">Ready to investigate?</h2>
-          <p className="mt-4 text-stone-400 text-sm">
-            Sign in with any demo account and run the golden scenario — investigate Pump P-204 from question to a cited, supervisor-approved work-order recommendation.
+          <p className="mt-4 text-stone-400 text-sm max-w-xl mx-auto">
+            Sign in with any demo account and run the golden investigation: Pump P-204 from equipment-failure question 
+            to supervisor-approved work order with full audit trail.
           </p>
           <div className="mt-8">
             <Link
