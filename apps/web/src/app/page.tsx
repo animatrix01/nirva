@@ -5,12 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BadgeCheck,
+  CheckCircle2,
   ClipboardCheck,
   FileSearch,
-  Link2,
   Lock,
-  Shield,
-  ShieldCheck,
   TriangleAlert,
   User,
   UserCog,
@@ -714,6 +712,7 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-8 text-sm text-stone-400">
               <a href="#how-it-works" className="hover:text-white transition">How it works</a>
               <a href="#roles" className="hover:text-white transition">Roles</a>
+              <a href="#faq" className="hover:text-white transition">FAQ</a>
               <a href="#demo" className="hover:text-white transition">Demo</a>
             </div>
             <Link
@@ -744,26 +743,27 @@ export default function LandingPage() {
               <div className="w-14 h-1 rounded-full" style={{ backgroundColor: LIME }} />
             </div>
 
-            {/* Product statement */}
-            <p className="text-[15px] leading-[1.7] text-stone-400 max-w-[520px]">
-              Submit an equipment-failure question. NIRVA investigates across plant documents, 
-              surfaces contradictions, and drafts a cited recommendation — pausing for supervisor 
-              approval before any action.
+            {/* Description */}
+            <p className="text-[0.9375rem] leading-[1.7] text-stone-400 max-w-[500px]">
+              Submit a plain-language question about any equipment failure. NIRVA plans the
+              investigation, retrieves only what your role is cleared to read, surfaces contradictions,
+              and drafts a cited recommendation — pausing for a supervisor&apos;s sign-off before any
+              action executes.
             </p>
 
-            {/* Trust anchors - 2x2 grid */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Role cards */}
+            <div className="grid grid-cols-4 gap-2">
               {[
-                { icon: Shield, title: "Works offline", sub: "Zero cloud dependency" },
-                { icon: ShieldCheck, title: "ACL-enforced retrieval", sub: "Never retrieve-then-filter" },
-                { icon: Link2, title: "Evidence-backed", sub: "Every claim sourced" },
-                { icon: ClipboardCheck, title: "Human approval", sub: "No bypass, ever" },
-              ].map((anchor) => (
-                <div key={anchor.title} className="flex items-start gap-2.5 rounded-lg border border-stone-700/60 bg-stone-900/40 px-3 py-3 hover:border-stone-700 hover:-translate-y-0.5 transition-all duration-200">
-                  <anchor.icon className="size-4 shrink-0 mt-0.5" style={{ color: LIME }} />
+                { icon: FileSearch,     label: "Engineer",       sub: "investigates" },
+                { icon: ClipboardCheck, label: "Supervisor",     sub: "approves" },
+                { icon: UserShield,     label: "Safety Officer", sub: "audits" },
+                { icon: UserCog,        label: "Admin",          sub: "manages" },
+              ].map((r) => (
+                <div key={r.label} className="flex flex-col gap-1.5 rounded-lg border border-stone-800/60 bg-stone-900/30 px-2.5 py-2.5 hover:border-stone-700 hover:bg-stone-900/50 transition cursor-pointer">
+                  <r.icon className="size-4 text-stone-500" />
                   <div>
-                    <p className="text-[13px] font-semibold text-stone-200 leading-tight">{anchor.title}</p>
-                    <p className="text-[11px] text-stone-500 leading-tight mt-0.5">{anchor.sub}</p>
+                    <p className="text-xs font-medium text-stone-200 leading-tight">{r.label}</p>
+                    <p className="text-[10px] text-stone-600 leading-tight mt-0.5">{r.sub}</p>
                   </div>
                 </div>
               ))}
@@ -788,19 +788,22 @@ export default function LandingPage() {
               </a>
             </div>
 
-            {/* Live Pipeline — shows local processing */}
-            <div className="pt-8">
-              <p className="text-[10px] uppercase tracking-widest text-stone-600 mb-3">See it running</p>
-              <LivePipeline />
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-3 text-[11px] text-stone-600">
-                <span>Local model</span>
-                <span>·</span>
-                <span>Zero cloud calls</span>
-                <span>·</span>
-                <span>Grounding citations</span>
-                <span>·</span>
-                <span>Confidence scoring</span>
-              </div>
+            {/* Live Pipeline — 3 panels */}
+            <LivePipeline />
+
+            {/* Four principles */}
+            <div className="grid grid-cols-4 gap-4 pt-8 pb-16">
+              {[
+                "Zero cloud calls — verified with network disconnected",
+                "ACL enforced inside retrieval — never retrieve-then-filter",
+                "Every answer cites its source passage or is labeled an assumption",
+                "No consequential action executes without supervisor sign-off",
+              ].map((t) => (
+                <div key={t} className="flex items-start gap-1.5">
+                  <CheckCircle2 className="size-3.5 shrink-0 mt-0.5" style={{ color: LIME }} />
+                  <span className="text-xs leading-[1.45] text-stone-500">{t}</span>
+                </div>
+              ))}
             </div>
 
           </div>
@@ -1012,6 +1015,19 @@ export default function LandingPage() {
               No cloud LLM. No data egress. No telemetry leaving the building. The entire pipeline — model, vectors, tools, audit — lives on your hardware and keeps working with the internet disconnected.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── FAQ ── */}
+      <div id="faq" className="border-t border-stone-800/60 py-20">
+        <div className="max-w-3xl mx-auto px-8">
+          <div className="mb-12 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500 mb-4">Frequently Asked Questions</p>
+            <h2 className="text-2xl font-bold text-white">Built for investigation.{" "}
+              <span style={{ color: LIME }}>Designed for trust.</span>
+            </h2>
+          </div>
+          <FaqAccordion />
         </div>
       </div>
 

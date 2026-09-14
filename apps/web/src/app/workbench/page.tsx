@@ -21,6 +21,7 @@ import {
   getAdminModels,
   getAudit,
   getHealth,
+  getJobImageBlob,
   listApprovals,
   listDocuments,
   listJobs,
@@ -97,6 +98,7 @@ function JobRow({ job }: { job: JobSummary }) {
 function EngineerHome() {
   const [jobs, setJobs] = useState<JobSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: { cancelled: boolean }) => {
     try {
@@ -104,6 +106,20 @@ function EngineerHome() {
       if (!signal?.cancelled) {
         setJobs(data);
         setError(null);
+        
+        // Load image for latest job if it has equipment_id
+        if (data.length > 0 && data[0].equipment_id) {
+          const jobId = data[0].job_id;
+          try {
+            const blob = await getJobImageBlob(jobId);
+            if (!signal?.cancelled) {
+              const url = URL.createObjectURL(blob);
+              setImageUrl(url);
+            }
+          } catch {
+            // Image not available, ignore
+          }
+        }
       }
     } catch (e: unknown) {
       if (signal?.cancelled) return;
@@ -117,6 +133,10 @@ function EngineerHome() {
     queueMicrotask(() => void load(signal));
     return () => {
       signal.cancelled = true;
+      // Clean up object URL
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
     };
   }, [load]);
 
@@ -150,21 +170,13 @@ function EngineerHome() {
           </p>
           
           <div className="flex items-start gap-4">
-            {/* Image preview if available - only show if equipment_id exists */}
-            {latestJob.equipment_id && (
+            {/* Image preview if available */}
+            {latestJob.equipment_id && imageUrl && (
               <div className="size-20 shrink-0 rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden flex items-center justify-center">
                 <img
-                  src={`/api/jobs/${latestJob.job_id}/image`}
+                  src={imageUrl}
                   className="size-full object-cover"
                   alt={latestJob.equipment_id}
-                  loading="lazy"
-                  onError={(e) => {
-                    // Replace with placeholder or hide
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `<div class="text-neutral-700 text-xs">${latestJob.equipment_id}</div>`;
-                    }
-                  }}
                 />
               </div>
             )}
