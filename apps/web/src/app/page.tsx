@@ -610,15 +610,15 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <label htmlFor="modal-username" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Username</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
-              <input id="modal-username" name="username" type="text" autoComplete="username"
+              <input id="modal-username" name="username" type="text" autoComplete="off"
                 value={username} onChange={e => setUsername(e.target.value)}
                 placeholder="Enter your username" required
-                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
+                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-stone-600 focus:outline-none focus:ring-0 transition-colors"
               />
             </div>
           </div>
@@ -626,10 +626,10 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             <label htmlFor="modal-password" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
-              <input id="modal-password" name="password" type="password" autoComplete="current-password"
+              <input id="modal-password" name="password" type="password" autoComplete="new-password"
                 value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Enter your password" required
-                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
+                className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-stone-600 focus:outline-none focus:ring-0 transition-colors"
               />
             </div>
           </div>

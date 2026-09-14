@@ -149,6 +149,12 @@ export function AppShell({ title, children }: { title: string; children: React.R
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Reduce grid opacity on all internal app pages
+  useEffect(() => {
+    document.body.classList.add("nirva-app");
+    return () => document.body.classList.remove("nirva-app");
+  }, []);
+
   useEffect(() => {
     if (mounted && auth === null) router.replace("/login");
   }, [mounted, auth, router]);

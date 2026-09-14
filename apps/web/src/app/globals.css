@@ -224,3 +224,13 @@ body::before {
     rgba(0,0,0,1.0) 100%
   );
 }
+
+/* ─── App shell pages — reduce grid opacity so dense text stays readable ───
+   The landing page grid at 0.13 is intentional (wide layout, large type).
+   Internal product pages have dense tables, mono text and small fonts —
+   drop to 0.05 so the grid stays present but never fights the content.   */
+body.nirva-app::before {
+  background-image:
+    linear-gradient(to right, rgba(168, 162, 158, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 162, 158, 0.05) 1px, transparent 1px);
+}

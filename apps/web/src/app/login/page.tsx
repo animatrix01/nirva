@@ -161,7 +161,7 @@ export default function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col gap-5">
             {/* Username Field */}
             <div className="flex flex-col gap-2">
               <label
@@ -179,12 +179,12 @@ export default function LoginPage() {
                   id="username"
                   name="username"
                   type="text"
-                  autoComplete="username"
+                  autoComplete="off"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
                   required
-                  className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
+                  className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-stone-600 focus:outline-none focus:ring-0 transition-colors"
                 />
               </div>
             </div>
@@ -206,12 +206,12 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-[#c8f135]/60 focus:outline-none focus:ring-1 focus:ring-[#c8f135]/40 transition-colors"
+                  className="w-full rounded-lg border border-white/8 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 focus:border-stone-600 focus:outline-none focus:ring-0 transition-colors"
                 />
               </div>
             </div>
