@@ -788,6 +788,20 @@ export default function LandingPage() {
               </a>
             </div>
 
+            {/* Live Pipeline — shows local processing */}
+            <div className="pt-8">
+              <p className="text-[10px] uppercase tracking-widest text-stone-600 mb-3">See it running</p>
+              <LivePipeline />
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-3 text-[11px] text-stone-600">
+                <span>Local model</span>
+                <span>·</span>
+                <span>Zero cloud calls</span>
+                <span>·</span>
+                <span>Grounding citations</span>
+                <span>·</span>
+                <span>Confidence scoring</span>
+              </div>
+            </div>
 
           </div>
 
