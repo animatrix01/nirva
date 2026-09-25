@@ -79,7 +79,7 @@ def export_excel(
     job = _job_or_403(db, user, job_id)
     data = collect(db, job, user.role)
     out_path = f"{reports_dir()}/{job.id}.xlsx"
-    build_xlsx(data, out_path)
+    build_xlsx(data, out_path, code=data.working_code, result=data.working_code_result)
     return FileResponse(
         out_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

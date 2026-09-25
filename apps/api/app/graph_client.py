@@ -29,6 +29,7 @@ NODE_SEQUENCE: tuple[str, ...] = (
     "plan",
     "retrieve",
     "retrieve_refine",
+    "code",
     "answer",
     "finalize",
     "propose",
@@ -99,6 +100,10 @@ class LangGraphInvestigationGraph:
                     ctx.emit("tool_called", "retrieve", "search_documents")
                     if delta.get("retrieved_evidence"):
                         ctx.emit("evidence_added", "retrieve", None)
+                if finished == "code" and isinstance(delta, dict):
+                    ctx.emit("tool_called", "code", "run_python")
+                    if delta.get("retrieved_evidence"):
+                        ctx.emit("evidence_added", "code", None)
                 if finished == "finalize":
                     report = final_state.get("final_report")
                     if report is None:
@@ -113,7 +118,7 @@ class LangGraphInvestigationGraph:
                     else:
                         ctx.emit("completed", "propose", None)
                     return dict(final_state)
-                if finished == "retrieve":
+                if finished in ("retrieve", "retrieve_refine"):
                     # honor the planner's route decision — no false SSE event
                     pending = route_after_retrieve(cast(NirvaState, final_state))
                     ctx.emit("node_started", pending, None)

@@ -308,6 +308,29 @@ def run_job(job_id: str) -> None:
                     )
                 )
         actions = (result or {}).get("proposed_actions") or []
+        from app.models import CodeRun
+
+        for tool_result in (result or {}).get("tool_results") or []:
+            name = getattr(tool_result, "tool_name", "")
+            if name != "run_python":
+                continue
+            data = getattr(tool_result, "data", {}) or {}
+            existing_run = db.query(CodeRun).filter(CodeRun.job_id == job_id).first()
+            if existing_run is None:
+                import uuid as _uuid
+
+                db.add(
+                    CodeRun(
+                        id=f"coderun-{_uuid.uuid4().hex[:12]}",
+                        job_id=job_id,
+                        task=job.objective,
+                        code=str(data.get("code", "")),
+                        stdout=str(data.get("stdout", "")),
+                        stderr=str(getattr(tool_result, "error", "") or ""),
+                        ok=bool(getattr(tool_result, "ok", False)),
+                        created_by=job.created_by,
+                    )
+                )
         job.contradictions = [
             c.model_dump() if hasattr(c, "model_dump") else dict(c)
             for c in ((result or {}).get("contradictions") or [])

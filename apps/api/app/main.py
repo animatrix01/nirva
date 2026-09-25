@@ -13,6 +13,7 @@ from app.routers import (
     artifacts,
     audit,
     auth,
+    code,
     documents,
     evals,
     evidence,
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
         expose_headers=["Last-Event-ID", "X-Accel-Buffering"],
     )
     app.include_router(auth.router)
+    app.include_router(code.router)
     app.include_router(jobs.router)
     app.include_router(artifacts.router)
     app.include_router(evidence.router)

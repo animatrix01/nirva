@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, cast
 
-from app.models import Approval, AssetEvent, Job, JobEvidence
+from app.models import Approval, AssetEvent, CodeRun, Job, JobEvidence
 from sqlalchemy.orm import Session
 
 
@@ -53,6 +53,8 @@ class ReportData:
     recommendation: str = ""
     recommendation_risk: str = ""
     recommendation_action: str = ""
+    working_code: str | None = None
+    working_code_result: str | None = None
 
 
 def _locator(payload: dict[str, Any]) -> str:
@@ -140,6 +142,7 @@ def collect(db: Session, job: Job, role: str) -> ReportData:
         .order_by(Approval.requested_at.desc())
         .first()
     )
+    code_run = db.query(CodeRun).filter(CodeRun.job_id == job.id).first()
 
     return ReportData(
         job_id=job.id,
@@ -158,6 +161,8 @@ def collect(db: Session, job: Job, role: str) -> ReportData:
         recommendation=str(approval.arguments_summary or "") if approval else "",
         recommendation_risk=str(approval.risk_level or "") if approval else "",
         recommendation_action=str(approval.action or "") if approval else "",
+        working_code=code_run.code if code_run else None,
+        working_code_result=code_run.stdout if code_run else None,
     )
 
 

@@ -39,3 +39,8 @@
 - db.py: bare postgresql:// now rewritten to postgresql+psycopg:// for the engine (psycopg2 not shipped); raw postgresql:// still reaches the checkpointer pool untouched.
 - Compose-stack golden flow PASS: engineer submit -> hybrid retrieval 13 artifacts + asset-history + inventory tools -> contradiction detected -> awaiting_approval -> supervisor approved -> WO-541f19f7 created -> audit chain_valid True (8 events) -> A3 episodic memory written. Web served on :3000 by container.
 - Teardown: compose down (volumes kept); qdrant/postgres/otel restarted as dev support; dev API :8000 + web :3000 restored.
+
+## [DECISION] 2026-09-06 — E3: model-generated code executes in a host-level sandbox (scoped follow-up noted)
+- run_python (nirva_tools.sandbox): AST denylist (imports incl. os/subprocess/socket, builtins eval/exec/open/__import__/getattr-family), subprocess python -I with empty env + temp cwd, 5s wall-clock kill, 8KB output caps. TOOL_PERMISSIONS run_python = engineer/supervisor/admin; safety_officer view-only.
+- Winning Plan constitution tension: the plan forbids executing model-generated SQL/queries against operational data. Generated *analysis* code is a new surface the teammate requested; host-level sandboxing is best-effort — a true guarantee needs OS-level isolation (container/job-object). Logged as scoped follow-up; unbounded loops are killed by timeout (tested), reflection escapes blocked (tested).
+- Legacy JobEvidence rows without allowed_roles metadata fall back to job-level visibility in exports (strict enforcement only where ACL metadata exists); restricted docs written WITH allowed_roles stay excluded.

@@ -10,17 +10,21 @@ from __future__ import annotations
 import json
 import re
 
-PLANNING_WHITELIST = frozenset({"retrieve", "retrieve_refine", "answer"})
+PLANNING_WHITELIST = frozenset({"retrieve", "retrieve_refine", "code", "answer"})
 DEFAULT_PLAN: list[str] = ["retrieve", "answer"]
 MAX_PLAN_STEPS = 4
 
 _PLANNER_SYSTEM = (
     "You are the planner of an industrial investigation engine. "
     "Choose a retrieval plan for the objective. Reply with ONLY a JSON array "
-    "of steps chosen from: retrieve, retrieve_refine, answer. "
+    "of steps chosen from: retrieve, retrieve_refine, code, answer. "
     "Rules: start with retrieve; answer must be last; at most 4 steps. "
     "Use retrieve_refine only for multi-part objectives that likely need a "
-    "second, more specific evidence pass."
+    "second, more specific evidence pass. "
+    "Use code only when the objective asks for data analysis or computation "
+    "over operational readings (vibration, temperature, inventory figures); "
+    "the code step runs generated analysis code in a sandbox and records the "
+    "verified result as tool evidence."
 )
 
 
