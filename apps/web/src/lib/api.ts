@@ -226,6 +226,47 @@ export function listDocuments(): Promise<DocumentOut[]> {
   return request<DocumentOut[]>("GET", "/api/documents");
 }
 
+export interface CodeRunResult {
+  run_id: string;
+  job_id: string;
+  task: string;
+  code: string;
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  exit_code: number;
+}
+
+export function runCode(jobId: string, task: string): Promise<CodeRunResult> {
+  return request<CodeRunResult>("POST", "/api/code/run", {
+    body: { job_id: jobId, task },
+  });
+}
+
+export function getCodeRun(jobId: string): Promise<CodeRunResult> {
+  return request<CodeRunResult>("GET", `/api/code/${encodeURIComponent(jobId)}`);
+}
+
+// Generated analysis script (.py) — authed blob like other file downloads.
+export async function downloadCodePy(jobId: string): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(
+    `${BASE_URL}/api/code/${encodeURIComponent(jobId)}/download`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
 export interface DocumentUploadPayload {
   file: File;
   title: string;

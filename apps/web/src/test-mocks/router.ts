@@ -423,6 +423,43 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       return detail;
     },
   },
+  {
+    method: "POST",
+    pattern: /^\/api\/code\/run$/,
+    handler: ({ body, token }) => {
+      const username = requireAuth(token);
+      const caller = MOCK_USERS.find((u) => u.username === username)!;
+      if (caller.role === "safety_officer") {
+        throw new ApiError(403, "Forbidden");
+      }
+      const { job_id: jobId, task } = (body ?? {}) as {
+        job_id?: unknown;
+        task?: unknown;
+      };
+      const job = typeof jobId === "string" ? findMockJob(jobId) : undefined;
+      if (!job) throw new ApiError(404, "Unknown job id", "job_id");
+      return {
+        run_id: "coderun-mock-1",
+        job_id: job.job_id,
+        task: typeof task === "string" ? task : "",
+        code: "readings = [2.0, 3.9, 4.1]\nprint(max(readings))",
+        ok: true,
+        stdout: "4.1\n",
+        stderr: "",
+        exit_code: 0,
+      };
+    },
+  },
+  {
+    method: "GET",
+    pattern: /^\/api\/code\/([^/]+)$/,
+    handler: ({ params, token }) => {
+      requireAuth(token);
+      const job = findMockJob(params[0]);
+      if (!job) throw new ApiError(404, "Unknown job id", "job_id");
+      throw new ApiError(404, "No code run for this job");
+    },
+  },
 ];
 
 export function handleMockRequest(
