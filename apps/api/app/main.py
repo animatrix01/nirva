@@ -16,6 +16,7 @@ from app.routers import (
     documents,
     evals,
     evidence,
+    exports,
     health,
     jobs,
     memories,
@@ -64,6 +65,8 @@ def create_app() -> FastAPI:
     app.include_router(audit.router)
     app.include_router(admin.router)
     app.include_router(evals.router)
+    app.include_router(exports.router)
+    app.include_router(exports.documents_router)
     app.include_router(health.router)
 
     @app.exception_handler(Exception)
