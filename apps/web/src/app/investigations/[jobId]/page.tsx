@@ -20,7 +20,7 @@ import {
 } from "@/components/ai-elements/sources";
 import { useStoredAuth } from "@/lib/auth-client";
 import { bannerForStatus } from "@/components/investigation/timeline";
-import { ApiError, getJob, getArtifact, decideApproval } from "@/lib/api";
+import { ApiError, downloadJobExport, getJob, getArtifact, decideApproval } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
 import { isArtifactPayloadRef } from "@/lib/artifacts";
 import type {
@@ -32,6 +32,66 @@ import type { CitationRef, JobDetail, SseEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type StreamState = "connecting" | "open" | "reconnecting" | "closed";
+
+function ExportButton({
+  jobId,
+  format,
+  label,
+  ext,
+}: {
+  jobId: string | undefined;
+  format: "pptx" | "word" | "excel";
+  label: string;
+  ext: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDownload = () => {
+    if (!jobId || busy) return;
+    setBusy(true);
+    setError(null);
+    void downloadJobExport(jobId, format)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `investigation-${jobId.slice(0, 8)}.${ext}`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      })
+      .catch((e: unknown) => {
+        setError(
+          e instanceof ApiError
+            ? e.body.detail
+            : e instanceof Error
+              ? e.message
+              : "Download failed"
+        );
+      })
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <span className="inline-flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={!jobId || busy}
+        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+      >
+        {busy ? "…" : label}
+      </button>
+      {error && (
+        <span role="alert" className="text-xs text-red-700 dark:text-red-400">
+          {error}
+        </span>
+      )}
+    </span>
+  );
+}
 
 const BANNER_TONE: Record<string, string> = {
   info: "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
@@ -212,6 +272,14 @@ export default function InvestigationDetailPage() {
           <p className="text-muted-foreground text-xs">
             Started by <span className="font-mono">{job.created_by}</span>
           </p>
+          {(job.status === "completed" || job.status === "awaiting_approval") && (
+            <div className="mt-1 flex flex-wrap items-center gap-2" role="group" aria-label="Download report">
+              <span className="text-muted-foreground text-xs font-medium">Download</span>
+              <ExportButton jobId={jobId} format="pptx" label="PPT" ext="pptx" />
+              <ExportButton jobId={jobId} format="word" label="Word" ext="docx" />
+              <ExportButton jobId={jobId} format="excel" label="Excel" ext="xlsx" />
+            </div>
+          )}
           <p aria-live="polite" className="sr-only">
             Stream {streamState}
             {live ? `, job status ${job.status}` : `, job status ${job.status}`}

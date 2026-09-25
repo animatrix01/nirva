@@ -180,6 +180,48 @@ export async function getDocumentFile(documentId: string): Promise<Blob> {
   return await response.blob();
 }
 
+export type ExportFormat = "pptx" | "word" | "excel";
+
+// Generated report files (PPT/Word/Excel) — fetched as an authed blob,
+// same pattern as document files (anchors cannot send Authorization headers).
+export async function downloadJobExport(jobId: string, format: ExportFormat): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(
+    `${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/export/${format}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
+// Visible document library as a workbook (ACL-filtered server-side).
+export async function downloadDocumentsExcel(): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(`${BASE_URL}/api/documents/export/excel`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
 export function listDocuments(): Promise<DocumentOut[]> {
   return request<DocumentOut[]>("GET", "/api/documents");
 }

@@ -23,6 +23,7 @@ import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
+  downloadDocumentsExcel,
   getDocumentContent,
   getDocumentFile,
   listDocuments,
@@ -445,6 +446,31 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentOut[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const onExportLibrary = () => {
+    if (exportBusy) return;
+    setExportBusy(true);
+    setExportError(null);
+    void downloadDocumentsExcel()
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "nirva-documents.xlsx";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      })
+      .catch((e: unknown) => {
+        setExportError(
+          e instanceof ApiError ? e.body.detail : "Export failed"
+        );
+      })
+      .finally(() => setExportBusy(false));
+  };
 
   const load = useCallback((signal: { cancelled: boolean }) => {
     void listDocuments()
@@ -484,9 +510,30 @@ export default function DocumentsPage() {
         ) : (
           <div className="flex flex-col gap-6">
             <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-                Library ({documents?.length ?? 0})
-              </h2>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide">
+                  Library ({documents?.length ?? 0})
+                </h2>
+                {documents && documents.length > 0 && (
+                  <span className="inline-flex flex-col gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onExportLibrary}
+                      disabled={exportBusy}
+                      className="bg-white"
+                    >
+                      {exportBusy ? "Exporting…" : "Export Excel"}
+                    </Button>
+                    {exportError && (
+                      <span role="alert" className="text-xs text-red-700 dark:text-red-400">
+                        {exportError}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
               <p className="text-muted-foreground mb-2 text-xs">
                 List is ACL-filtered by the API for your role — you only see
                 documents you are allowed to see.
