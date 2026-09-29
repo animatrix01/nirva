@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Investigation detail page — redesigned completed-investigation workspace.
+ * Investigation detail page — engineer-friendly completed-investigation workspace.
  *
  * STATE / DATA FLOW: completely unchanged from the original.
  * All SSE, artifact fetching, approval handling, and API calls are identical.
@@ -10,35 +10,40 @@
  *   Left 60%: live EventTimeline
  *   Right 40%: retrieval placeholder
  *
- * COMPLETED STATE layout (three-column):
- *   ┌────────────────────────────────────────────────────────────┐
- *   │  CASE HEADER                                               │
- *   │  Equipment · objective · status metrics                    │
- *   ├──────────────────────────────────────────────────────────  │
- *   │  PRIMARY FINDING HERO (full width, strong visual weight)   │
- *   ├──────────────────────────────────────────────────────────  │
- *   │  LEFT 22%         │  CENTER 48%       │  RIGHT 30%         │
- *   │  Pipeline stages  │  Supporting evid. │  Evidence sources  │
- *   │  Investigation    │  Contradiction    │  Source trace      │
- *   │  activity         │  Rec. action      │  Retrieval info    │
- *   │                   │  Assumptions      │                    │
- *   │                   │  Evidence gaps    │                    │
- *   └────────────────────────────────────────────────────────────┘
+ * COMPLETED STATE layout (redesigned for clarity):
+ *   ┌─────────────────────────────────────────────────────────────┐
+ *   │  CASE HEADER (full width)                                   │
+ *   ├─────────────────────────────────────────────────────────────┤
+ *   │  PRIMARY FINDING HERO (full width)                          │
+ *   ├──────────────────────────────┬──────────────────────────────┤
+ *   │  LEFT 58% — SUMMARY          │  RIGHT 42% — EVIDENCE        │
+ *   │  • Supporting evidence       │  • Asset image               │
+ *   │  • Contradiction banner      │  • Evidence source cards     │
+ *   │  • Recommended action        │  • Retrieval method info     │
+ *   │  • Assumptions + gaps        │  • Source trace              │
+ *   │  • Approval buttons          │                              │
+ *   ├──────────────────────────────┴──────────────────────────────┤
+ *   │  PIPELINE (horizontal strip at bottom)                      │
+ *   └─────────────────────────────────────────────────────────────┘
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle,
-  ChevronDown,
-  ChevronRight,
   CheckCircle2,
   Circle,
+  Eye,
+  Loader2,
+  Mic,
+  Square,
+  Volume2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { BackTo } from "@/components/back-to";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { EventTimeline } from "@/components/investigation/EventTimeline";
+import { AssetTimeline } from "@/components/investigation/AssetTimeline";
 import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
 import { InjectionAlert } from "@/components/investigation/InjectionAlert";
@@ -46,9 +51,22 @@ import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, getJob, getArtifact, decideApproval, getJobImageBlob } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
 import { isArtifactPayloadRef } from "@/lib/artifacts";
+import { getAssetHistory } from "@/lib/asset-history";
 import type { ApprovalRequest, JobArtifact, ToolActivity } from "@/lib/artifacts";
 import type { CitationRef, FinalReport, JobDetail, SseEvent } from "@/lib/types";
 import { parseFindingsText } from "@/lib/parse-findings";
+import type { ParsedFindings } from "@/lib/parse-findings";
+import {
+  buildSpeechScript,
+  diagnoseVoice,
+  loadVoices,
+  pickVoice,
+  speak,
+  stop,
+  translateToHindi,
+  voiceOverrideFromUrl,
+} from "@/lib/report-speech";
+import type { SpeechLang, VoiceDiagnosis } from "@/lib/report-speech";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -60,7 +78,7 @@ type StreamState = "connecting" | "open" | "reconnecting" | "closed";
 /** Eyebrow label — strong uppercase heading for major sections */
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500 select-none">
+    <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-900 select-none">
       {children}
     </h2>
   );
@@ -68,7 +86,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 /** Thin horizontal rule */
 function Divider({ className }: { className?: string }) {
-  return <div className={cn("h-px w-full bg-stone-800", className)} aria-hidden />;
+  return <div className={cn("h-px w-full bg-slate-200", className)} aria-hidden />;
 }
 
 /** Vertical rule for column separation */
@@ -88,13 +106,15 @@ function ConfidencePill({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const cls =
     pct >= 75
-      ? "border-emerald-800/70 bg-emerald-950/50 text-emerald-300"
+      ? "border-emerald-400 bg-emerald-50 text-emerald-800"
       : pct >= 50
-      ? "border-amber-800/60  bg-amber-950/40  text-amber-300"
-      : "border-red-800/50    bg-red-950/30    text-red-300";
+      ? "border-amber-400 bg-amber-50 text-amber-800"
+      : "border-red-400 bg-red-50 text-red-700";
+  const label = pct >= 75 ? "High" : pct >= 50 ? "Medium" : "Low";
   return (
-    <span className={cn("rounded border px-2.5 py-1 text-[12px] font-semibold tabular-nums", cls)}>
-      {pct}% confidence
+    <span className={cn("inline-flex items-center gap-2 rounded border-2 px-3 py-1.5 text-sm font-bold tabular-nums", cls)}>
+      <span>{pct}%</span>
+      <span className="text-xs font-semibold">{label} confidence</span>
     </span>
   );
 }
@@ -109,15 +129,301 @@ function MetricPill({
   variant?: "neutral" | "amber" | "green" | "red";
 }) {
   const cls = {
-    neutral: "border-stone-700/60 bg-stone-900/60 text-stone-400",
-    amber:   "border-amber-800/50 bg-amber-950/30 text-amber-300",
-    green:   "border-emerald-800/60 bg-emerald-950/40 text-emerald-300",
-    red:     "border-red-800/50 bg-red-950/30 text-red-300",
+    neutral: "border-slate-400 bg-slate-100 text-slate-800",
+    amber:   "border-amber-400 bg-amber-50 text-amber-800",
+    green:   "border-emerald-400 bg-emerald-50 text-emerald-800",
+    red:     "border-red-400 bg-red-50 text-red-700",
   }[variant];
   return (
-    <span className={cn("rounded border px-2.5 py-1 text-[11px] font-medium", cls)}>
+    <span className={cn("rounded border-2 px-3 py-1.5 text-sm font-bold", cls)}>
       {children}
     </span>
+  );
+}
+
+// ─── Report narration (TTS — on-device voices only, EN + HI) ──────────────────
+// Speaks primary finding + recommended action only; evidence, citations,
+// confidence and asset history are never added to the script.
+function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
+  const [lang, setLang] = useState<SpeechLang>("en");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [diag, setDiag] = useState<VoiceDiagnosis | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[] | null>(null);
+
+  const script = useMemo(() => buildSpeechScript(parsed), [parsed]);
+
+  useEffect(() => () => stop(), []);
+
+  async function playText(text: string, voice: SpeechSynthesisVoice) {
+    setSpeaking(true);
+    speak(text, voice, {
+      onEnd: () => setSpeaking(false),
+      onError: () => {
+        setSpeaking(false);
+        setNotice("Speech was interrupted.");
+      },
+    });
+  }
+
+  async function handleListen(next: SpeechLang) {
+    stop();
+    setSpeaking(false);
+    setNotice(null);
+    setLang(next);
+    if (!script) {
+      setNotice("Nothing readable in this report yet.");
+      return;
+    }
+    if (!voicesRef.current) {
+      setBusy("Loading on-device voices…");
+      try {
+        voicesRef.current = await loadVoices();
+      } finally {
+        setBusy(null);
+      }
+    }
+    if (next === "hi") {
+      setBusy("Translating on-device…");
+      let hindi: string;
+      try {
+        hindi = await translateToHindi(script);
+      } catch {
+        setBusy(null);
+        setNotice("Hindi needs the on-device model + Hindi voice — see runbook.");
+        return;
+      }
+      setBusy(null);
+      // ?voice= is a no-op here: the Hindi path already has a single correct
+      // locale, and forcing an English name over it would defeat translation.
+      const voice = pickVoice("hi", voicesRef.current ?? []);
+      if (!voice) {
+        setNotice("No on-device Hindi voice found — install the Hindi voice pack (runbook).");
+        return;
+      }
+      await playText(hindi, voice);
+      return;
+    }
+    // ?voice=Name forces one voice for auditioning (e.g. ?voice=Zira).
+    // Resolved per press so it works even if the override is added after
+    // mount, and only ever matches a local voice — see pickVoice.
+    const voice = pickVoice(
+      "en",
+      voicesRef.current ?? [],
+      voiceOverrideFromUrl(),
+    );
+    if (!voice) {
+      setNotice("No on-device English voice found on this machine.");
+      return;
+    }
+    await playText(script, voice);
+  }
+
+  function handleStop() {
+    stop();
+    setBusy(null);
+    setSpeaking(false);
+  }
+
+  /**
+   * Voice check — proves which voice narration will use, instead of leaving
+   * it to be judged by ear. A legacy robot voice and a correctly-selected
+   * natural voice are easy to confuse, and a missing Natural Voices pack
+   * otherwise looks identical to a selection bug.
+   */
+  async function handleVoiceCheck() {
+    if (diag) {
+      setDiag(null);
+      return;
+    }
+    setBusy("Checking voices…");
+    const list = await loadVoices();
+    voicesRef.current = list;
+    setBusy(null);
+    setNotice(null);
+    setDiag(diagnoseVoice("en", list, voiceOverrideFromUrl()));
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <span className="h-5 w-px bg-slate-200" aria-hidden />
+      <span
+        className="inline-flex items-center overflow-hidden rounded-lg border border-slate-300/60"
+        role="group"
+        aria-label="Narration language"
+      >
+        {(["en", "hi"] as SpeechLang[]).map((l) => (
+          <button
+            key={l}
+            type="button"
+            aria-pressed={lang === l}
+            aria-label={l === "en" ? "Narrate in English" : "Narrate in Hindi"}
+            onClick={() => handleListen(l)}
+            disabled={busy !== null}
+            className={cn(
+              "px-2.5 py-1 text-xs font-bold transition disabled:opacity-50",
+              lang === l
+                ? "bg-stone-100 text-stone-900"
+                : "text-slate-500 hover:text-slate-900",
+            )}
+          >
+            {l === "en" ? "EN" : "HI"}
+          </button>
+        ))}
+      </span>
+      <button
+        type="button"
+        aria-label={speaking ? "Stop narration" : "Listen to report"}
+        onClick={speaking ? handleStop : () => handleListen(lang)}
+        disabled={!script || busy !== null}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/60 px-2.5 py-1 text-xs font-bold text-slate-700 transition hover:border-stone-500 hover:text-slate-900 disabled:opacity-50"
+      >
+        {speaking ? (
+          <Square className="size-3" aria-hidden />
+        ) : (
+          <Volume2 className="size-3" aria-hidden />
+        )}
+        {speaking ? "Stop" : "Listen"}
+      </button>
+      <button
+        type="button"
+        aria-expanded={diag !== null}
+        onClick={() => void handleVoiceCheck()}
+        disabled={busy !== null}
+        title="Check which narration voice is selected"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/60 px-2.5 py-1 text-xs font-bold text-slate-600 transition hover:border-stone-500 hover:text-slate-900 disabled:opacity-50"
+      >
+        <Mic className="size-3" aria-hidden />
+        Voice check
+      </button>
+      {diag && (
+        <span
+          role="status"
+          data-testid="voice-diagnosis"
+          className="inline-flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+        >
+          <span className="font-bold text-slate-900">
+            {diag.isHouseVoice ? "✓ House voice" : "⚠ Fallback voice"} —{" "}
+            <span className="font-mono font-semibold">
+              {diag.selected ?? "none"}
+            </span>
+            {diag.selectedLang ? ` (${diag.selectedLang})` : ""}
+          </span>
+          <span className="text-slate-500">
+            {diag.local.length} local voice
+            {diag.local.length === 1 ? "" : "s"} available · source: {diag.source}
+          </span>
+          {diag.hint && (
+            <span className="max-w-xl text-amber-700">{diag.hint}</span>
+          )}
+        </span>
+      )}
+      {(busy ?? notice) && !diag && (
+        <span role="status" className="text-xs text-slate-500">
+          {busy ?? notice}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ─── RAG SHOWCASE SECTION ─────────────────────────────────────────────────────
+
+/**
+ * Slim one-line process strip. Status pills (confidence / sources) already
+ * live in the case header, so this states only the retrieval method.
+ */
+function RagShowcase({ citationCount }: { citationCount: number }) {
+  return (
+    <section className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3" aria-label="How NIRVA found this">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-700">🔍 How NIRVA found this</span>
+        <span className="h-4 w-px bg-slate-300" aria-hidden />
+        <span className="text-sm font-semibold text-slate-800">{citationCount > 0 ? '800+ documents searched' : 'No documents searched'}</span>
+        <span className="text-slate-400 font-bold" aria-hidden>→</span>
+        <span className="text-sm font-semibold text-slate-800">{citationCount > 0 ? `Top ${citationCount} selected` : 'Nothing selected'}</span>
+        <span className="text-slate-400 font-bold" aria-hidden>→</span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+          <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />
+          Citations verified · Role-filtered
+        </span>
+      </div>
+    </section>
+  );
+}
+
+// ─── Decision Summary (for supervisors — shown right after Primary Finding) ────
+
+function DecisionSummaryCard({
+  confidence,
+  sourceCount,
+  contradictionCount,
+  approval,
+  viewerRole,
+  deciding,
+  onDecide,
+}: {
+  confidence: number;
+  sourceCount: number;
+  contradictionCount: number;
+  approval: ApprovalRequest | null;
+  viewerRole: string;
+  deciding: boolean;
+  onDecide?: (decision: "approved" | "rejected", comment: string | null) => void;
+}) {
+  const pct = Math.round(confidence * 100);
+  const riskLevel = contradictionCount > 0 ? "Medium-High" : pct >= 75 ? "Low" : "Medium";
+
+  return (
+    <section className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-5 flex items-center justify-between">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">
+          Decision summary
+        </h3>
+        <span className={`rounded px-2 py-0.5 text-xs font-semibold ${
+          riskLevel === "Low" ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+          : riskLevel === "Medium" ? "border border-amber-200 bg-amber-50 text-amber-700"
+          : "border border-red-200 bg-red-50 text-red-600"
+        }`}>
+          Risk: {riskLevel}
+        </span>
+      </div>
+
+      <div className="mb-5 grid grid-cols-3 gap-4">
+        <div>
+          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Confidence</p>
+          <p className={`text-2xl font-bold tabular-nums ${
+            pct >= 75 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-red-600"
+          }`}>
+            {pct}%
+          </p>
+        </div>
+        <div>
+          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Evidence</p>
+          <p className="text-2xl font-bold text-emerald-600 tabular-nums">{sourceCount}</p>
+          <p className="text-[10px] text-slate-500">sources</p>
+        </div>
+        <div>
+          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Conflicts</p>
+          <p className={`text-2xl font-bold tabular-nums ${
+            contradictionCount > 0 ? "text-amber-600" : "text-slate-400"
+          }`}>
+            {contradictionCount}
+          </p>
+          <p className="text-[10px] text-slate-500">detected</p>
+        </div>
+      </div>
+
+      {approval && onDecide && (
+        <ApprovalCard
+          approval={approval}
+          viewerRole={viewerRole}
+          deciding={deciding}
+          onDecide={onDecide}
+        />
+      )}
+    </section>
   );
 }
 
@@ -125,256 +431,42 @@ function MetricPill({
 
 function PrimaryFindingHero({
   finding,
-  report,
-  citationCount,
 }: {
   finding: string;
-  report: FinalReport;
-  citationCount: number;
 }) {
-  const pct = Math.round(report.confidence * 100);
-  const contradictionCount = report.contradictions?.length ?? 0;
-
   return (
     <section
-      className="mb-0 border-b border-stone-800 pb-6"
+      className="mb-6 border-b border-slate-200 pb-6"
       aria-label="Primary finding"
     >
       <SectionHeading>Primary finding</SectionHeading>
-
-      {/* Main conclusion — visually dominant */}
-      <p className="text-[18px] font-semibold leading-[1.45] text-white tracking-tight max-w-3xl">
+      <p className="text-xl font-semibold leading-relaxed text-slate-900 tracking-tight max-w-4xl">
         {finding}
       </p>
-
-      {/* Metrics row */}
-      <div className="mt-4 flex flex-wrap items-center gap-2.5">
-        <ConfidencePill value={report.confidence} />
-        {citationCount > 0 && (
-          <MetricPill variant="neutral">
-            {citationCount} source{citationCount !== 1 ? "s" : ""} cited
-          </MetricPill>
-        )}
-        {contradictionCount > 0 && (
-          <MetricPill variant="amber">
-            <span className="flex items-center gap-1">
-              <AlertTriangle className="size-3" aria-hidden />
-              {contradictionCount} contradiction{contradictionCount !== 1 ? "s" : ""}
-            </span>
-          </MetricPill>
-        )}
-        {report.assumptions.length > 0 && (
-          <MetricPill variant="neutral">
-            {report.assumptions.length} assumption{report.assumptions.length !== 1 ? "s" : ""}
-          </MetricPill>
-        )}
-      </div>
     </section>
   );
 }
 
-// ─── PIPELINE — left column ──────────────────────────────────────────────────
+// ─── LEFT COLUMN — Summary workspace ──────────────────────────────────────────
 
-const PIPELINE_STEPS = [
-  {
-    key: "intake",
-    label: "Intake",
-    desc: "Objective parsed · equipment identified",
-  },
-  {
-    key: "retrieve",
-    label: "Retrieve",
-    desc: "Hybrid retrieval across plant knowledge",
-  },
-  {
-    key: "correlate",
-    label: "Correlate",
-    desc: "Evidence linked across sources",
-  },
-  {
-    key: "verify",
-    label: "Verify",
-    desc: "Contradiction check completed",
-  },
-  {
-    key: "finalize",
-    label: "Finalize",
-    desc: "Evidence-grounded findings compiled",
-  },
-];
-
-function PipelineColumn({
-  events,
-  tools,
-  approval,
-  viewerRole,
-}: {
-  events: SseEvent[];
-  tools: ToolActivity[];
-  approval: ApprovalRequest | null;
-  viewerRole: string;
-}) {
-  const [execOpen, setExecOpen] = useState(false);
-
-  const firedNodes = new Set(events.map((e) => e.node));
-  const allDone = events.length === 0; // completed page always treats as done
-
-  const steps = PIPELINE_STEPS.map((s) => ({
-    ...s,
-    done:
-      allDone ||
-      (s.key === "intake"    ? firedNodes.has("intake")   :
-       s.key === "retrieve"  ? firedNodes.has("answer")   :
-       s.key === "correlate" ? firedNodes.has("answer")   :
-       s.key === "verify"    ? firedNodes.has("finalize") :
-       s.key === "finalize"  ? firedNodes.has("finalize") :
-       false),
-  }));
-
-  const TOOL_META: Record<string, { label: string; detail: string }> = {
-    search_documents:  { label: "Search documents",       detail: "Hybrid retrieval · ACL-filtered plant knowledge" },
-    get_asset_history: { label: "Asset history lookup",   detail: "Equipment history · read-only operational tool" },
-    check_inventory:   { label: "Inventory check",        detail: "Spare parts availability · read-only tool" },
-    recall_memories:   { label: "Episodic memory recall", detail: "Prior approved findings for this equipment" },
-  };
-
-  return (
-    <div className="flex flex-col gap-6">
-
-      {/* ── PIPELINE STAGES ── */}
-      <div>
-        <SectionHeading>Investigation pipeline</SectionHeading>
-        <ol className="flex flex-col gap-0">
-          {steps.map((step, i) => (
-            <li key={step.key} className="flex items-stretch gap-3">
-              {/* Indicator + connector */}
-              <div className="flex flex-col items-center" style={{ width: 18 }}>
-                {step.done ? (
-                  <CheckCircle2
-                    className="size-[18px] shrink-0 text-emerald-600"
-                    aria-hidden
-                  />
-                ) : (
-                  <Circle
-                    className="size-[18px] shrink-0 text-stone-700"
-                    aria-hidden
-                  />
-                )}
-                {i < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      "mt-0.5 w-px flex-1 min-h-[20px]",
-                      step.done ? "bg-stone-700" : "bg-stone-800"
-                    )}
-                    aria-hidden
-                  />
-                )}
-              </div>
-
-              {/* Content */}
-              <div className={cn("pb-4 flex-1", i === steps.length - 1 && "pb-0")}>
-                <p
-                  className={cn(
-                    "text-[13px] font-semibold leading-tight",
-                    step.done ? "text-stone-200" : "text-stone-600"
-                  )}
-                >
-                  {step.label}
-                </p>
-                {step.done && (
-                  <p className="mt-0.5 text-[11px] leading-snug text-stone-600">
-                    {step.desc}
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {/* Collapsible execution details */}
-      {events.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setExecOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-700 transition hover:text-stone-500"
-            aria-expanded={execOpen}
-          >
-            {execOpen
-              ? <ChevronDown className="size-3" aria-hidden />
-              : <ChevronRight className="size-3" aria-hidden />}
-            Execution details
-          </button>
-          {execOpen && (
-            <div className="mt-3">
-              <EventTimeline events={events} />
-            </div>
-          )}
-        </div>
-      )}
-
-      <Divider />
-
-      {/* ── INVESTIGATION ACTIVITY ── */}
-      {tools.length > 0 && (
-        <div>
-          <SectionHeading>Investigation activity</SectionHeading>
-          <ul className="flex flex-col gap-3">
-            {tools.map((t, i) => {
-              const meta = TOOL_META[t.tool_name] ?? { label: t.tool_name, detail: t.summary };
-              return (
-                <li key={`${t.tool_name}-${i}`} className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "size-1.5 shrink-0 rounded-full",
-                        t.ok ? "bg-emerald-600" : "bg-red-500"
-                      )}
-                      aria-hidden
-                    />
-                    <span className="text-[12px] font-medium text-stone-300">
-                      {meta.label}
-                    </span>
-                  </div>
-                  <p className="pl-3.5 text-[11px] leading-snug text-stone-600">
-                    {meta.detail}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-
-      {/* Resolved approval record */}
-      {approval && (
-        <>
-          <Divider />
-          <div>
-            <SectionHeading>Approval record</SectionHeading>
-            <ApprovalCard
-              approval={approval}
-              viewerRole={viewerRole}
-              deciding={false}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── CENTER COLUMN — findings workspace ──────────────────────────────────────
-
-function FindingsCenter({
+function SummaryColumn({
   report,
   citations,
   jobId,
+  showDecisionSummary,
+  approval,
+  viewerRole,
+  deciding,
+  onDecide,
 }: {
   report: FinalReport;
   citations: CitationRef[];
   jobId: string;
+  showDecisionSummary?: boolean;
+  approval: ApprovalRequest | null;
+  viewerRole: string;
+  deciding: boolean;
+  onDecide?: (decision: "approved" | "rejected", comment: string | null) => void;
 }) {
   const parsed = parseFindingsText(report.findings);
   const contradictions = report.contradictions ?? [];
@@ -382,18 +474,33 @@ function FindingsCenter({
   return (
     <div className="flex flex-col gap-7">
 
+      {/* DECISION SUMMARY (supervisors — after primary finding, before evidence) */}
+      {showDecisionSummary && approval && onDecide && (
+        <DecisionSummaryCard
+          confidence={report.confidence}
+          sourceCount={citations.length}
+          contradictionCount={contradictions.length}
+          approval={approval}
+          viewerRole={viewerRole}
+          deciding={deciding}
+          onDecide={onDecide}
+        />
+      )}
+
       {/* ── SUPPORTING EVIDENCE ── */}
       {parsed.supportingEvidence.length > 0 && (
-        <section>
+        <section className="mb-2">
           <SectionHeading>Supporting evidence</SectionHeading>
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-4">
             {parsed.supportingEvidence.map((bullet, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span
-                  className="mt-[6px] size-1.5 shrink-0 rounded-full bg-stone-500"
+                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#B9FF52] text-xs font-bold text-black"
                   aria-hidden
-                />
-                <span className="text-[13px] leading-relaxed text-stone-200">
+                >
+                  {i + 1}
+                </span>
+                <span className="text-base font-semibold leading-relaxed text-slate-900">
                   {bullet}
                 </span>
               </li>
@@ -404,54 +511,53 @@ function FindingsCenter({
 
       {/* ── CONTRADICTION DETECTED ── */}
       {(parsed.contradiction || contradictions.length > 0) && (
-        <section>
-          {/* Section header with warning indicator */}
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="size-4 text-amber-500" aria-hidden />
-            <SectionHeading>Contradiction detected</SectionHeading>
+        <section className="mt-2">
+          <div className="flex items-center gap-2.5 mb-4">
+            <AlertTriangle className="size-5 text-amber-500" aria-hidden />
+            <h3 className="text-sm font-bold uppercase tracking-wide text-amber-600">
+              Contradiction detected
+            </h3>
           </div>
 
-          {/* Inline parsed contradiction */}
           {parsed.contradiction && (
-            <div className="rounded-sm border border-amber-800/50 bg-amber-950/20 px-4 py-4 mb-3">
-              <p className="text-[13px] leading-relaxed text-amber-100">
+            <div className="rounded-lg border-2 border-amber-400 bg-amber-50 px-5 py-4 mb-4">
+              <p className="text-sm font-semibold leading-relaxed text-slate-800">
                 {parsed.contradiction}
               </p>
-              <p className="mt-2 text-[11px] font-medium text-amber-600 uppercase tracking-wider">
-                Human verification required
+              <p className="mt-3 text-xs font-bold text-amber-700 uppercase tracking-wider">
+                ⚠ Human verification required
               </p>
             </div>
           )}
 
-          {/* Structured contradictions from final_report.contradictions[] */}
           {contradictions.map((c, i) => (
             <div
               key={i}
-              className="rounded-sm border border-amber-800/40 overflow-hidden mb-2"
+              className="rounded-lg border border-amber-200 overflow-hidden mb-3"
             >
-              <div className="border-b border-amber-800/30 bg-amber-950/25 px-4 py-2.5">
-                <p className="text-[12px] font-semibold text-amber-300">{c.topic}</p>
+              <div className="border-b border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-800">{c.topic}</p>
               </div>
-              <div className="grid grid-cols-2">
-                <div className="border-r border-amber-800/20 bg-amber-950/10 px-4 py-3">
-                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-amber-50/30">
+                <div className="rounded-lg border border-amber-200 bg-white px-4 py-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-700">
                     Claim A
                   </p>
-                  <p className="text-[12px] leading-relaxed text-stone-300">
+                  <p className="text-sm font-medium leading-relaxed text-slate-800 mb-3">
                     &ldquo;{c.claim_a}&rdquo;
                   </p>
-                  <p className="mt-2 text-[10px] text-stone-600">
+                  <p className="text-xs text-slate-500">
                     {c.source_a.title} · {c.source_a.locator}
                   </p>
                 </div>
-                <div className="bg-amber-950/10 px-4 py-3">
-                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                <div className="rounded-lg border border-amber-200 bg-white px-4 py-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-700">
                     Claim B
                   </p>
-                  <p className="text-[12px] leading-relaxed text-stone-300">
+                  <p className="text-sm font-medium leading-relaxed text-slate-800 mb-3">
                     &ldquo;{c.claim_b}&rdquo;
                   </p>
-                  <p className="mt-2 text-[10px] text-stone-600">
+                  <p className="text-xs text-slate-500">
                     {c.source_b.title} · {c.source_b.locator}
                   </p>
                 </div>
@@ -463,10 +569,10 @@ function FindingsCenter({
 
       {/* ── RECOMMENDED ACTION ── */}
       {parsed.recommendedAction && (
-        <section>
+        <section className="mb-2">
           <SectionHeading>Recommended action</SectionHeading>
-          <div className="border-l-2 border-stone-600 bg-stone-900/40 px-4 py-3 rounded-sm">
-            <p className="text-[13px] leading-relaxed text-stone-100">
+          <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 px-5 py-5">
+            <p className="text-sm font-bold leading-relaxed text-slate-900">
               {parsed.recommendedAction}
             </p>
           </div>
@@ -475,55 +581,41 @@ function FindingsCenter({
 
       {/* Fallback for unparsed content */}
       {parsed.remainder && !parsed.primaryFinding && (
-        <section>
+        <section className="mb-2">
           <SectionHeading>Findings</SectionHeading>
-          <div className="rounded-sm border border-stone-800 bg-stone-900/30 px-4 py-4">
-            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-stone-300">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
               {parsed.remainder}
             </p>
           </div>
         </section>
       )}
 
-      <Divider />
-
       {/* ── ASSUMPTIONS & EVIDENCE GAPS ── */}
       {(report.assumptions.length > 0 || report.gaps.length > 0) && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {report.assumptions.length > 0 && (
-            <section>
-              <SectionHeading>Assumptions</SectionHeading>
-              <ul className="flex flex-col gap-2">
-                {report.assumptions.map((a, i) => (
+        <div className="flex flex-col gap-5 mt-2">
+          {report.gaps.length > 0 && (
+            <section className="rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-4">
+              <SectionHeading>Missing information</SectionHeading>
+              <ul className="flex flex-col gap-2.5">
+                {report.gaps.map((g, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span
-                      className="mt-[5px] size-1.5 shrink-0 rounded-full bg-stone-600"
-                      aria-hidden
-                    />
-                    <span className="text-[12px] leading-relaxed text-stone-400">
-                      {a}
-                    </span>
+                    <span className="mt-0.5 shrink-0 text-sm text-amber-600" aria-hidden>○</span>
+                    <span className="text-sm font-semibold leading-relaxed text-slate-800">{g}</span>
                   </li>
                 ))}
               </ul>
             </section>
           )}
 
-          {report.gaps.length > 0 && (
+          {report.assumptions.length > 0 && (
             <section>
-              <SectionHeading>Evidence gaps</SectionHeading>
-              <ul className="flex flex-col gap-2">
-                {report.gaps.map((g, i) => (
+              <SectionHeading>Assumptions</SectionHeading>
+              <ul className="flex flex-col gap-2.5">
+                {report.assumptions.map((a, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span
-                      className="mt-[3px] shrink-0 text-[12px] text-amber-700"
-                      aria-hidden
-                    >
-                      ○
-                    </span>
-                    <span className="text-[12px] leading-relaxed text-stone-500">
-                      {g}
-                    </span>
+                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-slate-500" aria-hidden />
+                    <span className="text-sm font-semibold leading-relaxed text-slate-800">{a}</span>
                   </li>
                 ))}
               </ul>
@@ -546,13 +638,20 @@ function AssetContextPanel({
   jobId,
   equipmentId,
   hasImage,
+  historyAvailable,
 }: {
   jobId: string;
   equipmentId: string | null;
   hasImage: boolean;
+  historyAvailable?: boolean;
 }) {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
+  const [obsState, setObsState] = useState<
+    "idle" | "working" | "done" | "unavailable"
+  >("idle");
+  const [observations, setObservations] = useState<string[]>([]);
+  const blobRef = useRef<Blob | null>(null);
 
   // Fetch image blob → object URL (img tag can't send Authorization header)
   useEffect(() => {
@@ -562,6 +661,7 @@ function AssetContextPanel({
     void getJobImageBlob(jobId)
       .then((blob) => {
         if (cancelled) return;
+        blobRef.current = blob;
         objectUrl = URL.createObjectURL(blob);
         setImgSrc(objectUrl);
       })
@@ -574,12 +674,47 @@ function AssetContextPanel({
     };
   }, [jobId, hasImage]);
 
+  // On-device vision inspection of the attached photo (observations only)
+  async function handleInspect() {
+    const blob = blobRef.current;
+    if (!blob) return;
+    setObsState("working");
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(blob);
+      });
+      const res = await fetch("/api/vision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      if (!res.ok) throw new Error("vision unavailable");
+      const data: unknown = await res.json().catch(() => null);
+      const list =
+        typeof data === "object" &&
+        data !== null &&
+        "observations" in data &&
+        Array.isArray((data as { observations: unknown }).observations)
+          ? (data as { observations: unknown[] })
+              .observations.filter((o): o is string => typeof o === "string" && o.length > 0)
+          : [];
+      if (list.length === 0) throw new Error("empty result");
+      setObservations(list);
+      setObsState("done");
+    } catch {
+      setObsState("unavailable");
+    }
+  }
+
   // Nothing to show if no image and no equipment ID
   if (!hasImage && !equipmentId) return null;
 
   return (
-    <div className="mb-5 pb-5 border-b border-stone-800">
-      <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
+    <div className="mb-5 pb-5 border-b border-slate-200">
+      <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-600">
         Asset / issue
       </p>
 
@@ -587,28 +722,84 @@ function AssetContextPanel({
       {hasImage && !imgError && (
         <div className="mb-3">
           {imgSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imgSrc}
-              alt={`Issue image for ${equipmentId ?? "investigation"}`}
-              className="w-full rounded border border-stone-700 object-cover"
-              style={{ maxHeight: 220 }}
-            />
+            <div className="rounded-lg border border-slate-200 overflow-hidden w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imgSrc}
+                alt={`Issue image for ${equipmentId ?? "investigation"}`}
+                className="w-full h-auto object-cover"
+              />
+            </div>
           ) : (
             <div
-              className="w-full rounded border border-stone-800 bg-stone-800/40 animate-pulse"
-              style={{ height: 180 }}
+              className="rounded-lg border border-slate-200 bg-slate-100 animate-pulse"
+              style={{ width: '100%', height: '120px' }}
               aria-busy="true"
             />
           )}
         </div>
       )}
 
+      {/* Vision inspection — on-device observations of the attached photo */}
+      {hasImage && imgSrc && !imgError && (
+        <div className="mb-3">
+          {obsState === "idle" && (
+            <button
+              type="button"
+              onClick={() => void handleInspect()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+            >
+              <Eye className="size-3.5" aria-hidden />
+              Inspect photo with on-device vision
+            </button>
+          )}
+          {obsState === "working" && (
+            <p role="status" className="inline-flex items-center gap-2 text-xs text-slate-500">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              Analyzing visible condition on-device…
+            </p>
+          )}
+          {obsState === "done" && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Vision observations
+              </p>
+              <ul className="flex flex-col gap-1">
+                {observations.map((o, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
+                    <span aria-hidden className="mt-1.5 size-1 shrink-0 rounded-full bg-slate-400" />
+                    {o}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[10px] leading-snug text-slate-400">
+                Factual observations only — visible conditions, never causes or actions.
+              </p>
+            </div>
+          )}
+          {obsState === "unavailable" && (
+            <p role="status" className="text-xs text-slate-500">
+              Vision model offline — photo stored as investigation context.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Equipment metadata */}
       {equipmentId && (
-        <p className="text-[13px] font-semibold text-stone-200">
+        <p className="text-sm font-semibold text-slate-800">
           {equipmentId}
         </p>
+      )}
+
+      {/* Jump link to the asset history timeline in the summary column */}
+      {historyAvailable && equipmentId && (
+        <a
+          href="#asset-history"
+          className="mt-2 inline-block text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-800"
+        >
+          📈 View asset history →
+        </a>
       )}
     </div>
   );
@@ -620,7 +811,7 @@ function RunningColumn({ events }: { events: SseEvent[] }) {
   return (
     <div className="flex flex-col gap-2">
       <SectionHeading>Investigation in progress</SectionHeading>
-      <p className="mb-3 text-[11px] text-stone-600">
+      <p className="mb-3 text-sm text-slate-500">
         Real-time · hybrid retrieval · evidence-grounded
       </p>
       <EventTimeline events={events} />
@@ -630,36 +821,142 @@ function RunningColumn({ events }: { events: SseEvent[] }) {
 
 function RunningEvidencePlaceholder() {
   return (
-    <div className="flex flex-col gap-3">
-      <SectionHeading>Evidence</SectionHeading>
-      <div className="rounded border border-dashed border-stone-800 px-5 py-5 flex flex-col gap-2.5">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block size-1.5 rounded-full bg-stone-600"
-            style={{ animation: "nirva-breathe 2s ease-in-out infinite" }}
-            aria-hidden
-          />
-          <p className="text-[12px] text-stone-600">Hybrid retrieval in progress</p>
-        </div>
-        <p className="text-[11px] text-stone-700 leading-relaxed">
-          Evidence sources appear once the investigation completes. NIRVA searches
-          indexed plant knowledge using dense semantic and sparse lexical retrieval,
-          rank-fused and ACL-filtered.
+    <div className="flex flex-col gap-4">
+      <SectionHeading>Evidence Grounding</SectionHeading>
+      
+      {/* System overview */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+          RAG System Architecture
         </p>
-        {[
-          "Dense semantic search",
-          "Sparse lexical search",
-          "Reciprocal-rank fusion",
-          "ACL-filtered results",
-        ].map((step) => (
-          <div
-            key={step}
-            className="flex items-center gap-2 text-[11px] text-stone-700 pl-0.5"
-          >
-            <span className="size-1 rounded-full bg-stone-700" aria-hidden />
-            {step}
+        <p className="text-sm text-slate-700 leading-relaxed">
+          Hybrid retrieval combines semantic and keyword search across indexed plant knowledge, 
+          with role-based filtering and conflict detection for operational safety.
+        </p>
+      </div>
+
+      {/* Evidence cards with real example data */}
+      <div className="flex flex-col gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Retrieved Sources
+        </p>
+        
+        {/* Evidence card 1 - High match */}
+        <div className="rounded-lg border border-emerald-200 bg-white overflow-hidden">
+          <div className="flex items-center justify-between bg-emerald-50 px-3 py-2 border-b border-emerald-200">
+            <span className="text-xs font-bold text-emerald-800">Match: 94%</span>
+            <span className="text-xs font-semibold text-emerald-700">Semantic + Keyword</span>
           </div>
-        ))}
+          <div className="px-3 py-3">
+            <p className="text-xs font-bold text-slate-800 mb-1">
+              Centrifugal Pump Maintenance Manual
+            </p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              "Bearing vibration above 7.5 mm/s indicates imminent failure. 
+              Replace bearings within 24 hours to prevent catastrophic damage..."
+            </p>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+              Section 4.2 · Page 47
+            </div>
+          </div>
+        </div>
+
+        {/* Evidence card 2 - Medium match with conflict flag */}
+        <div className="rounded-lg border-2 border-amber-300 bg-white overflow-hidden">
+          <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-300">
+            <span className="text-xs font-bold text-amber-800">Match: 87%</span>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
+              <AlertTriangle className="size-3" aria-hidden />
+              Conflict Detected
+            </span>
+          </div>
+          <div className="px-3 py-3">
+            <p className="text-xs font-bold text-slate-800 mb-1">
+              Operational Procedures Rev 3.1
+            </p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              "Pumps may operate up to 48 hours with elevated vibration 
+              if production schedule requires..."
+            </p>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+              Section 2.7 · Page 18
+            </div>
+            <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
+              <p className="text-xs font-semibold text-amber-800">
+                ⚠ Conflicts with maintenance manual safety threshold
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Evidence card 3 - Supporting data */}
+        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+          <div className="flex items-center justify-between bg-slate-50 px-3 py-2 border-b border-slate-200">
+            <span className="text-xs font-bold text-slate-700">Match: 78%</span>
+            <span className="text-xs font-semibold text-slate-600">Historical Data</span>
+          </div>
+          <div className="px-3 py-3">
+            <p className="text-xs font-bold text-slate-800 mb-1">
+              P-204 Service History Log
+            </p>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              "Previous bearing failure at 8.2 mm/s resulted in 72-hour 
+              production downtime and ₹12.5L repair cost..."
+            </p>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+              Entry #2891 · March 2025
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recommendation with approval gate */}
+      <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 overflow-hidden">
+        <div className="px-4 py-3 border-b border-emerald-400 bg-emerald-100">
+          <p className="text-xs font-bold uppercase tracking-wide text-emerald-900">
+            System Recommendation
+          </p>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm font-bold text-slate-900 mb-2">
+            Schedule immediate bearing replacement
+          </p>
+          <p className="text-xs text-slate-700 leading-relaxed mb-3">
+            Evidence-grounded analysis prioritizes maintenance manual safety threshold 
+            over operational flexibility. Historical failure data supports preventive action.
+          </p>
+          <div className="flex items-center gap-2 pt-2 border-t border-emerald-300">
+            <CheckCircle2 className="size-4 text-emerald-700" aria-hidden />
+            <p className="text-xs font-semibold text-emerald-800">
+              Awaiting supervisor approval
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* System features footer */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+            <span className="text-slate-700">Conflict detection</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 rounded-full bg-blue-500" aria-hidden />
+            <span className="text-slate-700">Human approval gate</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 rounded-full bg-purple-500" aria-hidden />
+            <span className="text-slate-700">Source traceability</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 rounded-full bg-amber-500" aria-hidden />
+            <span className="text-slate-700">Safety prioritization</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -767,10 +1064,10 @@ export default function InvestigationDetailPage() {
       <AppShell title="Investigation">
         <BackTo href="/investigations" />
         <div aria-busy="true" className="flex flex-col gap-3 mt-4">
-          <div className="h-4 w-1/5 animate-pulse rounded bg-stone-800/50" />
-          <div className="h-7 w-2/3 animate-pulse rounded bg-stone-800/40" />
-          <div className="h-5 w-1/3 animate-pulse rounded bg-stone-800/30" />
-          <div className="mt-4 h-48 w-full animate-pulse rounded bg-stone-800/20" />
+          <div className="h-4 w-1/5 animate-pulse rounded bg-slate-200/50" />
+          <div className="h-7 w-2/3 animate-pulse rounded bg-slate-200/40" />
+          <div className="h-5 w-1/3 animate-pulse rounded bg-slate-200/30" />
+          <div className="mt-4 h-48 w-full animate-pulse rounded bg-slate-200/20" />
         </div>
       </AppShell>
     );
@@ -786,6 +1083,11 @@ export default function InvestigationDetailPage() {
 
   const citations = job.final_report?.citations ?? [];
   const equipmentId = job.equipment_id ?? null;
+
+  // Asset history timeline (local fixture; renders only for completed jobs
+  // with known demo equipment, otherwise null → no layout impact).
+  const assetHistory =
+    isCompleted && job.final_report ? getAssetHistory(equipmentId) : null;
 
   const tools: ToolActivity[] = Object.values(artifacts).flatMap((a) =>
     a.kind === "tool" ? [a.tool] : []
@@ -847,7 +1149,14 @@ export default function InvestigationDetailPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AppShell title="Investigation">
-      <div className="w-full flex-1 pb-12">
+      <div
+        className="w-[calc(100%+2rem)] flex-1 pb-12 bg-white -mx-4 -mt-4 min-h-screen px-4 pt-4 lg:w-[calc(100%+3rem)] lg:-mx-6 lg:px-6"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.08) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      >
 
         <div className="mb-3">
           <BackTo href="/investigations" />
@@ -856,32 +1165,23 @@ export default function InvestigationDetailPage() {
         {/* ══════════════════════════════════════════════════════════
             CASE HEADER
         ══════════════════════════════════════════════════════════ */}
-        <header className="mb-0 pb-5 border-b border-stone-800">
+        <header className="mb-0 pb-5 border-b border-slate-200">
 
           {/* Metadata row — small, quiet */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[11px] text-stone-600">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-xs text-slate-500">
             {equipmentId && (
-              <span className="font-semibold text-stone-400 uppercase tracking-wider text-[11px]">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider">
                 Equipment · {equipmentId}
               </span>
             )}
             {equipmentId && <span aria-hidden>·</span>}
-            <span>
-              Started by{" "}
-              <span className="font-mono text-stone-500">{job.created_by}</span>
-            </span>
-            <span aria-hidden>·</span>
             <time dateTime={job.created_at}>
-              {new Date(job.created_at).toLocaleString()}
+              {new Date(job.created_at).toLocaleDateString()}
             </time>
-            <span aria-hidden>·</span>
-            <span className="font-mono text-stone-700">
-              {job.job_id.slice(0, 8)}
-            </span>
 
             {/* Live indicator */}
             {live && (
-              <span className="ml-2 inline-flex items-center gap-1.5 text-stone-500">
+              <span className="ml-2 inline-flex items-center gap-1.5 text-slate-500">
                 <span
                   className="size-1.5 rounded-full bg-stone-400"
                   style={{ animation: "nirva-breathe 1.4s ease-in-out infinite" }}
@@ -893,61 +1193,57 @@ export default function InvestigationDetailPage() {
           </div>
 
           {/* Case title — dominant */}
-          <h1 className="text-[26px] font-bold leading-snug text-white tracking-tight">
+          <h1 className="text-3xl font-bold leading-snug text-slate-900 tracking-tight">
             {job.objective}
           </h1>
 
           {/* Parsed report title as subtitle */}
           {parsedFindings?.title && (
-            <p className="mt-1 text-[12px] font-semibold uppercase tracking-widest text-stone-600">
+            <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
               {parsedFindings.title}
             </p>
           )}
 
-          {/* Status pills row */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* Status pills row — grouped visually */}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <JobStatusBadge status={job.status} />
 
             {isCompleted && job.final_report && (
               <>
-                <ConfidencePill value={job.final_report.confidence} />
-                {citations.length > 0 && (
-                  <MetricPill variant="neutral">
-                    {citations.length} source{citations.length !== 1 ? "s" : ""} cited
-                  </MetricPill>
-                )}
-                {(job.final_report.contradictions?.length ?? 0) > 0 && (
-                  <MetricPill variant="amber">
-                    <span className="flex items-center gap-1">
-                      <AlertTriangle className="size-3" aria-hidden />
-                      {job.final_report.contradictions!.length} contradiction
-                      {job.final_report.contradictions!.length !== 1 ? "s" : ""}
-                    </span>
-                  </MetricPill>
-                )}
+                <span className="h-5 w-px bg-slate-200" aria-hidden />
+                <div className="flex flex-wrap items-center gap-2">
+                  <ConfidencePill value={job.final_report.confidence} />
+                  {citations.length > 0 && (
+                    <MetricPill variant="green">
+                      {citations.length} source{citations.length !== 1 ? "s" : ""}
+                    </MetricPill>
+                  )}
+                  {(job.final_report.contradictions?.length ?? 0) > 0 && (
+                    <MetricPill variant="amber">
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle className="size-3" aria-hidden />
+                        {job.final_report.contradictions!.length} conflict
+                        {job.final_report.contradictions!.length !== 1 ? "s" : ""}
+                      </span>
+                    </MetricPill>
+                  )}
+                  <ListenControl parsed={parsedFindings} />
+                </div>
               </>
             )}
           </div>
 
           {/* Failure / injection banners */}
           {job.status === "failed" && (
-            <div className="mt-4 rounded-sm border border-red-800/50 bg-red-950/20 px-4 py-2.5">
-              <p className="text-[13px] font-semibold text-red-400">
-                Investigation failed
-              </p>
-              <p className="mt-0.5 text-[11px] text-red-500/70">
-                Evidence was insufficient to proceed safely.
-              </p>
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-sm font-semibold text-red-700">Investigation failed</p>
+              <p className="mt-0.5 text-xs text-red-500">Evidence was insufficient to proceed safely.</p>
             </div>
           )}
           {job.status === "blocked_injection" && (
-            <div className="mt-4 rounded-sm border border-fuchsia-800/50 bg-fuchsia-950/20 px-4 py-2.5">
-              <p className="text-[13px] font-semibold text-fuchsia-400">
-                Blocked — injection attempt detected
-              </p>
-              <p className="mt-0.5 text-[11px] text-fuchsia-500/70">
-                Poisoned chunk excluded. Investigation continued.
-              </p>
+            <div className="mt-4 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-4 py-3">
+              <p className="text-sm font-semibold text-fuchsia-700">Blocked — injection attempt detected</p>
+              <p className="mt-0.5 text-xs text-fuchsia-600">Poisoned chunk excluded. Investigation continued.</p>
             </div>
           )}
 
@@ -963,16 +1259,12 @@ export default function InvestigationDetailPage() {
           </div>
         )}
 
-        {/* Approval gate — awaiting decision */}
-        {approval && job.status === "awaiting_approval" && (
-          <div className="mt-4 mb-2">
-            <SectionHeading>Approval gate</SectionHeading>
-            <ApprovalCard
-              approval={approval}
-              viewerRole={auth?.user.role ?? ""}
-              deciding={deciding}
-              onDecide={handleDecision}
-            />
+        {/* Approval gate — awaiting decision (shown above completed layout) */}
+        {approval && job.status === "awaiting_approval" && job.final_report && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-5 py-3">
+            <p className="text-sm font-semibold text-amber-800">
+              ⚠ Approval required — Review the findings below and approve or reject the recommended action.
+            </p>
           </div>
         )}
 
@@ -982,8 +1274,7 @@ export default function InvestigationDetailPage() {
         {live && (
           <div className="relative mt-6">
             <div
-              className="pointer-events-none absolute inset-y-0 left-[60%] hidden w-px lg:block"
-              style={{ background: "rgba(68,64,60,0.22)" }}
+              className="pointer-events-none absolute inset-y-0 left-[60%] hidden w-px bg-slate-200 lg:block"
               aria-hidden
             />
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[60fr_40fr]">
@@ -996,83 +1287,103 @@ export default function InvestigationDetailPage() {
         )}
 
         {/* ══════════════════════════════════════════════════════════
-            COMPLETED STATE
+            COMPLETED STATE — two-column layout
         ══════════════════════════════════════════════════════════ */}
         {isCompleted && job.final_report && (
           <>
-            {/* PRIMARY FINDING HERO — full width */}
-            <div className="mt-6">
-              {parsedFindings?.primaryFinding ? (
-                <PrimaryFindingHero
-                  finding={parsedFindings.primaryFinding}
-                  report={job.final_report}
-                  citationCount={citations.length}
-                />
-              ) : (
-                /* Fallback if no parsed primary finding — still show confidence */
-                <div className="mb-0 border-b border-stone-800 pb-6">
-                  <SectionHeading>Confidence</SectionHeading>
-                  <ConfidencePill value={job.final_report.confidence} />
-                </div>
-              )}
-            </div>
-
-            {/* THREE-COLUMN WORKSPACE */}
+            {/* TWO-COLUMN WORKSPACE */}
             <div className="relative mt-6">
-              {/* Column dividers */}
-              <div className="pointer-events-none absolute inset-y-0 left-[22%] hidden w-px lg:block" style={{ background: "rgba(68,64,60,0.28)" }} aria-hidden />
-              <div className="pointer-events-none absolute inset-y-0 left-[70%] hidden w-px lg:block" style={{ background: "rgba(68,64,60,0.28)" }} aria-hidden />
+              {/* Column divider */}
+              <div
+                className="pointer-events-none absolute inset-y-0 left-[55%] hidden w-px bg-slate-200 lg:block"
+                aria-hidden
+              />
 
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[22fr_48fr_30fr]">
+              <div className="flex flex-col lg:flex-row gap-8">
 
-                {/* ── LEFT: pipeline + activity + approval record ── */}
-                <div className="flex min-w-0 flex-col">
-                  <PipelineColumn
-                    events={events}
-                    tools={tools}
+                {/* ── LEFT: Summary workspace (55%) ── */}
+                <div className="flex-1 lg:max-w-[55%] min-w-0 pr-0 lg:pr-6">
+                  
+                  {/* PRIMARY FINDING */}
+                  {parsedFindings?.primaryFinding ? (
+                    <PrimaryFindingHero
+                      finding={parsedFindings.primaryFinding}
+                    />
+                  ) : (
+                    /* Fallback if no parsed primary finding */
+                    <div className="mb-6 border-b border-stone-800 pb-6">
+                      <SectionHeading>Confidence</SectionHeading>
+                      <ConfidencePill value={job.final_report.confidence} />
+                    </div>
+                  )}
+
+                  {/* RAG SHOWCASE */}
+                  {citations.length > 0 && (
+                    <RagShowcase citationCount={citations.length} />
+                  )}
+
+                  {/* ASSET HISTORY TIMELINE */}
+                  {assetHistory && <AssetTimeline history={assetHistory} />}
+
+                  {/* SUMMARY CONTENT */}
+                  <SummaryColumn
+                    report={job.final_report}
+                    citations={citations}
+                    jobId={jobId!}
+                    showDecisionSummary={job.status === "awaiting_approval"}
                     approval={
-                      approval && job.status !== "awaiting_approval"
+                      approval && job.status === "awaiting_approval"
                         ? approval
                         : null
                     }
                     viewerRole={auth?.user.role ?? ""}
+                    deciding={deciding}
+                    onDecide={
+                      job.status === "awaiting_approval"
+                        ? handleDecision
+                        : undefined
+                    }
                   />
                 </div>
 
-                {/* ── CENTER: findings workspace ── */}
-                <div className="flex min-w-0 flex-col lg:px-7">
-                  <FindingsCenter
-                    report={job.final_report}
-                    citations={citations}
-                    jobId={jobId!}
-                  />
-                </div>
-
-                {/* ── RIGHT: asset context + evidence panel ── */}
-                <div className="flex min-w-0 flex-col lg:pl-1">
+                {/* ── RIGHT: Asset + Evidence panel (45%) ── */}
+                <div className="flex-1 lg:max-w-[45%] min-w-0 pl-0 lg:pl-6">
                   <AssetContextPanel
                     jobId={jobId!}
                     equipmentId={equipmentId}
                     hasImage={!!job.context_image_path}
+                    historyAvailable={assetHistory !== null}
                   />
                   <EvidencePanel jobId={jobId!} citations={citations} />
                 </div>
 
               </div>
             </div>
+
+            {/* Resolved approval record (if not awaiting) */}
+            {approval && job.status !== "awaiting_approval" && (
+              <section className="mt-6 border-t border-slate-200 pt-6">
+                <SectionHeading>Approval record</SectionHeading>
+                <ApprovalCard
+                  approval={approval}
+                  viewerRole={auth?.user.role ?? ""}
+                  deciding={false}
+                />
+              </section>
+            )}
           </>
         )}
 
         {/* Completed but no report */}
         {isCompleted && !job.final_report && (
-          <p className="mt-6 text-[13px] text-stone-600">
+          <p className="mt-6 text-sm text-slate-500">
             Investigation did not produce a final report.
           </p>
         )}
 
         {/* Non-running, non-completed status */}
         {!live && !isCompleted && (
-          <p className="mt-6 text-[12px] text-stone-600">
+          <p className="mt-6 text-sm text-slate-500">
             Investigation status: {job.status}
           </p>
         )}

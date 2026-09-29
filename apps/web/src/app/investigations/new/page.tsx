@@ -17,7 +17,7 @@
  * navigates to the created investigation so the run isn't lost.
  */
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,118 +51,6 @@ function validateImage(file: File): string | null {
     return "Image is too large. Maximum size is 10 MB.";
   }
   return null;
-}
-
-// ─── Field label ──────────────────────────────────────────────────────────────
-
-function FieldNumber({ n }: { n: string }) {
-  return (
-    <span className="shrink-0 w-5 font-mono text-[11px] font-bold text-stone-600 select-none pt-px">
-      {n}
-    </span>
-  );
-}
-
-// ─── Image attachment component ───────────────────────────────────────────────
-
-function ImageAttachment({
-  file,
-  previewUrl,
-  error,
-  onSelect,
-  onRemove,
-}: {
-  file: File | null;
-  previewUrl: string | null;
-  error: string | null;
-  onSelect: (file: File) => void;
-  onRemove: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = e.target.files?.[0];
-    if (picked) onSelect(picked);
-    // Reset input so the same file can be re-selected after removal
-    e.target.value = "";
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-        className="sr-only"
-        aria-label="Upload issue or asset image"
-        onChange={handleFileChange}
-      />
-
-      {file && previewUrl ? (
-        /* ── Preview state ── */
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt="Issue / asset preview"
-              className="h-32 w-32 rounded border border-stone-700 object-cover"
-            />
-            <button
-              type="button"
-              onClick={onRemove}
-              aria-label="Remove image"
-              className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-stone-700 bg-stone-900 text-stone-400 transition hover:bg-stone-800 hover:text-white"
-            >
-              <X className="size-3" aria-hidden />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-1 pt-1 min-w-0">
-            <p className="text-[12px] font-medium text-stone-300 truncate max-w-xs">
-              {file.name}
-            </p>
-            <p className="text-[11px] text-stone-600">
-              {(file.size / 1024).toFixed(0)} KB · {file.type.replace("image/", "").toUpperCase()}
-            </p>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="mt-0.5 w-fit text-[11px] font-medium text-stone-500 transition hover:text-stone-300"
-            >
-              Replace image
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* ── Upload trigger ── */
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className={cn(
-            "flex items-center gap-3 rounded border border-dashed px-4 py-3 text-left transition",
-            error
-              ? "border-red-800/60 bg-red-950/10"
-              : "border-stone-700 bg-stone-900/30 hover:border-stone-600 hover:bg-stone-900/50"
-          )}
-        >
-          <ImagePlus className="size-4 shrink-0 text-stone-600" aria-hidden />
-          <div>
-            <p className="text-[12px] font-medium text-stone-400">Upload image</p>
-            <p className="text-[11px] text-stone-600">
-              JPEG, PNG, WebP or GIF · max 10 MB
-            </p>
-          </div>
-        </button>
-      )}
-
-      {error && (
-        <p role="alert" className="text-[11px] text-red-400">
-          {error}
-        </p>
-      )}
-    </div>
-  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -255,48 +143,47 @@ export default function NewInvestigationPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <AppShell title="New investigation">
-      <div className="mb-3">
+    <AppShell title="">
+      <div className="mb-4">
         <BackTo href="/investigations" />
       </div>
 
-      <div className="max-w-2xl">
+      {/* Page title */}
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold text-stone-900 tracking-tight">New Investigation</h1>
+        <p className="mt-1.5 text-sm leading-relaxed text-stone-600">
+          Describe the equipment issue in plain language. NIRVA will retrieve relevant
+          plant evidence and build an evidence-backed finding.
+        </p>
+      </div>
 
-        {/* Page title */}
-        <div className="mb-5">
-          <h1 className="text-[20px] font-bold text-white tracking-tight">
-            New investigation
-          </h1>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-stone-500">
-            Describe the equipment issue or investigation objective. NIRVA will
-            retrieve relevant plant evidence and build an evidence-backed finding.
-          </p>
-        </div>
+      <form onSubmit={(e) => void handleSubmit(e)} noValidate>
+        <div className="flex flex-col gap-0 w-full">
 
-        <form onSubmit={(e) => void handleSubmit(e)} noValidate>
-          <div className="rounded border border-stone-800 bg-stone-900/30 divide-y divide-stone-800">
+          {/* ── 01 INVESTIGATION OBJECTIVE ── */}
+          {/* Two columns inside, flush — textarea left, tips right, zero gap between */}
+          <div className="rounded-t-xl border border-stone-200 bg-white overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] divide-y lg:divide-y-0 lg:divide-x divide-stone-200">
 
-            {/* ── 01  INVESTIGATION OBJECTIVE ── */}
-            <div className="flex gap-4 px-5 py-5">
-              <FieldNumber n="01" />
-              <div className="flex-1 flex flex-col gap-2">
-                <Label
-                  htmlFor="objective"
-                  className="text-[11px] font-bold uppercase tracking-widest text-stone-400"
-                >
-                  Investigation objective
-                </Label>
+              {/* Left: textarea */}
+              <div className="p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-600 shrink-0">01</span>
+                  <Label htmlFor="objective" className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Investigation Objective
+                  </Label>
+                </div>
                 <textarea
                   id="objective"
-                  rows={4}
+                  rows={8}
                   className={cn(
-                    "w-full rounded border bg-transparent px-3 py-2.5 text-[13px] leading-relaxed text-stone-100 outline-none resize-none transition",
-                    "placeholder:text-stone-700",
+                    "w-full flex-1 rounded-lg border bg-white px-4 py-3 text-sm leading-relaxed text-stone-900 outline-none resize-none transition",
+                    "placeholder:text-stone-400",
                     objectiveError
-                      ? "border-red-800/60 focus:border-red-700"
-                      : "border-stone-700 focus:border-stone-500"
+                      ? "border-red-300 focus:border-red-400"
+                      : "border-stone-300 focus:border-stone-400"
                   )}
-                  placeholder="e.g. Investigate why Pump P-204 has failed repeatedly. Compare maintenance history with the OEM manual and safety SOP."
+                  placeholder="e.g. Investigate why Pump P-204 has failed repeatedly. Compare maintenance history with the OEM manual and safety SOP, check spare-part availability, and prepare a cited maintenance recommendation."
                   value={objective}
                   onChange={(e) => {
                     setObjective(e.target.value);
@@ -305,102 +192,182 @@ export default function NewInvestigationPage() {
                   disabled={submitting}
                   required
                 />
-                {objectiveError && (
-                  <p role="alert" className="text-[11px] text-red-400">
-                    {objectiveError}
+                {objectiveError ? (
+                  <p role="alert" className="text-xs text-red-600">{objectiveError}</p>
+                ) : (
+                  <p className="text-[11px] text-stone-500">
+                    Be specific — include the equipment name, symptom, and what you need to know.
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* ── 02  EQUIPMENT ID ── */}
-            <div className="flex gap-4 px-5 py-5">
-              <FieldNumber n="02" />
-              <div className="flex-1 flex flex-col gap-2">
-                <Label
-                  htmlFor="equipment"
-                  className="text-[11px] font-bold uppercase tracking-widest text-stone-400"
-                >
-                  Equipment ID
-                  <span className="ml-2 font-normal normal-case tracking-normal text-stone-600">
-                    optional
-                  </span>
-                </Label>
-                <Input
-                  id="equipment"
-                  placeholder="e.g. P-204"
-                  value={equipmentId}
-                  onChange={(e) => setEquipmentId(e.target.value)}
-                  disabled={submitting}
-                  className="max-w-xs text-[13px]"
-                />
-                <p className="text-[11px] text-stone-600">
-                  Helps NIRVA focus evidence retrieval on the selected asset.
+              {/* Right: writing tips — flush, no gap */}
+              <div className="p-6 flex flex-col gap-3 bg-stone-50">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                  Write a strong objective
                 </p>
+                <ul className="flex flex-col gap-2.5 text-[12px] leading-relaxed text-stone-600">
+                  <li className="flex gap-2">
+                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-stone-400" aria-hidden />
+                    <span>
+                      <span className="font-semibold text-stone-800">Name the asset</span>
+                      {" "}— e.g. P-204, not &ldquo;the pump&rdquo;
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-stone-400" aria-hidden />
+                    <span>
+                      <span className="font-semibold text-stone-800">State the symptom</span>
+                      {" "}— &ldquo;seal fails every 2 weeks&rdquo;
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-stone-400" aria-hidden />
+                    <span>
+                      <span className="font-semibold text-stone-800">Ask what you need</span>
+                      {" "}— &ldquo;compare with OEM + SOP, recommend action&rdquo;
+                    </span>
+                  </li>
+                </ul>
+                <div className="mt-auto rounded-lg border border-stone-200 bg-white px-3 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+                    Golden example
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-stone-600 italic">
+                    &ldquo;Investigate why Pump P-204 has failed repeatedly.
+                    Compare maintenance history with the OEM manual and safety SOP.&rdquo;
+                  </p>
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* ── 03  ISSUE / ASSET IMAGE ── */}
-            <div className="flex gap-4 px-5 py-5">
-              <FieldNumber n="03" />
-              <div className="flex-1 flex flex-col gap-2">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">
-                  Issue / asset image
-                  <span className="ml-2 font-normal normal-case tracking-normal text-stone-600">
-                    optional
-                  </span>
-                </p>
-                <p className="text-[11px] text-stone-600">
-                  Add a photo of the equipment or visible issue for investigation context.
-                </p>
-                <ImageAttachment
-                  file={imageFile}
-                  previewUrl={previewUrl}
-                  error={imageError}
-                  onSelect={handleImageSelect}
-                  onRemove={handleImageRemove}
-                />
-              </div>
+          {/* ── 02 ISSUE / ASSET IMAGE ── */}
+          <div className="border-x border-b border-stone-200 bg-white p-6 flex flex-col gap-4">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-6 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-600 shrink-0">02</span>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                Issue / Asset Image
+                <span className="ml-2 font-normal normal-case tracking-normal text-stone-400">optional</span>
+              </p>
             </div>
 
+            {/* Tall drop zone / preview */}
+            {imageFile && previewUrl ? (
+              <div className="flex items-start gap-5">
+                <div className="relative shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Issue / asset preview"
+                    className="h-48 w-48 rounded-lg border border-stone-300 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImageRemove}
+                    aria-label="Remove image"
+                    className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 transition hover:bg-stone-50 hover:text-stone-900"
+                  >
+                    <X className="size-3" aria-hidden />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 pt-1">
+                  <p className="text-[13px] font-medium text-stone-800">{imageFile.name}</p>
+                  <p className="text-[11px] text-stone-500">
+                    {(imageFile.size / 1024).toFixed(0)} KB · {imageFile.type.replace("image/", "").toUpperCase()}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("image-upload-input")?.click()}
+                    className="mt-1 w-fit text-[11px] font-medium text-stone-600 transition hover:text-stone-900"
+                  >
+                    Replace image
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => document.getElementById("image-upload-input")?.click()}
+                className={cn(
+                  "flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-12 transition",
+                  imageError
+                    ? "border-red-300 bg-red-50"
+                    : "border-stone-300 bg-stone-50 hover:border-stone-400 hover:bg-stone-100"
+                )}
+              >
+                <ImagePlus className="size-8 text-stone-400" aria-hidden />
+                <div className="text-center">
+                  <p className="text-[13px] font-medium text-stone-700">Upload image</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">JPEG, PNG, WebP or GIF · max 10 MB</p>
+                </div>
+              </button>
+            )}
+
+            <input
+              id="image-upload-input"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              className="sr-only"
+              aria-label="Upload issue or asset image"
+              onChange={(e) => {
+                const picked = e.target.files?.[0];
+                if (picked) handleImageSelect(picked);
+                e.target.value = "";
+              }}
+            />
+
+            {imageError && (
+              <p role="alert" className="text-[11px] text-red-600">{imageError}</p>
+            )}
+            <p className="text-[11px] text-stone-500">
+              Visual context helps NIRVA correlate findings with physical equipment state.
+            </p>
           </div>
 
-          {/* Errors / warnings */}
-          {serverError && (
-            <p role="alert" className="mt-3 text-[12px] text-red-400">
-              {serverError}
-            </p>
-          )}
-          {imageWarnMsg && (
-            <p role="status" className="mt-3 text-[12px] text-amber-400">
-              ⚠ {imageWarnMsg}
-            </p>
-          )}
-
-          {/* Action bar */}
-          <div className="mt-4 flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="ghost"
+          {/* ── 03 EQUIPMENT ID ── */}
+          <div className="rounded-b-xl border-x border-b border-stone-200 bg-white p-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-6 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-600 shrink-0">03</span>
+              <Label htmlFor="equipment" className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                Equipment ID
+                <span className="ml-2 font-normal normal-case tracking-normal text-stone-400">optional</span>
+              </Label>
+            </div>
+            <Input
+              id="equipment"
+              placeholder="e.g. P-204, TK-102A, HX-305"
+              value={equipmentId}
+              onChange={(e) => setEquipmentId(e.target.value)}
               disabled={submitting}
-              onClick={() => router.push("/investigations")}
-              className="text-stone-400"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting
-                ? imageFile
-                  ? "Uploading…"
-                  : "Starting…"
-                : "Start investigation"}
-            </Button>
+              className="text-sm bg-white border-stone-300 text-stone-800 placeholder:text-stone-400 focus:border-stone-400"
+            />
+            <p className="text-[11px] text-stone-500">
+              Helps NIRVA focus retrieval on documents tagged with this asset identifier.
+            </p>
           </div>
-        </form>
-      </div>
+
+        </div>
+
+        {/* Errors / warnings + CTA */}
+        {serverError  && <p role="alert"  className="mt-4 text-xs text-red-600">{serverError}</p>}
+        {imageWarnMsg && <p role="status" className="mt-2 text-xs text-amber-600">⚠ {imageWarnMsg}</p>}
+
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={submitting}
+            onClick={() => router.push("/investigations")}
+            className="text-stone-600 hover:text-stone-900"
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={submitting} className="px-6">
+            {submitting ? (imageFile ? "Uploading…" : "Starting…") : "Start Investigation →"}
+          </Button>
+        </div>
+      </form>
     </AppShell>
   );
 }

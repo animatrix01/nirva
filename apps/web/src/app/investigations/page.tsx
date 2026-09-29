@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
-  Clock,
   ExternalLink,
+  FileText,
   Filter,
   MoreVertical,
   Plus,
@@ -15,46 +16,24 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { JobStatusBadge } from "@/components/job-status-badge";
 
-import { ApiError, getJob, listJobs } from "@/lib/api";
+import { ApiError, listJobs } from "@/lib/api";
 import type { JobStatus, JobSummary } from "@/lib/types";
 
-// ─── Status presentation ─────────────────────────────────────────────────────
+// ─── Next-step copy ──────────────────────────────────────────────────────────
+// Status pills and labels come from <JobStatusBadge>, which the investigation
+// detail page and InvestigationsList already share, so all three agree. Only
+// the "what happens next" wording still needs a per-status table, and the
+// only consumer is the needs-attention block.
 
-const STATUS_META: Record<
-  JobStatus,
-  { label: string; tagClass: string; next: string }
-> = {
-  queued: {
-    label: "Queued",
-    tagClass: "border-neutral-500/40 text-neutral-400",
-    next: "Queued for execution",
-  },
-  running: {
-    label: "Running",
-    tagClass: "border-sky-500/40 text-sky-400",
-    next: "Gathering evidence",
-  },
-  awaiting_approval: {
-    label: "Awaiting approval",
-    tagClass: "border-amber-500/40 text-amber-400",
-    next: "Supervisor approval required",
-  },
-  completed: {
-    label: "Completed",
-    tagClass: "border-emerald-500/40 text-emerald-400",
-    next: "Review results",
-  },
-  failed: {
-    label: "Failed",
-    tagClass: "border-red-500/40 text-red-400",
-    next: "Retry investigation",
-  },
-  blocked_injection: {
-    label: "Blocked injection",
-    tagClass: "border-fuchsia-500/40 text-fuchsia-400",
-    next: "Review security event",
-  },
+const NEXT_STEP: Record<JobStatus, string> = {
+  queued: "Queued for execution",
+  running: "Gathering evidence",
+  awaiting_approval: "Supervisor approval required",
+  completed: "Review results",
+  failed: "Retry investigation",
+  blocked_injection: "Review security event",
 };
 
 function relativeTime(iso: string): string {
@@ -74,10 +53,10 @@ function relativeTime(iso: string): string {
 function SectionTitle({ label, count }: { label: string; count: number }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+      <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
         {label}
       </h2>
-      <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-300">
+      <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
         {count}
       </span>
     </div>
@@ -86,40 +65,39 @@ function SectionTitle({ label, count }: { label: string; count: number }) {
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-neutral-700/80 px-2.5 py-0.5 text-[11px] text-neutral-300">
+    <span className="rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs text-slate-800">
       {children}
     </span>
   );
 }
 
 function Kebab({ jobId }: { jobId: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
       <button
         type="button"
         aria-label="More actions"
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="rounded-md p-1 text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-300"
+        className="rounded-md p-1 text-slate-500 transition hover:bg-slate-50 hover:text-slate-600"
       >
         <MoreVertical className="size-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-7 z-30 w-44 rounded-md border border-neutral-700 bg-neutral-900 py-1 shadow-xl">
-          <Link
-            href={`/investigations/${jobId}`}
-            className="block px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800"
-          >
-            Open investigation
-          </Link>
+        <div className="absolute right-0 top-7 z-30 w-44 rounded-md border border-neutral-700 bg-white py-1 shadow-xl">
           <button
             type="button"
-            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
-            onClick={() => {
-              void navigator.clipboard.writeText(jobId);
-              setOpen(false);
-            }}
+            className="block w-full px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-slate-50"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/investigations/${jobId}`); setOpen(false); }}
+          >
+            Open investigation
+          </button>
+          <button
+            type="button"
+            className="block w-full px-3 py-1.5 text-left text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); void navigator.clipboard.writeText(jobId); setOpen(false); }}
           >
             Copy job ID
           </button>
@@ -139,10 +117,10 @@ function OutlineLink({
   return (
     <Link
       href={href}
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-200 transition hover:border-neutral-500 hover:bg-neutral-800"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#A8EF47]"
     >
       {children}
-      <ArrowRight className="size-3.5" />
+      <ArrowRight className="size-4" />
     </Link>
   );
 }
@@ -222,9 +200,13 @@ export default function InvestigationsPage() {
     });
   }, [all, statusFilter, assetFilter, cutoff, search]);
 
+  // The approval queue is the app's core promise — no consequential action
+  // without supervisor sign-off — so it stays on the page, but only while
+  // something is actually waiting. An always-visible empty box is noise; a
+  // silently missing queue is worse.
   const needs = filtered.filter((j) => j.status === "awaiting_approval");
-  const active = filtered.filter((j) => j.status === "running");
   const recent = filtered.filter((j) => j.status === "completed").slice(0, 4);
+  const completedCount = filtered.filter((j) => j.status === "completed").length;
 
   const assets = useMemo(() => {
     const set = new Set<string>();
@@ -232,41 +214,20 @@ export default function InvestigationsPage() {
     return ["all", ...Array.from(set).sort()];
   }, [all]);
 
-  // Fetch confidence for the featured needs-attention card
-  const featured = needs[0];
-  const [featuredConfidence, setFeaturedConfidence] = useState<number | null>(
-    null
-  );
-  useEffect(() => {
-    if (!featured) return;
-    const signal = { cancelled: false };
-    void getJob(featured.job_id)
-      .then((d) => {
-        if (!signal.cancelled)
-          setFeaturedConfidence(d.final_report?.confidence ?? null);
-      })
-      .catch(() => {
-        if (!signal.cancelled) setFeaturedConfidence(null);
-      });
-    return () => {
-      signal.cancelled = true;
-    };
-  }, [featured]);
-
   return (
-    <AppShell title="Investigations">
-      <main className="mx-auto max-w-6xl px-6 py-8">
+    <AppShell title="">
+      <div className="mx-auto w-full max-w-[1400px] py-8">
         {/* 1. Page header & stats */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-white">Investigations</h1>
-            <p className="mt-1 text-sm text-neutral-400">
+            <h1 className="text-3xl font-bold text-slate-900">Investigations</h1>
+            <p className="mt-1 text-sm text-slate-600">
               Equipment problems and operational investigations
             </p>
           </div>
           <Link
             href="/investigations/new"
-            className="flex items-center gap-1.5 rounded-md bg-[#C4F135] px-4 py-2 text-sm font-medium text-black transition hover:bg-[#b3dc2f]"
+            className="flex items-center gap-1.5 rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-medium text-black transition hover:bg-[#A8EF47]"
           >
             <Plus className="size-4" />
             New investigation
@@ -276,22 +237,30 @@ export default function InvestigationsPage() {
         <div className="mt-5 flex items-center gap-5">
           {stats.map((s) => (
             <div key={s.label} className="flex items-center gap-2">
-              <span className={`size-2 rounded-full ${s.dot}`} />
-              <span className="text-sm text-neutral-300">
-                {s.count} {s.label}
+              <span className={`size-2.5 rounded-full ${s.dot}`} />
+              <span className="text-sm font-bold text-slate-900">
+                {s.count}
+              </span>
+              <span className="text-sm font-medium text-slate-500">
+                {s.label}
               </span>
             </div>
           ))}
         </div>
 
-        {/* 2. Filter bar */}
+        {/* 2. Filter bar — selects left, search + Filters right.
+            Filters collapses the selects to give the search more room; they
+            start visible so the default view matches the reference. */}
         <div className="mt-6 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div
+            id="investigation-filters"
+            className={`flex flex-wrap items-center gap-2 ${showFilters ? "" : "hidden"}`}
+          >
             <select
               aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as JobStatus | "all")}
-              className="rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 outline-none transition focus:border-neutral-600"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
             >
               <option value="all">All statuses</option>
               <option value="queued">Queued</option>
@@ -305,7 +274,7 @@ export default function InvestigationsPage() {
               aria-label="Filter by asset"
               value={assetFilter}
               onChange={(e) => setAssetFilter(e.target.value)}
-              className="rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 outline-none transition focus:border-neutral-600"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
             >
               <option value="all">All assets</option>
               {assets
@@ -320,7 +289,7 @@ export default function InvestigationsPage() {
               aria-label="Filter by time"
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-              className="rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 outline-none transition focus:border-neutral-600"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
             >
               <option value="all">All time</option>
               <option value="24h">Last 24 hours</option>
@@ -328,25 +297,24 @@ export default function InvestigationsPage() {
               <option value="30d">Last 30 days</option>
             </select>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex shrink-0 items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search investigations..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-64 rounded-md border border-neutral-800 bg-neutral-900 py-2 pl-9 pr-3 text-sm text-neutral-200 outline-none transition placeholder:text-neutral-500 focus:border-neutral-600"
+                className="w-[240px] rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-400 sm:w-[300px] lg:w-[340px]"
               />
             </div>
             <button
               type="button"
               onClick={() => setShowFilters((v) => !v)}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
-                showFilters
-                  ? "border-neutral-600 bg-neutral-800 text-neutral-100"
-                  : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
-              }`}
+              aria-expanded={showFilters}
+              aria-controls="investigation-filters"
+              className="flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
               <Filter className="size-4" />
               Filters
@@ -355,12 +323,12 @@ export default function InvestigationsPage() {
         </div>
 
         {error && (
-          <div role="alert" className="mt-6 rounded-lg border border-red-500/30 bg-red-500/5 p-4">
-            <p className="text-sm text-red-400">{error}</p>
+          <div role="alert" className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-600">{error}</p>
             <button
               type="button"
               onClick={() => void load()}
-              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800"
+              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-slate-800 hover:bg-slate-50"
             >
               Retry
             </button>
@@ -369,39 +337,35 @@ export default function InvestigationsPage() {
 
         {jobs === null && !error && (
           <div className="mt-8 space-y-3" aria-busy="true">
-            <div className="h-24 animate-pulse rounded-xl bg-neutral-800/50" />
-            <div className="h-16 animate-pulse rounded-xl bg-neutral-800/50" />
-            <div className="h-40 animate-pulse rounded-xl bg-neutral-800/50" />
+            <div className="h-24 animate-pulse rounded-xl bg-[#F8FAFC]" />
+            <div className="h-16 animate-pulse rounded-xl bg-[#F8FAFC]" />
+            <div className="h-40 animate-pulse rounded-xl bg-[#F8FAFC]" />
           </div>
         )}
 
         {jobs !== null && (
-          <div className="mt-8 space-y-10">
-            {/* 3. NEEDS ATTENTION */}
-            <section>
-              <SectionTitle label="Needs attention" count={needs.length} />
-              {needs.length === 0 ? (
-                <p className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-5 py-6 text-sm text-neutral-500">
-                  Nothing awaiting approval right now.
-                </p>
-              ) : (
-                needs.map((j, idx) => (
+          <div className="mt-8 space-y-12">
+            {/* NEEDS ATTENTION — rendered only while something is waiting.
+                An always-present empty box was noise; a silently missing
+                approval queue would be worse, so this stays on the page. */}
+            {needs.length > 0 && (
+              <section>
+                <SectionTitle label="Needs attention" count={needs.length} />
+                {needs.map((j) => (
                   <div
                     key={j.job_id}
-                    className={`rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-5 ${
-                      idx > 0 ? "mt-4" : ""
-                    }`}
+                    className="rounded-xl border border-amber-300 bg-amber-50/40 p-6"
                   >
                     <div className="flex gap-4">
-                      <TriangleAlert className="mt-1 size-5 shrink-0 text-amber-400" />
+                      <TriangleAlert className="mt-1 size-5 shrink-0 text-amber-600" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold tracking-wide text-amber-400">
+                        <p className="text-xs font-bold tracking-wide text-amber-600">
                           AWAITING APPROVAL
                         </p>
-                        <h3 className="mt-1 font-medium text-white">
+                        <h3 className="mt-1 text-base font-semibold text-slate-900">
                           {j.objective_summary}
                         </h3>
-                        <p className="mt-1 text-sm text-neutral-400">
+                        <p className="mt-1 text-sm text-slate-600">
                           Work-order draft ready — the investigation surfaced findings
                           that require a supervisor decision.
                         </p>
@@ -418,114 +382,65 @@ export default function InvestigationsPage() {
                       </div>
                     </div>
 
-                    {idx === 0 && (
-                      <div className="mt-5 grid grid-cols-3 gap-6 border-t border-amber-500/15 pt-4">
-                        <div>
-                          <p className="text-xs text-neutral-500">Last updated</p>
-                          <p className="mt-1 font-mono text-xs text-neutral-200">
-                            {relativeTime(j.created_at)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-neutral-500">Confidence</p>
-                          {featuredConfidence === null ? (
-                            <p className="mt-1 font-mono text-xs text-neutral-500">—</p>
-                          ) : (
-                            <>
-                              <p className="mt-1 font-mono text-sm text-neutral-200">
-                                {Math.round(featuredConfidence * 100)}%
-                              </p>
-                              <div className="mt-1.5 h-1 w-3/4 rounded-full bg-neutral-800">
-                                <div
-                                  className="h-1 rounded-full bg-amber-500"
-                                  style={{ width: `${featuredConfidence * 100}%` }}
-                                />
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs text-neutral-500">Next step</p>
-                          <p className="mt-1 text-sm text-amber-400">
-                            {STATUS_META.awaiting_approval.next}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </section>
-
-            {/* 4. ACTIVE */}
-            <section>
-              <SectionTitle label="Active" count={active.length} />
-              {active.length === 0 ? (
-                <p className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-5 py-6 text-sm text-neutral-500">
-                  No investigations currently running.
-                </p>
-              ) : (
-                active.map((j) => (
-                  <div
-                    key={j.job_id}
-                    className="rounded-xl border border-sky-500/30 bg-sky-500/[0.04] p-5"
-                  >
-                    <div className="flex gap-4">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/10">
-                        <Clock className="size-5 text-sky-400" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold tracking-wide text-sky-400">
-                          {STATUS_META.running.label.toUpperCase()}
-                        </p>
-                        <h3 className="mt-1 font-medium text-white">
-                          {j.objective_summary}
-                        </h3>
-                        <p className="mt-1 text-sm text-neutral-400">
-                          Agent executing the investigation plan
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-start gap-2">
-                        <OutlineLink href={`/investigations/${j.job_id}`}>
-                          Open
-                        </OutlineLink>
-                        <Kebab jobId={j.job_id} />
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-3 gap-6 border-t border-sky-500/15 pt-4">
+                    <div className="mt-5 grid grid-cols-3 gap-6 border-t border-amber-500/15 pt-4">
                       <div>
-                        <p className="text-xs text-neutral-500">Asset</p>
-                        <p className="mt-1 font-mono text-sm text-neutral-200">
-                          {j.equipment_id || "—"}
+                        <p className="text-xs text-slate-600">Last updated</p>
+                        <p className="mt-1 font-mono text-sm text-slate-800">
+                          {relativeTime(j.created_at)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-neutral-500">Progress</p>
-                        <p className="mt-1 text-sm text-neutral-200">
-                          Gathering evidence
-                        </p>
-                        <div className="mt-1.5 h-1 w-3/4 rounded-full bg-neutral-800">
-                          <div className="h-1 w-1/2 rounded-full bg-sky-500" />
-                        </div>
+                        <p className="text-xs text-slate-600">Confidence</p>
+                        {j.confidence === null ? (
+                          <p className="mt-1 font-mono text-xs text-slate-500">—</p>
+                        ) : (
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="font-mono text-base font-bold text-slate-900">
+                              {Math.round(j.confidence * 100)}%
+                            </span>
+                            <div className="h-1.5 flex-1 rounded-full bg-slate-100">
+                              <div
+                                className="h-1.5 rounded-full bg-amber-500"
+                                style={{ width: `${Math.round(j.confidence * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                        <div>
-                          <p className="text-xs text-neutral-500">Started</p>
-                          <p className="mt-1 font-mono text-xs text-neutral-200">
-                            {relativeTime(j.created_at)}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="text-xs text-slate-600">Next step</p>
+                        <p className="mt-1 text-sm font-medium text-amber-600">
+                          {NEXT_STEP.awaiting_approval}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
-            </section>
+                ))}
+              </section>
+            )}
 
-            {/* 5. RECENT */}
+            {/* RECENTLY COMPLETED */}
             <section>
-              <SectionTitle label="Recently completed" count={recent.length} />
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
+                    Recently completed
+                  </h2>
+                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                    {completedCount}
+                  </span>
+                </div>
+                <a
+                  href="#all-investigations"
+                  className="flex items-center gap-1 text-xs font-semibold text-slate-600 transition hover:text-slate-900"
+                >
+                  View all
+                  <ArrowRight className="size-3.5" />
+                </a>
+              </div>
+
               {recent.length === 0 ? (
-                <p className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-5 py-6 text-sm text-neutral-500">
+                <p className="rounded-xl border border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">
                   No completed investigations yet.
                 </p>
               ) : (
@@ -534,46 +449,59 @@ export default function InvestigationsPage() {
                     <Link
                       key={j.job_id}
                       href={`/investigations/${j.job_id}`}
-                      className="flex flex-col rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 transition hover:border-neutral-700"
+                      className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-400 hover:shadow-md"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="size-4 text-emerald-500" />
-                        <span className="text-[11px] font-semibold tracking-wide text-emerald-400">
-                          COMPLETED
+                      {/* status + relative time */}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="size-4 text-slate-400" />
+                          <span className="text-xs font-semibold text-slate-500">
+                            Completed
+                          </span>
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {relativeTime(j.created_at)}
                         </span>
                       </div>
-                      <h3 className="mt-2 line-clamp-2 text-sm font-medium leading-snug text-white">
+
+                      <h3 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
                         {j.objective_summary}
                       </h3>
-                      <p className="mt-1 line-clamp-2 text-xs leading-snug text-neutral-400">
-                        {j.equipment_id
-                          ? `Equipment ${j.equipment_id}`
-                          : "General investigation"}
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {j.equipment_id ?? "General investigation"}
                       </p>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {j.equipment_id ? <Tag>{j.equipment_id}</Tag> : null}
-                        <Tag>
-                          <span className="font-mono">{relativeTime(j.created_at)}</span>
-                        </Tag>
-                      </div>
-                      <div className="mt-4 flex items-center justify-end gap-1 border-t border-neutral-800 pt-3 text-xs text-neutral-500">
+
+                      <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                        <FileText className="size-3.5 shrink-0" />
+                        {j.sources} sources
+                        {j.confidence === null ? null : (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span className="font-semibold text-slate-700">
+                              {Math.round(j.confidence * 100)}% confidence
+                            </span>
+                          </>
+                        )}
+                      </p>
+
+                      <span className="mt-4 flex items-center justify-end gap-1 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-700">
                         Open
                         <ArrowUpRight className="size-3.5" />
-                      </div>
+                      </span>
                     </Link>
                   ))}
                 </div>
               )}
             </section>
 
-            {/* 6. ALL INVESTIGATIONS */}
-            <section>
+            {/* ALL INVESTIGATIONS */}
+            <section id="all-investigations">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
                     All investigations
                   </h2>
-                  <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-300">
+                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
                     {filtered.length}
                   </span>
                 </div>
@@ -585,73 +513,61 @@ export default function InvestigationsPage() {
                     setTimeFilter("all");
                     setSearch("");
                   }}
-                  className="flex items-center gap-1 text-xs text-neutral-400 underline-offset-2 transition hover:text-neutral-200 hover:underline"
+                  className="flex items-center gap-1 text-xs text-slate-600 underline-offset-2 transition hover:text-slate-800 hover:underline"
                 >
                   Reset filters
                   <ExternalLink className="size-3.5" />
                 </button>
               </div>
 
-              <div className="overflow-hidden">
-                <div className="grid grid-cols-12 gap-3 px-2 pb-2 text-sm text-neutral-500">
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-3">Investigation</div>
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="grid grid-cols-12 gap-3 border-b border-slate-200 bg-slate-50 px-4 pb-3 pt-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <div className="col-span-1">Status</div>
+                  <div className="col-span-4">Investigation</div>
                   <div className="col-span-1">Asset</div>
                   <div className="col-span-1">Sources</div>
                   <div className="col-span-2">Confidence</div>
                   <div className="col-span-1">Updated</div>
-                  <div className="col-span-2">Next step</div>
+                  <div className="col-span-2 text-right">Actions</div>
                 </div>
 
                 {filtered.length === 0 ? (
-                  <p className="px-2 py-6 text-sm text-neutral-500">
+                  <p className="px-4 py-6 text-sm text-slate-500">
                     No investigations match the current filters.
                   </p>
                 ) : (
                   filtered.map((j) => {
-                    const meta = STATUS_META[j.status] ?? {
-                      label: j.status,
-                      tagClass: "border-neutral-500/40 text-neutral-400",
-                      next: "—",
-                    };
                     return (
                       <Link
                         key={j.job_id}
                         href={`/investigations/${j.job_id}`}
-                        className="grid grid-cols-12 items-center gap-3 border-b border-neutral-800 px-2 py-3.5 transition-colors hover:bg-neutral-800/40"
+                        className="grid grid-cols-12 items-center gap-3 border-b border-slate-100 px-4 py-3.5 transition-colors hover:bg-slate-50 last:border-0"
                       >
-                        <div className="col-span-2">
-                          <span
-                            className={`rounded border px-2 py-0.5 text-[11px] font-medium ${meta.tagClass}`}
-                          >
-                            {meta.label}
-                          </span>
+                        <div className="col-span-1">
+                          <JobStatusBadge status={j.status} />
                         </div>
-                        <div className="col-span-3 min-w-0">
-                          <p className="truncate text-sm text-neutral-100">
+                        <div className="col-span-4 min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-800">
                             {j.objective_summary}
                           </p>
-                          <p className="mt-0.5 truncate text-xs text-neutral-500">
-                            {meta.next}
-                          </p>
                         </div>
-                        <div className="col-span-1 font-mono text-sm text-neutral-300">
-                          {j.equipment_id || "—"}
+                        <div className="col-span-1 text-sm font-medium text-slate-600">
+                          {j.equipment_id || <span className="text-slate-300">—</span>}
                         </div>
-                        <div className="col-span-1 font-mono text-sm text-neutral-300">
+                        <div className="col-span-1 text-sm font-medium text-slate-600">
                           {j.sources}
                         </div>
                         <div className="col-span-2">
                           {j.confidence === null ? (
-                            <span className="font-mono text-xs text-neutral-600">—</span>
+                            <span className="font-mono text-xs text-slate-300">—</span>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm text-neutral-200">
+                              <span className="font-mono text-sm font-semibold text-slate-800">
                                 {Math.round(j.confidence * 100)}%
                               </span>
-                              <div className="h-1 w-12 rounded-full bg-neutral-800">
+                              <div className="h-2 w-16 rounded-full bg-slate-100">
                                 <div
-                                  className={`h-1 rounded-full ${
+                                  className={`h-2 rounded-full ${
                                     j.status === "awaiting_approval"
                                       ? "bg-amber-500"
                                       : "bg-emerald-500"
@@ -662,13 +578,14 @@ export default function InvestigationsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="col-span-1 font-mono text-xs text-neutral-400">
+                        <div className="col-span-1 font-mono text-xs font-medium text-slate-500">
                           {relativeTime(j.created_at)}
                         </div>
-                        <div className="col-span-2 flex items-center gap-2 text-xs text-neutral-400">
-                          {meta.next}
-                          <ArrowRight className="size-3 text-neutral-600" />
-                          <span className="flex-1" />
+                        <div className="col-span-2 flex items-center justify-end gap-1">
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400">
+                            Open
+                            <ArrowRight className="size-3" />
+                          </span>
                           <Kebab jobId={j.job_id} />
                         </div>
                       </Link>
@@ -679,7 +596,7 @@ export default function InvestigationsPage() {
             </section>
           </div>
         )}
-      </main>
+      </div>
     </AppShell>
   );
 }
