@@ -82,10 +82,12 @@ function SourceRecord({
 
   useEffect(() => {
     const signal = { cancelled: false };
-    setLoading(true);
-    setDetail(null);
-    setError(null);
-    void getEvidence(jobId, citation.chunk_id)
+    queueMicrotask(() => {
+      if (signal.cancelled) return;
+      setLoading(true);
+      setDetail(null);
+      setError(null);
+      void getEvidence(jobId, citation.chunk_id)
       .then((e) => {
         if (!signal.cancelled) {
           setDetail(e);
@@ -100,6 +102,7 @@ function SourceRecord({
           setLoading(false);
         }
       });
+    });
     return () => {
       signal.cancelled = true;
     };

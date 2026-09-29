@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from nirva_agent.graph import (
+    code_node,
     refine_query,
     retrieve_refine_node,
     route_after_retrieve,
@@ -32,6 +33,68 @@ def test_route_never_reruns_refine() -> None:
     plan = ["retrieve", "retrieve_refine", "answer"]
     completed = ["retrieve", "retrieve_refine"]
     assert route_after_retrieve(_state(plan, completed)) == "answer"
+
+
+def test_route_runs_code_when_planned() -> None:
+    plan = ["retrieve", "code", "answer"]
+    assert route_after_retrieve(_state(plan, ["retrieve"])) == "code"
+    assert route_after_retrieve(_state(plan, ["retrieve", "code"])) == "answer"
+
+
+def test_route_prefers_refine_before_code() -> None:
+    plan = ["retrieve", "retrieve_refine", "code", "answer"]
+    assert route_after_retrieve(_state(plan, ["retrieve"])) == "retrieve_refine"
+    assert route_after_retrieve(_state(plan, ["retrieve", "retrieve_refine"])) == "code"
+
+
+class _CodeGateway:
+    def chat(self, messages: object, **kwargs: object) -> object:
+        from nirva_agent.gateway import ChatResponse
+
+        return ChatResponse(
+            content="readings = [2.0, 3.9, 4.1]\nprint(max(readings))",
+            finish_reason="stop",
+            model="fake",
+            prompt_tokens=1,
+            completion_tokens=1,
+        )
+
+
+def test_code_node_runs_sandbox_and_records_evidence() -> None:
+    state: NirvaState = {
+        "request_id": "job-code-1",
+        "user_id": "u",
+        "user_role": "engineer",
+        "objective": "Parse vibration log for P-204, flag readings over 3.5.",
+        "retrieved_evidence": [],
+        "completed_steps": ["retrieve"],
+        "last_event_seq": 2,
+    }  # type: ignore[typeddict-item]
+    result = code_node(state, _CodeGateway())  # type: ignore[arg-type]
+    assert result["completed_steps"] == ["code"]
+    tool_results = result["tool_results"]
+    assert isinstance(tool_results, list) and len(tool_results) == 1
+    assert tool_results[0].ok is True
+    assert "4.1" in tool_results[0].data["stdout"]
+    evidence = result["retrieved_evidence"]
+    assert isinstance(evidence, list) and len(evidence) == 1
+    assert evidence[0].source == "tool"
+
+
+def test_code_node_degrades_gracefully_without_gateway() -> None:
+    state: NirvaState = {
+        "request_id": "job-code-2",
+        "user_id": "u",
+        "user_role": "engineer",
+        "objective": "x",
+        "retrieved_evidence": [],
+        "completed_steps": ["retrieve"],
+        "last_event_seq": 1,
+    }
+    result = code_node(state, None)
+    assert result["completed_steps"] == ["code"]
+    tool_results = result["tool_results"]
+    assert isinstance(tool_results, list) and tool_results[0].ok is False
 
 
 def test_refine_query_strips_stopwords() -> None:

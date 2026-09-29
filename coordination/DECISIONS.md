@@ -39,3 +39,17 @@
 - db.py: bare postgresql:// now rewritten to postgresql+psycopg:// for the engine (psycopg2 not shipped); raw postgresql:// still reaches the checkpointer pool untouched.
 - Compose-stack golden flow PASS: engineer submit -> hybrid retrieval 13 artifacts + asset-history + inventory tools -> contradiction detected -> awaiting_approval -> supervisor approved -> WO-541f19f7 created -> audit chain_valid True (8 events) -> A3 episodic memory written. Web served on :3000 by container.
 - Teardown: compose down (volumes kept); qdrant/postgres/otel restarted as dev support; dev API :8000 + web :3000 restored.
+
+## [DECISION] 2026-09-06 — E3: model-generated code executes in a host-level sandbox (scoped follow-up noted)
+- run_python (nirva_tools.sandbox): AST denylist (imports incl. os/subprocess/socket, builtins eval/exec/open/__import__/getattr-family), subprocess python -I with empty env + temp cwd, 5s wall-clock kill, 8KB output caps. TOOL_PERMISSIONS run_python = engineer/supervisor/admin; safety_officer view-only.
+- Winning Plan constitution tension: the plan forbids executing model-generated SQL/queries against operational data. Generated *analysis* code is a new surface the teammate requested; host-level sandboxing is best-effort — a true guarantee needs OS-level isolation (container/job-object). Logged as scoped follow-up; unbounded loops are killed by timeout (tested), reflection escapes blocked (tested).
+- Legacy JobEvidence rows without allowed_roles metadata fall back to job-level visibility in exports (strict enforcement only where ACL metadata exists); restricted docs written WITH allowed_roles stay excluded.
+
+## [DECISION] 2026-09-27 — PR #1 (feat/frontend-animations) merge resolution
+- Textual conflicts (2 files): documents/page.tsx + investigations/[jobId]/page.tsx — kept the friend's redesign, re-applied our ExportButton/Download group + export imports on top.
+- Theme: restored dark NIRVA :root tokens (#1a1917 bg, #e7e5e4 ink, #c8f135 lime); the PR's light-mode :root would have booted the app white. .dark block kept (identical values, harmless).
+- Migrations: renamed 0007_job_image -> 0008_job_image chained after 0007_code_runs (was a dual alembic head). Single head verified.
+- Lint gate: fixed 19 errors the branch carried (unescaped quotes, setState-in-effect via queueMicrotask pattern, module-scope MOCK_NOW_MS for Date.now-in-render), wrapped 7 E501 long strings.
+- Translate/vision web routes use the LOCAL model gateway only — no cloud calls, sovereignty intact.
+- 6 web test failures pre-exist on the friend's branch HEAD (verified identical in an isolated worktree) — not caused by the merge; handed back to the friend.
+- Merge strategy per user: resolve on a local branch, push to origin/feat/frontend-animations so PR #1 turns green.

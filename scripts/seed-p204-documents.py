@@ -28,7 +28,7 @@ import hashlib
 import os
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "api"))
@@ -224,7 +224,7 @@ def main() -> None:
                     file_path=f"demo/p204/{chash[:16]}",
                     file_size=0,
                     uploaded_by=uploader.id,
-                    uploaded_at=datetime.now(timezone.utc),
+                    uploaded_at=datetime.now(UTC),
                 )
             )
             existing_hashes.add(chash)

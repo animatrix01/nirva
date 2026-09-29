@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   BarChart3,
   ClipboardCheck,
+  Code2,
   FileText,
   FolderOpen,
   LayoutDashboard,
@@ -60,6 +61,13 @@ const NAV_ITEMS: NavItem[] = [
     icon: ClipboardCheck,
     roles: ["supervisor", "admin"],
     match: (p) => p.startsWith("/approvals"),
+  },
+  {
+    href: "/code",
+    label: "Code",
+    icon: Code2,
+    roles: ["engineer", "supervisor", "admin"],
+    match: (p) => p.startsWith("/code"),
   },
   {
     href: "/audit",

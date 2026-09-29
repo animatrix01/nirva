@@ -59,6 +59,7 @@ import type { UploadProcessingState } from "@/components/upload-processing-modal
 import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
+  downloadDocumentsExcel,
   getDocumentContent,
   getDocumentFile,
   listDocuments,
@@ -622,23 +623,19 @@ export function ChunkViewer({
   // Reset state when the viewer closes or changes document
   useEffect(() => {
     if (!open) {
-      setContent(null);
-      setError(null);
-      setLoading(false);
-      setTechOpen(false);
       return;
     }
     if (!documentId) return;
-
-    setContent(null);
-    setError(null);
-    setLoading(true);
-    setTechOpen(false);
 
     const signal  = { cancelled: false };
     let blobUrl: string | null = null;
 
     queueMicrotask(() => {
+      // reset inside the microtask (not the effect body) — react-compiler safe
+      setContent(null);
+      setError(null);
+      setLoading(true);
+      setTechOpen(false);
       void getDocumentContent(documentId)
         .then((c) => {
           if (signal.cancelled) return;
@@ -1261,6 +1258,31 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter,  setTypeFilter]  = useState<DocumentType | "all">("all");
   const [uploadOpen,  setUploadOpen]  = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const onExportLibrary = () => {
+    if (exportBusy) return;
+    setExportBusy(true);
+    setExportError(null);
+    void downloadDocumentsExcel()
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "nirva-documents.xlsx";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      })
+      .catch((e: unknown) => {
+        setExportError(
+          e instanceof ApiError ? e.body.detail : "Export failed"
+        );
+      })
+      .finally(() => setExportBusy(false));
+  };
 
   const load = useCallback((signal: { cancelled: boolean }) => {
     void listDocuments()
@@ -1395,6 +1417,23 @@ export default function DocumentsPage() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onExportLibrary}
+                    disabled={exportBusy}
+                    className="bg-white"
+                  >
+                    {exportBusy ? "Exporting…" : "Export Excel"}
+                  </Button>
+                  {exportError && (
+                    <span role="alert" className="text-xs text-red-700 dark:text-red-400">
+                      {exportError}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

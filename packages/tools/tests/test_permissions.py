@@ -25,6 +25,7 @@ ALL_ROLES = ["engineer", "safety_officer", "supervisor", "admin"]
         ("check_inventory", set(ALL_ROLES)),
         ("propose_work_order", {"engineer", "supervisor", "admin"}),
         ("approve_work_order", {"supervisor"}),
+        ("run_python", {"engineer", "supervisor", "admin"}),
     ],
 )
 def test_default_deny_matrix(tool: str, allowed_roles: set[str]) -> None:

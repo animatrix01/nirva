@@ -223,8 +223,91 @@ export async function getDocumentFile(documentId: string): Promise<Blob> {
   return await response.blob();
 }
 
+export type ExportFormat = "pptx" | "word" | "excel";
+
+// Generated report files (PPT/Word/Excel) — fetched as an authed blob,
+// same pattern as document files (anchors cannot send Authorization headers).
+export async function downloadJobExport(jobId: string, format: ExportFormat): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(
+    `${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/export/${format}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
+// Visible document library as a workbook (ACL-filtered server-side).
+export async function downloadDocumentsExcel(): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(`${BASE_URL}/api/documents/export/excel`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
+}
+
 export function listDocuments(): Promise<DocumentOut[]> {
   return request<DocumentOut[]>("GET", "/api/documents");
+}
+
+export interface CodeRunResult {
+  run_id: string;
+  job_id: string;
+  task: string;
+  code: string;
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  exit_code: number;
+}
+
+export function runCode(jobId: string, task: string): Promise<CodeRunResult> {
+  return request<CodeRunResult>("POST", "/api/code/run", {
+    body: { job_id: jobId, task },
+  });
+}
+
+export function getCodeRun(jobId: string): Promise<CodeRunResult> {
+  return request<CodeRunResult>("GET", `/api/code/${encodeURIComponent(jobId)}`);
+}
+
+// Generated analysis script (.py) — authed blob like other file downloads.
+export async function downloadCodePy(jobId: string): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const token = auth?.token ?? null;
+  const response = await fetch(
+    `${BASE_URL}/api/code/${encodeURIComponent(jobId)}/download`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try {
+      body = (await response.json()) as TypedErrorBody;
+    } catch {
+      // keep default body
+    }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return await response.blob();
 }
 
 export interface DocumentUploadPayload {

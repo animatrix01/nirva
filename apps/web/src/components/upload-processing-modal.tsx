@@ -247,7 +247,7 @@ function ResultView({
   // Fetch vision observations if this is an image with chunks
   useEffect(() => {
     if (!isImage || !hasChunks) return;
-    setLoadingObs(true);
+    queueMicrotask(() => setLoadingObs(true));
     import("@/lib/api").then(({ getDocumentContent }) => {
       getDocumentContent(result.document_id)
         .then((content) => {
@@ -492,10 +492,12 @@ export function UploadProcessingModal({ state, onDismiss }: Props) {
     animDoneRef.current = false;
     resultRef.current   = null;
     errorRef.current    = null;
-    setResult(null);
-    setErrorMsg(null);
-    setPhase("animating");
-    setStages(buildStages(state.isImage));
+    queueMicrotask(() => {
+      setResult(null);
+      setErrorMsg(null);
+      setPhase("animating");
+      setStages(buildStages(state.isImage));
+    });
 
     const defs = state.isImage ? IMAGE_STAGES : PDF_STAGES;
     let cancelled = false;

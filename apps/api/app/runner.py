@@ -264,7 +264,7 @@ def _make_retriever(
 # Demo-mode mock evidence — realistic P-204 investigation data injected when
 # Qdrant/Ollama are not available. Mirrors what production retrieval produces.
 # ---------------------------------------------------------------------------
-_MOCK_EVIDENCE = [
+_MOCK_EVIDENCE: list[dict[str, Any]] = [
     {
         "chunk_id": "chk-mock-p204-0001",
         "document_id": "doc-mock-maintenance-sop",
@@ -362,17 +362,29 @@ _MOCK_EVIDENCE = [
 
 _MOCK_FINDINGS = """## Root Cause Analysis — Pump P-204
 
-**Primary finding:** Recurring mechanical seal failure on pump P-204 is caused by coupling misalignment producing axial loading on seal faces beyond the OEM tolerance of 0.3 mm wear limit.
+**Primary finding:** Recurring mechanical seal failure on pump P-204 is caused
+by coupling misalignment producing axial loading on seal faces beyond the OEM
+tolerance of 0.3 mm wear limit.
 
 **Supporting evidence:**
-- Incident log (2026-07-14) confirms seal face wear of 0.8 mm at last failure, with root cause attributed to coupling misalignment [chunk_id=chk-mock-p204-0002].
-- Monthly inspection (August 2026) records vibration at 4.2 mm/s RMS — above the 3.5 mm/s alert threshold — and seal flush flow below spec at 1.8 L/min [chunk_id=chk-mock-p204-0003].
-- Maintenance SOP requires coupling realignment to below 0.05 mm runout after any seal replacement [chunk_id=chk-mock-p204-0001].
-- Asset history tool confirms pump was returned to service without completed alignment (WO-2026-0892).
+- Incident log (2026-07-14) confirms seal face wear of 0.8 mm at last failure,
+  with root cause attributed to coupling misalignment
+  [chunk_id=chk-mock-p204-0002].
+- Monthly inspection (August 2026) records vibration at 4.2 mm/s RMS — above
+  the 3.5 mm/s alert threshold — and seal flush flow below spec at 1.8 L/min
+  [chunk_id=chk-mock-p204-0003].
+- Maintenance SOP requires coupling realignment to below 0.05 mm runout after
+  any seal replacement [chunk_id=chk-mock-p204-0001].
+- Asset history tool confirms pump was returned to service without completed
+  alignment (WO-2026-0892).
 
-**Contradiction detected:** Inspection report states alignment was completed successfully; asset history records pump returned to service still misaligned. Human verification required.
+**Contradiction detected:** Inspection report states alignment was completed
+successfully; asset history records pump returned to service still misaligned.
+Human verification required.
 
-**Recommended action:** Replace seal kit SEAL-P204-KIT (3 units in stock) and perform laser coupling alignment to ≤0.05 mm runout before restoring service. Follow SOP-014 lockout-tagout procedures throughout."""
+**Recommended action:** Replace seal kit SEAL-P204-KIT (3 units in stock) and
+perform laser coupling alignment to ≤0.05 mm runout before restoring service.
+Follow SOP-014 lockout-tagout procedures throughout."""
 
 
 def _inject_mock_evidence(db: Session, job_id: str, user_role: str) -> None:
@@ -503,6 +515,29 @@ def run_job(job_id: str) -> None:
                     )
                 )
         actions = (result or {}).get("proposed_actions") or []
+        from app.models import CodeRun
+
+        for tool_result in (result or {}).get("tool_results") or []:
+            name = getattr(tool_result, "tool_name", "")
+            if name != "run_python":
+                continue
+            data = getattr(tool_result, "data", {}) or {}
+            existing_run = db.query(CodeRun).filter(CodeRun.job_id == job_id).first()
+            if existing_run is None:
+                import uuid as _uuid
+
+                db.add(
+                    CodeRun(
+                        id=f"coderun-{_uuid.uuid4().hex[:12]}",
+                        job_id=job_id,
+                        task=job.objective,
+                        code=str(data.get("code", "")),
+                        stdout=str(data.get("stdout", "")),
+                        stderr=str(getattr(tool_result, "error", "") or ""),
+                        ok=bool(getattr(tool_result, "ok", False)),
+                        created_by=job.created_by,
+                    )
+                )
         job.contradictions = [
             c.model_dump() if hasattr(c, "model_dump") else dict(c)
             for c in ((result or {}).get("contradictions") or [])

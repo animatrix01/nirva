@@ -48,40 +48,42 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ─── LIGHT theme (:root default) ────────────────────────────────────────── */
+/* ─── NIRVA Industrial Dark theme (matches the landing page) ───
+   bg #1a1917 · surface #1c1917 · ink #e7e5e4 · lime primary #c8f135
+   borders #44403c (stone-700) · muted #a8a29e (stone-400)          */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #65a30d;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --background: #1a1917;
+  --foreground: #e7e5e4;
+  --card: #1c1917;
+  --card-foreground: #e7e5e4;
+  --popover: #1c1917;
+  --popover-foreground: #e7e5e4;
+  --primary: #c8f135;
+  --primary-foreground: #1a1917;
+  --secondary: #292524;
+  --secondary-foreground: #e7e5e4;
+  --muted: #292524;
+  --muted-foreground: #a8a29e;
+  --accent: #292524;
+  --accent-foreground: #e7e5e4;
   --destructive: #dc2626;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #65a30d;
-  --chart-1: #65a30d;
-  --chart-2: #64748b;
+  --border: #44403c;
+  --input: #57534e;
+  --ring: #c8f135;
+  --chart-1: #c8f135;
+  --chart-2: #a8a29e;
   --chart-3: #d97706;
-  --chart-4: #cbd5e1;
-  --chart-5: #e2e8f0;
+  --chart-4: #57534e;
+  --chart-5: #44403c;
   --radius: 0.625rem;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #65a30d;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #65a30d;
+  --sidebar: #1c1917;
+  --sidebar-foreground: #e7e5e4;
+  --sidebar-primary: #c8f135;
+  --sidebar-primary-foreground: #1a1917;
+  --sidebar-accent: #292524;
+  --sidebar-accent-foreground: #e7e5e4;
+  --sidebar-border: #44403c;
+  --sidebar-ring: #c8f135;
 }
 
 /* ─── DARK theme ─────────────────────────────────────────────────────────── */

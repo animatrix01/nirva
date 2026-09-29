@@ -13,9 +13,11 @@ from app.routers import (
     artifacts,
     audit,
     auth,
+    code,
     documents,
     evals,
     evidence,
+    exports,
     health,
     jobs,
     memories,
@@ -45,6 +47,9 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            # web dev can run on an alternate port when 3000 is taken
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -52,6 +57,7 @@ def create_app() -> FastAPI:
         expose_headers=["Last-Event-ID", "X-Accel-Buffering"],
     )
     app.include_router(auth.router)
+    app.include_router(code.router)
     app.include_router(jobs.router)
     app.include_router(artifacts.router)
     app.include_router(evidence.router)
@@ -61,6 +67,8 @@ def create_app() -> FastAPI:
     app.include_router(audit.router)
     app.include_router(admin.router)
     app.include_router(evals.router)
+    app.include_router(exports.router)
+    app.include_router(exports.documents_router)
     app.include_router(health.router)
 
     @app.exception_handler(Exception)

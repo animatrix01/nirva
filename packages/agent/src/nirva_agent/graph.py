@@ -151,14 +151,114 @@ def refine_query(objective: str) -> str:
     return " ".join(keywords) if keywords else objective
 
 
+_PLANNED_LOOP_STEPS = ("retrieve_refine", "code")
+
+
 def route_after_retrieve(state: NirvaState) -> str:
-    """Pure routing decision honoring the validated planner whitelist."""
+    """Pure routing decision honoring the validated planner whitelist.
+
+    Returns the next uncompleted planned loop step (refine/code) or answer.
+    """
     plan = state.get("plan", [])
-    if "retrieve_refine" in plan and "retrieve_refine" not in state.get(
-        "completed_steps", []
-    ):
-        return "retrieve_refine"
+    completed = state.get("completed_steps", [])
+    for step in _PLANNED_LOOP_STEPS:
+        if step in plan and step not in completed:
+            return step
     return "answer"
+
+
+_CODE_SYSTEM = (
+    "You generate short Python analysis scripts for industrial sensor and "
+    "operational readings. Reply with ONLY executable Python code, no "
+    "markdown fences, no explanations. Use only the standard library. "
+    "Never import os, subprocess, socket, or eval/exec. Print the key "
+    "numbers with print()."
+)
+
+
+def _strip_code_fences(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        stripped = "\n".join(lines)
+    return stripped.strip()
+
+
+def code_node(state: NirvaState, gateway: GatewayLike | None) -> dict[str, object]:
+    """E3: model-generated analysis code, executed in the sandbox.
+
+    Generation is best-effort; sandbox failures are RECORDED as tool output,
+    never raised — a failed code step degrades to plain retrieval evidence.
+    """
+    from nirva_tools.sandbox import run_python
+
+    from nirva_agent.state import ToolResult
+
+    task = state.get("objective", "")
+    code = ""
+    if gateway is not None:
+        try:
+            response = gateway.chat(
+                [
+                    ChatMessage(role="system", content=_CODE_SYSTEM),
+                    ChatMessage(role="user", content=f"TASK: {task}"),
+                ],
+                temperature=0.0,
+                max_tokens=600,
+            )
+            code = _strip_code_fences(response.content)
+        except Exception:  # noqa: BLE001 — codegen is best-effort by design
+            code = ""
+
+    outcome = {"code": code, "ok": False, "stdout": "", "stderr": "", "exit_code": -1}
+    if code:
+        result = run_python(code)
+        outcome = {
+            "code": code,
+            "ok": result.ok,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "exit_code": result.exit_code,
+        }
+
+    request_id = str(state.get("request_id", ""))
+    raw_equipment = state.get("equipment_id")
+    equipment: str | None = raw_equipment if isinstance(raw_equipment, str) else None
+    stdout_text = str(outcome["stdout"]).strip()[:400] if outcome["ok"] else ""
+    summary = stdout_text if outcome["ok"] else f"code step failed ({str(outcome['stderr'])[:200]})"
+    evidence = EvidenceItem(
+        chunk_id=f"tool-code-{request_id[:8]}" if request_id else "tool-code",
+        document_id="working-code",
+        document_title="Working Code (generated analysis)",
+        document_type="data",
+        revision="1",
+        section=equipment or "",
+        equipment_id=equipment,
+        text=f"Analysis code output:\n{summary}",
+        score=1.0,
+        source="tool",
+    )
+    ok_flag = bool(outcome["ok"])
+    err_text = None if outcome["ok"] else (str(outcome["stderr"]) or "sandbox rejected the code")
+    return {
+        "retrieved_evidence": [evidence],
+        "tool_results": [
+            ToolResult(
+                tool_name="run_python",
+                ok=ok_flag,
+                data={"code": code, "stdout": str(outcome["stdout"]), "exit_code": outcome["exit_code"]},
+                error=err_text,
+                idempotency_key=f"code-{request_id}" if request_id else None,
+            )
+        ],
+        "completed_steps": ["code"],
+        "current_node": "answer",
+        "last_event_seq": _seq(state),
+    }
 
 
 def _chunk_id_of(item: object) -> str | None:
@@ -406,9 +506,15 @@ def build_investigation_graph(
     builder.add_conditional_edges(
         "retrieve",
         route_after_retrieve,
-        {"retrieve_refine": "retrieve_refine", "answer": "answer"},
+        {"retrieve_refine": "retrieve_refine", "code": "code", "answer": "answer"},
     )
-    builder.add_edge("retrieve_refine", "answer")
+    builder.add_node("code", lambda state: code_node(state, gateway))
+    builder.add_conditional_edges(
+        "retrieve_refine",
+        route_after_retrieve,
+        {"code": "code", "answer": "answer"},
+    )
+    builder.add_edge("code", "answer")
     builder.add_edge("answer", "finalize")
     builder.add_edge("finalize", "propose")
     builder.add_edge("propose", END)

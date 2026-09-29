@@ -100,7 +100,12 @@ def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
             parsed = ParsedDocument(
                 root=SectionNode(
                     title=str(base["document_title"]),
-                    children=[SectionNode(title="Vision inspection", text="[Image stored — vision model unavailable in dev mode]")],
+                    children=[
+                        SectionNode(
+                            title="Vision inspection",
+                            text="[Image stored — vision model unavailable in dev mode]",
+                        )
+                    ],
                 ),
                 **base,  # type: ignore[arg-type]
             )

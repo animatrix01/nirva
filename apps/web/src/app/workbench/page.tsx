@@ -603,6 +603,10 @@ function EngineerHome() {
 
 // ─── Supervisor ───────────────────────────────────────────────────────────────
 
+// Module-scope "now" for mock timestamps and relative-time labels: evaluated
+// once at import so render bodies stay pure (react-compiler rule).
+const MOCK_NOW_MS = Date.now();
+
 function SupervisorHome() {
   const [approvals, setApprovals] = useState<ApprovalRequest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -674,7 +678,7 @@ function SupervisorHome() {
       risk_level: "high",
       status: "pending",
       requested_by: "engineer",
-      requested_at: new Date(Date.now() - 1000 * 60 * 47).toISOString(),
+      requested_at: new Date(MOCK_NOW_MS - 1000 * 60 * 47).toISOString(),
       decided_by: null,
       decided_at: null,
       work_order_id: null,
@@ -689,7 +693,7 @@ function SupervisorHome() {
       risk_level: "medium",
       status: "pending",
       requested_by: "engineer",
-      requested_at: new Date(Date.now() - 1000 * 60 * 130).toISOString(),
+      requested_at: new Date(MOCK_NOW_MS - 1000 * 60 * 130).toISOString(),
       decided_by: null,
       decided_at: null,
       work_order_id: null,
@@ -707,9 +711,9 @@ function SupervisorHome() {
       risk_level: "high",
       status: "approved",
       requested_by: "engineer",
-      requested_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      requested_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 6).toISOString(),
       decided_by: "supervisor",
-      decided_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+      decided_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 5).toISOString(),
       work_order_id: "WO-90021",
     },
     {
@@ -722,9 +726,9 @@ function SupervisorHome() {
       risk_level: "high",
       status: "rejected",
       requested_by: "engineer",
-      requested_at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
+      requested_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 26).toISOString(),
       decided_by: "supervisor",
-      decided_at: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
+      decided_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 25).toISOString(),
       work_order_id: null,
     },
     {
@@ -737,9 +741,9 @@ function SupervisorHome() {
       risk_level: "medium",
       status: "approved",
       requested_by: "engineer",
-      requested_at: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(),
+      requested_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 50).toISOString(),
       decided_by: "supervisor",
-      decided_at: new Date(Date.now() - 1000 * 60 * 60 * 49).toISOString(),
+      decided_at: new Date(MOCK_NOW_MS - 1000 * 60 * 60 * 49).toISOString(),
       work_order_id: "WO-90019",
     },
   ];
@@ -783,7 +787,7 @@ function SupervisorHome() {
           ) : (
             <div className="space-y-4">
               {displayPending.map((a) => {
-                const waitMins = Math.floor((Date.now() - new Date(a.requested_at).getTime()) / 60000);
+                const waitMins = Math.floor((MOCK_NOW_MS - new Date(a.requested_at).getTime()) / 60000);
                 const waitLabel = waitMins < 60
                   ? `${waitMins}m ago`
                   : `${Math.floor(waitMins / 60)}h ${waitMins % 60}m ago`;

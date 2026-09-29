@@ -8,6 +8,8 @@ TOOL_PERMISSIONS: dict[str, frozenset[str]] = {
     "check_inventory": frozenset({"engineer", "safety_officer", "supervisor", "admin"}),
     "propose_work_order": frozenset({"engineer", "supervisor", "admin"}),
     "approve_work_order": frozenset({"supervisor"}),
+    # E3: generated-code execution; safety_officer is view-only elsewhere
+    "run_python": frozenset({"engineer", "supervisor", "admin"}),
 }
 
 

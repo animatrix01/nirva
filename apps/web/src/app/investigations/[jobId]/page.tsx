@@ -48,7 +48,8 @@ import { EvidencePanel } from "@/components/investigation/EvidencePanel";
 import { ApprovalCard } from "@/components/investigation/ApprovalCard";
 import { InjectionAlert } from "@/components/investigation/InjectionAlert";
 import { useStoredAuth } from "@/lib/auth-client";
-import { ApiError, getJob, getArtifact, decideApproval, getJobImageBlob } from "@/lib/api";
+import { bannerForStatus } from "@/components/investigation/timeline";
+import { ApiError, downloadJobExport, getJob, getArtifact, getJobImageBlob, decideApproval } from "@/lib/api";
 import { openJobStream } from "@/lib/sse";
 import { isArtifactPayloadRef } from "@/lib/artifacts";
 import { getAssetHistory } from "@/lib/asset-history";
@@ -852,8 +853,8 @@ function RunningEvidencePlaceholder() {
               Centrifugal Pump Maintenance Manual
             </p>
             <p className="text-xs text-slate-600 leading-relaxed">
-              "Bearing vibration above 7.5 mm/s indicates imminent failure. 
-              Replace bearings within 24 hours to prevent catastrophic damage..."
+              &ldquo;Bearing vibration above 7.5 mm/s indicates imminent failure. 
+              Replace bearings within 24 hours to prevent catastrophic damage...&rdquo;
             </p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
               <span className="size-1 rounded-full bg-slate-400" aria-hidden />
@@ -876,8 +877,8 @@ function RunningEvidencePlaceholder() {
               Operational Procedures Rev 3.1
             </p>
             <p className="text-xs text-slate-600 leading-relaxed">
-              "Pumps may operate up to 48 hours with elevated vibration 
-              if production schedule requires..."
+              &ldquo;Pumps may operate up to 48 hours with elevated vibration
+              if production schedule requires...&rdquo;
             </p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
               <span className="size-1 rounded-full bg-slate-400" aria-hidden />
@@ -902,8 +903,8 @@ function RunningEvidencePlaceholder() {
               P-204 Service History Log
             </p>
             <p className="text-xs text-slate-600 leading-relaxed">
-              "Previous bearing failure at 8.2 mm/s resulted in 72-hour 
-              production downtime and ₹12.5L repair cost..."
+              &ldquo;Previous bearing failure at 8.2 mm/s resulted in 72-hour
+              production downtime and &#8377;1,12,500 repair cost...&rdquo;
             </p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
               <span className="size-1 rounded-full bg-slate-400" aria-hidden />
@@ -963,6 +964,76 @@ function RunningEvidencePlaceholder() {
 }
 
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
+function ExportButton({
+  jobId,
+  format,
+  label,
+  ext,
+}: {
+  jobId: string | undefined;
+  format: "pptx" | "word" | "excel";
+  label: string;
+  ext: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDownload = () => {
+    if (!jobId || busy) return;
+    setBusy(true);
+    setError(null);
+    void downloadJobExport(jobId, format)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `investigation-${jobId.slice(0, 8)}.${ext}`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      })
+      .catch((e: unknown) => {
+        setError(
+          e instanceof ApiError
+            ? e.body.detail
+            : e instanceof Error
+              ? e.message
+              : "Download failed"
+        );
+      })
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <span className="inline-flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={!jobId || busy}
+        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+      >
+        {busy ? "…" : label}
+      </button>
+      {error && (
+        <span role="alert" className="text-xs text-red-700 dark:text-red-400">
+          {error}
+        </span>
+      )}
+    </span>
+  );
+}
+
+const BANNER_TONE: Record<string, string> = {
+  info: "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  success:
+    "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+  error: "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
+  warning:
+    "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
+  danger:
+    "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200",
+};
 
 export default function InvestigationDetailPage() {
   const params = useParams<{ jobId: string }>();
@@ -1230,6 +1301,14 @@ export default function InvestigationDetailPage() {
                   <ListenControl parsed={parsedFindings} />
                 </div>
               </>
+            )}
+            {(job.status === "completed" || job.status === "awaiting_approval") && (
+              <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Download report">
+                <span className="text-xs font-medium text-slate-500">Download</span>
+                <ExportButton jobId={jobId} format="pptx" label="PPT" ext="pptx" />
+                <ExportButton jobId={jobId} format="word" label="Word" ext="docx" />
+                <ExportButton jobId={jobId} format="excel" label="Excel" ext="xlsx" />
+              </div>
             )}
           </div>
 
