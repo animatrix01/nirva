@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -48,10 +48,44 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ─── NIRVA Industrial Dark theme (matches the landing page) ───
-   bg #1a1917 · surface #1c1917 · ink #e7e5e4 · lime primary #c8f135
-   borders #44403c (stone-700) · muted #a8a29e (stone-400)          */
+/* ─── LIGHT theme (:root default) ────────────────────────────────────────── */
 :root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #65a30d;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #65a30d;
+  --chart-1: #65a30d;
+  --chart-2: #64748b;
+  --chart-3: #d97706;
+  --chart-4: #cbd5e1;
+  --chart-5: #e2e8f0;
+  --radius: 0.625rem;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #65a30d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #65a30d;
+}
+
+/* ─── DARK theme ─────────────────────────────────────────────────────────── */
+.dark {
   --background: #1a1917;
   --foreground: #e7e5e4;
   --card: #1c1917;
@@ -86,40 +120,6 @@
   --sidebar-ring: #c8f135;
 }
 
-.dark {
-  --background: #1a1917;
-  --foreground: #e7e5e4;
-  --card: #1c1917;
-  --card-foreground: #e7e5e4;
-  --popover: #1c1917;
-  --popover-foreground: #e7e5e4;
-  --primary: #c8f135;
-  --primary-foreground: #1a1917;
-  --secondary: #292524;
-  --secondary-foreground: #e7e5e4;
-  --muted: #292524;
-  --muted-foreground: #a8a29e;
-  --accent: #292524;
-  --accent-foreground: #e7e5e4;
-  --destructive: #dc2626;
-  --border: #44403c;
-  --input: #57534e;
-  --ring: #c8f135;
-  --chart-1: #c8f135;
-  --chart-2: #a8a29e;
-  --chart-3: #d97706;
-  --chart-4: #57534e;
-  --chart-5: #44403c;
-  --sidebar: #1c1917;
-  --sidebar-foreground: #e7e5e4;
-  --sidebar-primary: #c8f135;
-  --sidebar-primary-foreground: #1a1917;
-  --sidebar-accent: #292524;
-  --sidebar-accent-foreground: #e7e5e4;
-  --sidebar-border: #44403c;
-  --sidebar-ring: #c8f135;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -130,24 +130,33 @@
   html {
     @apply font-sans;
   }
+  /* Default arrow cursor everywhere — suppress browser text cursor on non-editable elements */
+  body {
+    cursor: default;
+  }
+  p, h1, h2, h3, h4, h5, h6, span, div, li, label {
+    cursor: default;
+  }
   /* Consistent lime focus ring across the app (keyboard a11y) */
   :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
     outline: 2px solid #c8f135;
     outline-offset: 2px;
   }
+  /* Restore text cursor only where it makes sense */
+  input, textarea, [contenteditable] {
+    cursor: text;
+  }
+  a, button, [role="button"], select {
+    cursor: pointer;
+  }
 }
 
-/* ─── Global box-grid background ───────────────────────────────────────────
-   Visible on left/right edges, fades to near-invisible in the center.
-   Sits behind all content via z-index: 0 on ::before + position: relative
-   on body. pointer-events: none ensures it never blocks interaction.     */
+/* ─── Global box-grid background ─────────────────────────────────────────── */
 body {
   position: relative;
 }
 
-/* ─── NIRVA logo breathing animation ───────────────────────────────────────
-   Subtle 3s scale + opacity breath. No glow, no color shift, no spin.
-   Used on the upload processing overlay.                                   */
+/* ─── NIRVA logo breathing animation ─────────────────────────────────────── */
 @keyframes nirva-breathe {
   0%, 100% { transform: scale(1);    opacity: 0.80; }
   50%       { transform: scale(1.06); opacity: 1;    }
@@ -157,9 +166,7 @@ body {
   animation: nirva-breathe 3.2s ease-in-out infinite;
 }
 
-/* ─── Scan ring — single slow arc rotation around the logo ─────────────────
-   A thin conic-gradient border that rotates once every 4s.
-   No glow. Serves as a restrained "working" signal.                        */
+/* ─── Scan ring ───────────────────────────────────────────────────────────── */
 @keyframes nirva-scan {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -169,8 +176,7 @@ body {
   animation: nirva-scan 4s linear infinite;
 }
 
-/* ─── Stage row entrance ────────────────────────────────────────────────────
-   Each processing stage fades in from 4px below.                           */
+/* ─── Stage row entrance ──────────────────────────────────────────────────── */
 @keyframes nirva-stage-in {
   from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: translateY(0);   }
@@ -181,8 +187,7 @@ body {
   opacity: 0;
 }
 
-/* ─── Result panel fade-in ──────────────────────────────────────────────────
-   Slightly slower entrance for the result/summary view.                    */
+/* ─── Result panel fade-in ────────────────────────────────────────────────── */
 @keyframes nirva-fade-up {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0);   }
@@ -192,6 +197,7 @@ body {
   animation: nirva-fade-up 0.4s ease-out forwards;
 }
 
+/* Landing page grid — 0.05 (very subtle, decorative) */
 body::before {
   content: "";
   position: fixed;
@@ -199,38 +205,14 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(168, 162, 158, 0.13) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(168, 162, 158, 0.13) 1px, transparent 1px);
+    linear-gradient(to right, rgba(168, 162, 158, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 162, 158, 0.015) 1px, transparent 1px);
   background-size: 40px 40px;
-  /* Mask: visible on sides, softly present in center at reduced opacity */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.9) 12%,
-    rgba(0,0,0,0.40) 28%,
-    rgba(0,0,0,0.25) 50%,
-    rgba(0,0,0,0.40) 72%,
-    rgba(0,0,0,0.9) 88%,
-    rgba(0,0,0,1.0) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.9) 12%,
-    rgba(0,0,0,0.40) 28%,
-    rgba(0,0,0,0.25) 50%,
-    rgba(0,0,0,0.40) 72%,
-    rgba(0,0,0,0.9) 88%,
-    rgba(0,0,0,1.0) 100%
-  );
 }
 
-/* ─── App shell pages — reduce grid opacity so dense text stays readable ───
-   The landing page grid at 0.13 is intentional (wide layout, large type).
-   Internal product pages have dense tables, mono text and small fonts —
-   drop to 0.05 so the grid stays present but never fights the content.   */
+/* Internal app pages — slightly more visible for dense content */
 body.nirva-app::before {
   background-image:
-    linear-gradient(to right, rgba(168, 162, 158, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(168, 162, 158, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(168, 162, 158, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 162, 158, 0.02) 1px, transparent 1px);
 }

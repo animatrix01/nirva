@@ -28,7 +28,7 @@ const DEMO_ACCOUNTS = [
   },
 ];
 
-const LIME = "#c8f135";
+const LIME = "#B9FF52";
 
 // ─── NIRVA Logo ───────────────────────────────────────────────────────────────
 function NirvaLogo({ className = "size-8" }: { className?: string }) {
@@ -256,7 +256,7 @@ export default function LoginPage() {
                   }}
                   className={`rounded-lg border px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/10 ${
                     username === account.username
-                      ? "border-[#c8f135]/50 bg-white/10"
+                      ? "border-[#B9FF52]/50 bg-white/10"
                       : "border-white/8 bg-white/5"
                   }`}
                 >

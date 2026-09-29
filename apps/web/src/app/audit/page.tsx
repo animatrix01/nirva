@@ -1,20 +1,114 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Calendar, ChevronRight, Search, Shield } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, getAudit } from "@/lib/api";
-import type { AuditResponse } from "@/lib/types";
+import type { AuditEvent, AuditResponse } from "@/lib/types";
 
-const OUTCOME_BADGES: Record<string, string> = {
-  ok: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-  error: "bg-red-500/10 text-red-400 border border-red-500/20",
-  blocked: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
+// ─── Audit ledger design tokens ───────────────────────────────────────────────
+// Warm neutral palette, file-scoped so no global theme shifts. See the class on
+// the page root for the canvas colour.
+const AT = {
+  page:  "#f1f5f9",
+  card:  "#FFFFFF",
+  border:"#D9D9D4",
+  ink:   "#15191D",
+  ink2:  "#66717A",
+  lime:  "#B9FF52",
+  hair:  "var(--audit-row-hair)",
+} as const;
+
+// ─── Semantic event vocabulary ────────────────────────────────────────────────
+// Actions are classified by PREFIX, not by an invented event list, so the
+// ledger renders correctly for whatever the API actually returns. The real
+// corpus is: job.created, job.completed, retrieval.*, tool.*. The approval /
+// auth / denied / contradiction / gap rules are fallbacks for richer runs and
+// are deliberately NOT seeded here.
+
+type Tone = "neutral" | "blue" | "amber" | "red" | "green";
+
+const TONE: Record<Tone, { label: string; text: string; marker: string; dot: string }> = {
+  neutral: { label: "ok",   text: "#4B5563", marker: "#9CA3AF", dot: "#16A34A" },
+  blue:    { label: "ok",   text: "#1D4ED8", marker: "#2563EB", dot: "#16A34A" },
+  green:   { label: "ok",   text: "#15803D", marker: "#16A34A", dot: "#16A34A" },
+  amber:   { label: "warn", text: "#B45309", marker: "#D97706", dot: "#D97706" },
+  red:     { label: "bad",  text: "#B91C1C", marker: "#DC2626", dot: "#DC2626" },
+};
+
+/** Exact actions, checked first. */
+const ACTION_EXACT: Record<string, { label: string; tone: Tone }> = {
+  "job.created":   { label: "INVESTIGATION CREATED",   tone: "neutral" },
+  "job.completed": { label: "INVESTIGATION COMPLETED", tone: "green"   },
+};
+
+/** Prefix/substring rules, checked in order. */
+const ACTION_RULES: Array<{ test: (a: string) => boolean; label: string; tone: Tone }> = [
+  { test: (a) => a.startsWith("approval."),                                  label: "APPROVAL ACTION",        tone: "green"   },
+  { test: (a) => a.startsWith("auth."),                                      label: "ACCESS EVENT",          tone: "red"     },
+  { test: (a) => a.includes("denied") || a.includes("forbidden") || a.includes("policy"), label: "ACCESS DENIED", tone: "red"     },
+  { test: (a) => a.includes("injection"),                                    label: "INJECTION BLOCKED",      tone: "red"     },
+  { test: (a) => a.includes("contradiction"),                                label: "CONTRADICTION FOUND",    tone: "amber"   },
+  { test: (a) => a.includes("gap"),                                          label: "GAP IDENTIFIED",         tone: "amber"   },
+  { test: (a) => a.includes("review"),                                      label: "REVIEW REQUIRED",        tone: "amber"   },
+  { test: (a) => a.startsWith("retrieval."),                                label: "EVIDENCE RETRIEVED",     tone: "blue"    },
+  { test: (a) => a.startsWith("tool."),                                      label: "TOOL INVOKED",           tone: "blue"    },
+];
+
+/** Human label + semantic tone for an action string. Never throws. */
+export function classifyAction(action: string): { label: string; tone: Tone } {
+  const exact = ACTION_EXACT[action];
+  if (exact) return exact;
+  for (const rule of ACTION_RULES) {
+    if (rule.test(action)) return { label: rule.label, tone: rule.tone };
+  }
+  // Unknown action — show it as-is rather than hide the row.
+  return { label: action.replace(/[._]/g, " ").toUpperCase(), tone: "neutral" };
+}
+
+/** Ledger category. Order is stable; All is implicit. */
+export type Category = "all" | "investigations" | "evidence" | "decisions" | "access";
+
+const CATEGORY_RULES: Array<{ id: Exclude<Category, "all">; test: (a: string) => boolean }> = [
+  { id: "investigations", test: (a) => a.startsWith("job.") },
+  { id: "evidence",       test: (a) => a.startsWith("retrieval.") || a.startsWith("tool.") },
+  { id: "decisions",      test: (a) => a.startsWith("approval.") },
+  { id: "access",         test: (a) => a.startsWith("auth.") || a.includes("denied") || a.includes("injection") || a.includes("login") },
+];
+
+const inCategory = (action: string, cat: Category): boolean => {
+  if (cat === "all") return true;
+  const rule = CATEGORY_RULES.find((c) => c.id === cat);
+  return rule ? rule.test(action) : true;
 };
 
 type OutcomeFilter = "all" | "ok" | "blocked" | "error";
+
+/**
+ * Single source of truth for the ledger's column template. The header row and
+ * every event row MUST use this, otherwise the labels stop lining up with
+ * their data and fall into implicit single-column stacking.
+ */
+const LEDGER_COLS =
+  "110px minmax(0,1fr) 150px 150px 130px 120px 32px";
+
+/** Key/value line used inside the expanded audit detail panel. */
+function DetailRow({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <p className="flex flex-wrap gap-x-2">
+      <span className="shrink-0 font-semibold" style={{ color: AT.ink2 }}>{k}:</span>
+      <span
+        className={`min-w-0 break-all ${mono ? "font-mono text-[11px]" : ""}`}
+        style={{ color: AT.ink }}
+      >
+        {v}
+      </span>
+    </p>
+  );
+}
 
 export default function AuditPage() {
   const auth = useStoredAuth();
@@ -31,6 +125,8 @@ export default function AuditPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("all");
   const [fromDate, setFromDate] = useState("");
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<Category>("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!canView) return;
@@ -76,6 +172,7 @@ export default function AuditPage() {
       if (actionFilter !== "all" && e.action !== actionFilter) return false;
       if (actorFilter !== "all" && e.actor !== actorFilter) return false;
       if (outcomeFilter !== "all" && e.outcome !== outcomeFilter) return false;
+      if (!inCategory(e.action, category)) return false;
       if (cutoff !== null && !isNaN(cutoff) && new Date(e.ts).getTime() < cutoff)
         return false;
       if (
@@ -85,7 +182,27 @@ export default function AuditPage() {
         return false;
       return true;
     });
-  }, [audit, actionFilter, actorFilter, outcomeFilter, fromDate, search]);
+  }, [audit, actionFilter, actorFilter, outcomeFilter, fromDate, search, category]);
+
+  // Per-category counts are computed over the same base list as the other
+  // filters so the numbers on the chips are never misleading.
+  const categoryCounts = useMemo(() => {
+    const events = audit?.events ?? [];
+    const counts: Record<Category, number> = {
+      all: events.length,
+      investigations: 0,
+      evidence: 0,
+      decisions: 0,
+      access: 0,
+    };
+    for (const e of events) {
+      if (inCategory(e.action, "investigations")) counts.investigations += 1;
+      else if (inCategory(e.action, "evidence")) counts.evidence += 1;
+      else if (inCategory(e.action, "decisions")) counts.decisions += 1;
+      else if (inCategory(e.action, "access")) counts.access += 1;
+    }
+    return counts;
+  }, [audit]);
 
   const stats = useMemo(() => {
     const events = audit?.events ?? [];
@@ -96,11 +213,49 @@ export default function AuditPage() {
     };
   }, [audit]);
 
+  function toggleRow(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   const selectClass =
-    "rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 outline-none transition focus:border-neutral-600";
+    "rounded-md border bg-white px-3 py-2 text-[13px] outline-none transition";
+
+  const controlStyle = { background: AT.card, borderColor: AT.border, color: AT.ink2 };
+
+  /** Two-line timestamp: date line + time line, per the reference ledger. */
+  function Stamp({ ts }: { ts: string }) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return <span style={{ color: AT.ink2 }}>—</span>;
+    return (
+      <span className="whitespace-nowrap">
+        <span className="block text-[12px] font-medium" style={{ color: AT.ink }}>
+          {d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
+        </span>
+        <span className="block text-[11px]" style={{ color: AT.ink2 }}>
+          {d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </span>
+    );
+  }
+
+  const OutcomeCell = ({ outcome }: { outcome: AuditEvent["outcome"] }) => {
+    const tone: Tone = outcome === "ok" ? "green" : outcome === "error" ? "red" : "amber";
+    const label = outcome === "ok" ? "Success" : outcome === "error" ? "Denied" : "Blocked";
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]" style={{ color: TONE[tone].text }}>
+        <span className="size-1.5 shrink-0 rounded-full" style={{ background: TONE[tone].dot }} />
+        {label}
+      </span>
+    );
+  };
 
   return (
-    <AppShell title="Audit log">
+    <AppShell title="">
         {!canView ? (
           <p role="alert" className="text-destructive text-sm">
             Audit access is restricted to admins and safety officers.
@@ -112,193 +267,339 @@ export default function AuditPage() {
         ) : !audit ? (
           <div className="h-64 animate-pulse rounded-md bg-muted/50" aria-busy="true" />
         ) : (
-          <div className="flex flex-col">
+          <div
+            className="flex flex-col"
+            style={{ background: AT.page, margin: "-1rem -1.5rem", padding: "1.5rem" }}
+          >
             {/* 1. Page header */}
-            <h1 className="text-xl font-semibold uppercase tracking-widest text-white">
-              Audit log
+            <h1
+              className="text-[32px] font-bold leading-[1.12] tracking-[-0.02em]"
+              style={{ color: AT.ink }}
+            >
+              Audit Trail
             </h1>
-            <p className="mt-1 text-sm text-neutral-400">
-              System activity and security events
+            <p className="mt-1.5 text-[15px]" style={{ color: AT.ink2 }}>
+              Append-only record of investigations, evidence access, system actions and decisions.
             </p>
 
-            {/* Security banner */}
-            <div className="mt-5 flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-900/50 p-4">
+            {/* 2. Integrity strip — one horizontal band, not KPI cards */}
+            <div
+              className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border px-5 py-3.5"
+              style={{ background: AT.card, borderColor: AT.border }}
+            >
               <div className="flex items-center gap-2.5">
                 <Shield
-                  className={`size-4 ${
-                    audit.chain_valid ? "text-emerald-400" : "text-red-400"
-                  }`}
+                  className="size-4"
+                  style={{ color: audit.chain_valid ? "#15803D" : "#B91C1C" }}
+                  aria-hidden
                 />
-                <span className="text-sm font-medium text-white">Hash chain</span>
-                <span
-                  className={
-                    audit.chain_valid
-                      ? "text-sm font-medium text-emerald-400"
-                      : "text-sm font-medium text-red-400"
-                  }
-                >
-                  {audit.chain_valid ? "valid" : "BROKEN"}
-                </span>
-                <span className="text-sm text-neutral-400">— tamper-evident</span>
-              </div>
-              <span className="font-mono text-sm text-neutral-500">
-                Last verified: {verifiedAt ?? "…"}
-              </span>
-            </div>
-
-            {/* 2. Summary stats */}
-            <div className="mt-4 grid grid-cols-3 rounded-md border border-neutral-800">
-              <div className="p-6">
-                <p className="text-3xl font-semibold text-white">{stats.total}</p>
-                <p className="mt-1 text-sm text-neutral-400">Total events</p>
-              </div>
-              <div className="border-l border-neutral-800 p-6">
-                <p className="text-3xl font-semibold text-white">{stats.blocked}</p>
-                <p className="mt-1 text-sm text-neutral-400">Blocked events</p>
-              </div>
-              <div className="border-l border-neutral-800 p-6">
-                <p className="text-3xl font-semibold text-white">{stats.approvals}</p>
-                <p className="mt-1 text-sm text-neutral-400">Approval decisions</p>
-              </div>
-            </div>
-
-            {/* 3. Filters */}
-            <div className="mt-10">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-white">
-                Audit events
-              </h2>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label="Filter by event"
-                    value={actionFilter}
-                    onChange={(e) => setActionFilter(e.target.value)}
-                    className={selectClass}
+                <div>
+                  <p
+                    className="text-[13px] font-bold uppercase tracking-[0.08em]"
+                    style={{ color: audit.chain_valid ? "#15803D" : "#B91C1C" }}
                   >
-                    {actions.map((a) => (
-                      <option key={a} value={a}>
-                        {a === "all" ? "All events" : a}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="Filter by actor"
-                    value={actorFilter}
-                    onChange={(e) => setActorFilter(e.target.value)}
-                    className={selectClass}
-                  >
-                    {actors.map((a) => (
-                      <option key={a} value={a}>
-                        {a === "all" ? "All actors" : a}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="Filter by outcome"
-                    value={outcomeFilter}
-                    onChange={(e) => setOutcomeFilter(e.target.value as OutcomeFilter)}
-                    className={selectClass}
-                  >
-                    <option value="all">All outcomes</option>
-                    <option value="ok">ok</option>
-                    <option value="blocked">blocked</option>
-                    <option value="error">error</option>
-                  </select>
-                  <div className="relative">
-                    <Calendar className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-                    <input
-                      type="date"
-                      aria-label="From date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="rounded-md border border-neutral-800 bg-neutral-900 py-2 pl-9 pr-3 text-sm text-neutral-300 outline-none transition focus:border-neutral-600"
-                    />
-                  </div>
-                </div>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-                  <input
-                    type="text"
-                    placeholder="Search audit log..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-64 rounded-md border border-neutral-800 bg-neutral-900 py-2 pl-9 pr-3 text-sm text-neutral-200 outline-none transition placeholder:text-neutral-500 focus:border-neutral-600"
-                  />
+                    {audit.chain_valid ? "Hash chain valid" : "Hash chain broken"}
+                  </p>
+                  <p className="text-[11px]" style={{ color: AT.ink2 }}>
+                    Append-only · Tamper-evident
+                  </p>
                 </div>
               </div>
+
+              {[
+                { v: stats.total,     k: "Total events" },
+                { v: stats.blocked,   k: "Blocked events" },
+                { v: stats.approvals, k: "Approval decisions" },
+              ].map((s) => (
+                <div key={s.k}>
+                  <p className="text-[17px] font-semibold tabular-nums" style={{ color: AT.ink }}>{s.v}</p>
+                  <p className="text-[11px]" style={{ color: AT.ink2 }}>{s.k}</p>
+                </div>
+              ))}
+
+              <div className="ml-auto text-right">
+                <p className="text-[11px]" style={{ color: AT.ink2 }}>Last verified</p>
+                <p className="text-[12px] font-medium" style={{ color: AT.ink }}>{verifiedAt ?? "…"}</p>
+              </div>
             </div>
 
-            {/* 4. Data table */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800">
-                    {["Time", "Actor", "Action", "Summary (redacted)", "Outcome", "Hash", ""].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-4 py-4 font-sans text-sm font-normal text-neutral-400"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-6 text-sm text-neutral-500"
-                      >
-                        No audit events match the current filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filtered.map((e) => (
-                      <tr
-                        key={e.event_id}
-                        className={`border-b border-neutral-800 transition-colors hover:bg-neutral-900/60 ${
-                          e.job_id ? "cursor-pointer" : ""
-                        }`}
+            {/* 3. Category bar — all five always visible, zero counts muted */}
+            <div className="mt-5 flex flex-wrap gap-1.5" role="tablist" aria-label="Audit categories">
+              {([
+                { id: "all",            label: "All events" },
+                { id: "investigations", label: "Investigations" },
+                { id: "evidence",       label: "Evidence" },
+                { id: "decisions",      label: "Decisions" },
+                { id: "access",         label: "Access & security" },
+              ] as const).map((c) => {
+                const active = category === c.id;
+                const n = categoryCounts[c.id];
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setCategory(c.id)}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition"
+                    style={{
+                      background: active ? "#e2e8f0" : AT.card,
+                      borderColor: active ? "#94a3b8" : AT.border,
+                      color: active ? AT.ink : n === 0 ? "#A8A29E" : AT.ink2,
+                    }}
+                  >
+                    {c.label}
+                    <span
+                      className="tabular-nums"
+                      style={{ color: active ? AT.ink2 : n === 0 ? "#C7C5BE" : AT.ink2 }}
+                    >
+                      {n}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 4. Filters — actor / outcome / date / search all preserved */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Filter by event"
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                className={selectClass}
+                style={controlStyle}
+              >
+                {actions.map((a) => (
+                  <option key={a} value={a}>
+                    {a === "all" ? "All event types" : a}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Filter by actor"
+                value={actorFilter}
+                onChange={(e) => setActorFilter(e.target.value)}
+                className={selectClass}
+                style={controlStyle}
+              >
+                {actors.map((a) => (
+                  <option key={a} value={a}>
+                    {a === "all" ? "All actors" : a}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Filter by outcome"
+                value={outcomeFilter}
+                onChange={(e) => setOutcomeFilter(e.target.value as OutcomeFilter)}
+                className={selectClass}
+                style={controlStyle}
+              >
+                <option value="all">All outcomes</option>
+                <option value="ok">ok</option>
+                <option value="blocked">blocked</option>
+                <option value="error">error</option>
+              </select>
+              <div className="relative">
+                <Calendar
+                  className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2"
+                  style={{ color: AT.ink2 }}
+                  aria-hidden
+                />
+                <input
+                  type="date"
+                  aria-label="From date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="rounded-md border py-2 pl-8 pr-3 text-[13px] outline-none transition"
+                  style={controlStyle}
+                />
+              </div>
+
+              <div className="relative ml-auto">
+                <Search
+                  className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2"
+                  style={{ color: AT.ink2 }}
+                  aria-hidden
+                />
+                <input
+                  type="text"
+                  placeholder="Search audit log…"
+                  aria-label="Search audit log"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-64 rounded-md border py-2 pl-8 pr-3 text-[13px] outline-none transition placeholder:text-[#A8A29E]"
+                  style={{ ...controlStyle, color: AT.ink }}
+                />
+              </div>
+            </div>
+
+            {/* 5. Ledger */}
+            <div
+              className="mt-4 overflow-hidden rounded-lg border"
+              style={{ background: AT.card, borderColor: AT.border }}
+            >
+              <div
+                className="grid items-center gap-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.1em]"
+                style={{
+                  gridTemplateColumns: LEDGER_COLS,
+                  background: "#FBFBF9",
+                  borderBottom: `1px solid ${AT.border}`,
+                  color: AT.ink2,
+                }}
+              >
+                {/* Offset clears the 3px semantic marker in the rows below. */}
+                <span className="pl-[22px]">Timestamp</span>
+                <span>Event</span>
+                <span>Actor</span>
+                <span>Reference</span>
+                <span>Outcome</span>
+                <span>Hash</span>
+                <span className="text-right">Details</span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <p className="px-4 py-10 text-center text-[13px]" style={{ color: AT.ink2 }}>
+                  No audit events match the current filters.
+                </p>
+              ) : (
+                filtered.map((e) => {
+                  const { label, tone } = classifyAction(e.action);
+                  const open = expanded.has(e.event_id);
+                  return (
+                    <div
+                      key={e.event_id}
+                      style={{ borderBottom: `1px solid ${AT.border}` }}
+                    >
+                      <div
+                        role={e.job_id ? "button" : undefined}
+                        tabIndex={e.job_id ? 0 : undefined}
                         onClick={() => {
+                          // Whole-row navigation is preserved exactly as before.
                           if (e.job_id) router.push(`/investigations/${e.job_id}`);
                         }}
+                        onKeyDown={(ev) => {
+                          if (e.job_id && (ev.key === "Enter" || ev.key === " ")) {
+                            ev.preventDefault();
+                            router.push(`/investigations/${e.job_id}`);
+                          }
+                        }}
+                        className="grid w-full items-center gap-3 px-4 py-3 transition"
+                        style={{
+                          gridTemplateColumns: LEDGER_COLS,
+                          background: open ? "#FBFBF9" : AT.card,
+                          cursor: e.job_id ? "pointer" : "default",
+                        }}
                       >
-                        <td className="px-4 py-4 font-sans text-sm text-neutral-300 whitespace-nowrap">
-                          {new Date(e.ts).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-4 font-sans text-sm text-neutral-200">
-                          {e.actor}
-                        </td>
-                        <td className="px-4 py-4 font-sans text-sm text-neutral-200">
-                          {e.action}
-                        </td>
-                        <td className="max-w-72 truncate px-4 py-4 font-sans text-sm font-normal text-neutral-400">
-                          {e.argument_summary}
-                        </td>
-                        <td className="px-4 py-4">
+                        {/* 2–3px semantic marker + timestamp */}
+                        <span className="flex items-center gap-2.5">
                           <span
-                            className={`rounded px-2 py-0.5 text-xs font-medium ${
-                              OUTCOME_BADGES[e.outcome] ??
-                              "bg-neutral-500/10 text-neutral-400 border border-neutral-500/20"
-                            }`}
+                            className="h-8 w-[3px] shrink-0 rounded-full"
+                            style={{ background: TONE[tone].marker }}
+                            aria-hidden
+                          />
+                          <Stamp ts={e.ts} />
+                        </span>
+
+                        {/* Event label + details */}
+                        <span className="min-w-0">
+                          <span
+                            className="block text-[12px] font-bold uppercase tracking-[0.08em]"
+                            style={{ color: tone === "neutral" ? AT.ink : TONE[tone].text }}
                           >
-                            {e.outcome}
+                            {label}
                           </span>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-sm text-neutral-300">
-                          {e.hash.slice(0, 12)}…
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <ChevronRight className="ml-auto size-4 text-neutral-600" />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                          <span
+                            className="mt-0.5 block truncate text-[13px]"
+                            style={{ color: AT.ink2 }}
+                            title={e.argument_summary}
+                          >
+                            {e.argument_summary}
+                          </span>
+                        </span>
+
+                        {/* Actor + role */}
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13px] font-medium" style={{ color: AT.ink }}>
+                            {e.actor}
+                          </span>
+                          <span className="block text-[11px]" style={{ color: AT.ink2 }}>{e.actor_role}</span>
+                        </span>
+
+                        {/* Reference */}
+                        <span
+                          className="truncate font-mono text-[12px]"
+                          style={{ color: AT.ink2 }}
+                          title={e.job_id}
+                        >
+                          {e.job_id ? `${e.job_id.slice(0, 8)}…` : "—"}
+                        </span>
+
+                        <OutcomeCell outcome={e.outcome} />
+
+                        {/* Hash — visually secondary */}
+                        <span className="truncate font-mono text-[12px]" style={{ color: AT.ink2 }} title={e.hash}>
+                          {e.hash.slice(0, 10)}…
+                        </span>
+
+                        {/* Expand control — stopPropagation so it never navigates */}
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          aria-label={open ? "Hide full audit details" : "Show full audit details"}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            toggleRow(e.event_id);
+                          }}
+                          className="flex size-7 items-center justify-center rounded-md transition"
+                          style={{ color: AT.ink2 }}
+                        >
+                          <ChevronRight
+                            className="size-4 transition-transform"
+                            style={{ transform: open ? "rotate(90deg)" : "none" }}
+                            aria-hidden
+                          />
+                        </button>
+                      </div>
+
+                      {open && (
+                        <div
+                          className="grid gap-x-3 gap-y-2 px-4 pb-4 pt-1 text-[12px]"
+                          style={{
+                            gridTemplateColumns: "110px minmax(0,1fr)",
+                            background: "#FBFBF9",
+                          }}
+                        >
+                          <span />
+                          <div className="flex flex-col gap-1.5">
+                            {/* Raw action always available per the spec */}
+                            <DetailRow k="Action" v={e.action} mono />
+                            <DetailRow k="Event ID" v={e.event_id} mono />
+                            <DetailRow k="Outcome" v={e.outcome} />
+                            <DetailRow k="Actor" v={`${e.actor} (${e.actor_role})`} />
+                            <DetailRow k="Arguments" v={e.argument_summary} />
+                            <DetailRow k="Previous hash" v={e.prev_hash} mono />
+                            <DetailRow k="Hash" v={e.hash} mono />
+                            {e.job_id && (
+                              <p className="pt-1">
+                                <Link
+                                  href={`/investigations/${e.job_id}`}
+                                  onClick={(ev) => ev.stopPropagation()}
+                                  className="inline-flex items-center gap-1 font-semibold underline underline-offset-2"
+                                  style={{ color: AT.ink }}
+                                >
+                                  Open investigation {e.job_id.slice(0, 8)}…
+                                  <ChevronRight className="size-3" aria-hidden />
+                                </Link>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
