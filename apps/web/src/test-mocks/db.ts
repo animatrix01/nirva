@@ -43,6 +43,10 @@ export interface MockJobRecord {
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** Retrieved evidence count. Mirrors the real API's JobSummary.sources. */
+  sources: number;
+  /** Final-report confidence, or null while no report exists. */
+  confidence: number | null;
 }
 
 const seededJobs: MockJobRecord[] = [
@@ -56,6 +60,10 @@ const seededJobs: MockJobRecord[] = [
     created_by: "u-eng-0001",
     created_at: isoNow(-240),
     updated_at: isoNow(-230),
+    // 0.82 deliberately matches the confidence hardcoded in toJobDetail below,
+    // so the list summary and the detail view never disagree.
+    sources: 5,
+    confidence: 0.82,
   },
   {
     job_id: "job-seed-0002",
@@ -67,6 +75,8 @@ const seededJobs: MockJobRecord[] = [
     created_by: "u-sup-0003",
     created_at: isoNow(-90),
     updated_at: isoNow(-60),
+    sources: 3,
+    confidence: 0.74,
   },
 ];
 
@@ -86,6 +96,10 @@ export function createMockJob(
     created_by: userId,
     created_at: isoNow(),
     updated_at: isoNow(),
+    // A queued job has retrieved nothing yet — these are truthful zeros, not
+    // placeholders, so list views render their empty state correctly.
+    sources: 0,
+    confidence: null,
   };
   mockJobs.unshift(job);
   return toJobSummary(job);
@@ -97,8 +111,8 @@ export function toJobSummary(job: MockJobRecord): JobSummary {
     objective_summary: job.objective.slice(0, 120),
     status: job.status,
     equipment_id: job.equipment_id,
-    sources: 0,
-    confidence: null,
+    sources: job.sources,
+    confidence: job.confidence,
     created_by: job.created_by,
     created_at: job.created_at,
   };

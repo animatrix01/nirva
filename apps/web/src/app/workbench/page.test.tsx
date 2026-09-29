@@ -32,8 +32,10 @@ describe("WorkbenchPage role homes", () => {
     createMockJob("Investigate P-204 seal failures", "P-204", "u-eng-0001");
     render(<WorkbenchPage />);
     expect(await screen.findByText(/Engineer workbench/i)).toBeInTheDocument();
+    // The latest investigation intentionally appears twice: once in the
+    // "Last investigation" focal card and once in the log table.
     await waitFor(() =>
-      expect(screen.getByText(/Investigate P-204 seal failures/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/Investigate P-204 seal failures/i).length).toBeGreaterThanOrEqual(2)
     );
     expect(screen.getByRole("link", { name: /New investigation/i })).toHaveAttribute(
       "href",
@@ -70,8 +72,8 @@ describe("WorkbenchPage role homes", () => {
     await waitFor(() =>
       expect(screen.getByText(/valid — tamper-evident/i)).toBeInTheDocument()
     );
-    expect(screen.getByText(/Recent audit events/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open full audit log/i })).toHaveAttribute(
+    expect(screen.getByText(/Recent audit activity/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View full audit log/i })).toHaveAttribute(
       "href",
       "/audit"
     );
