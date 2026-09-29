@@ -116,8 +116,8 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
             aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 border-l-2 px-3 py-2 text-sm font-semibold transition-colors ${
               active
-                ? "border-[#B9FF52] bg-[#f0fdf4] text-slate-900"
-                : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                ? "border-[#c8f135] bg-neutral-800/60 font-medium text-white"
+                : "border-transparent text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200"
             }`}
           >
             <item.icon className="size-4 shrink-0" />

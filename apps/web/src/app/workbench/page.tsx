@@ -70,24 +70,24 @@ function Panel({
   const ops = tone === "ops";
   return (
     <section
-      className={`overflow-hidden rounded-xl border bg-white ${
-        ops ? "border-slate-300/80" : "border-slate-200"
+      className={`overflow-hidden rounded-xl border bg-neutral-900 ${
+        ops ? "border-neutral-700/80" : "border-neutral-800"
       } ${className}`}
     >
       <div
         className={
           ops
             ? "flex items-center gap-2.5 border-b px-5 py-3"
-            : "border-b border-slate-200 bg-slate-900 px-5 py-3.5"
+            : "border-b border-neutral-800 bg-neutral-900 px-5 py-3.5"
         }
         style={ops ? { backgroundColor: "#E8EDF2", borderColor: "#D7DEE3" } : undefined}
       >
-        {Icon && <Icon className={ops ? "size-4 shrink-0 text-slate-500" : "hidden"} aria-hidden />}
+        {Icon && <Icon className={ops ? "size-4 shrink-0 text-neutral-500" : "hidden"} aria-hidden />}
         <p
           className={
             ops
               ? "text-[11px] font-bold uppercase tracking-[0.14em]"
-              : "text-xs font-bold uppercase tracking-widest text-slate-300"
+              : "text-xs font-bold uppercase tracking-widest text-neutral-400"
           }
           style={ops ? { color: "#0F172A" } : undefined}
         >
@@ -107,7 +107,7 @@ function Panel({
 
 function LoadingBlock() {
   return (
-    <div className="flex items-center gap-2 py-6 text-sm text-slate-600">
+    <div className="flex items-center gap-2 py-6 text-sm text-neutral-400">
       <Loader2 className="size-4 animate-spin" />
       Loading…
     </div>
@@ -121,7 +121,7 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
       <button
         type="button"
         onClick={onRetry}
-        className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-slate-800 hover:bg-slate-50"
+        className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800"
       >
         Retry
       </button>
@@ -142,7 +142,7 @@ const WB = {
   ink:    "#101820",
   ink2:   "#52606D",
   muted:  "#74818D",
-  lime:   "#B9FF52",
+  lime:   "#c8f135",
 } as const;
 
 type StatusMeta = {
@@ -157,12 +157,12 @@ type StatusMeta = {
  * "Draft" because a queued job has not produced anything to review yet.
  */
 const STATUS_META: Record<string, StatusMeta> = {
-  completed:         { label: "Completed",          cls: "border-emerald-300 bg-emerald-50 text-emerald-800", bar: "bg-emerald-600" },
-  awaiting_approval: { label: "Review required",    cls: "border-amber-300 bg-amber-50 text-amber-800",       bar: "bg-amber-500" },
-  running:           { label: "In progress",        cls: "border-sky-300 bg-sky-50 text-sky-800",             bar: "bg-sky-600" },
-  queued:            { label: "Draft",              cls: "border-slate-300 bg-slate-100 text-slate-600",       bar: "bg-slate-400" },
-  failed:            { label: "Failed",             cls: "border-red-300 bg-red-50 text-red-800",             bar: "bg-red-500" },
-  blocked_injection: { label: "Blocked — injection", cls: "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800", bar: "bg-fuchsia-500" },
+  completed:         { label: "Completed",          cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", bar: "bg-emerald-600" },
+  awaiting_approval: { label: "Review required",    cls: "border-amber-500/30 bg-amber-500/10 text-amber-400",       bar: "bg-amber-500" },
+  running:           { label: "In progress",        cls: "border-sky-500/30 bg-sky-500/10 text-sky-400",             bar: "bg-sky-600" },
+  queued:            { label: "Draft",              cls: "border-neutral-700 bg-neutral-800 text-neutral-400",       bar: "bg-neutral-500" },
+  failed:            { label: "Failed",             cls: "border-red-500/30 bg-red-500/10 text-red-400",             bar: "bg-red-500" },
+  blocked_injection: { label: "Blocked — injection", cls: "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400", bar: "bg-fuchsia-500" },
 };
 
 const statusMeta = (status: string): StatusMeta =>
@@ -500,7 +500,7 @@ function EngineerHome() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search investigations…"
               aria-label="Search investigations"
-              className="w-60 rounded-lg border py-1.5 pl-8 pr-3 text-[13px] outline-none transition focus:border-slate-400"
+              className="w-60 rounded-lg border py-1.5 pl-8 pr-3 text-[13px] outline-none transition focus:border-[#c8f135]"
               style={{ background: WB.raised, borderColor: WB.border, color: WB.ink }}
             />
           </div>
@@ -754,8 +754,8 @@ function SupervisorHome() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Supervisor Workbench</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-neutral-100">Supervisor Workbench</h1>
+        <p className="mt-1 text-sm text-neutral-400">
           Approve or reject consequential actions — nothing executes without you.
         </p>
       </div>
@@ -781,7 +781,7 @@ function SupervisorHome() {
           ) : approvals === null ? (
             <LoadingBlock />
           ) : displayPending.length === 0 ? (
-            <p className="py-4 text-sm text-slate-600">
+            <p className="py-4 text-sm text-neutral-400">
               Nothing awaiting your decision.
             </p>
           ) : (
@@ -799,25 +799,25 @@ function SupervisorHome() {
                 return (
                   <div
                     key={a.approval_id}
-                    className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm"
+                    className="rounded-lg border border-amber-200 bg-neutral-900 p-4 shadow-sm"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`rounded border px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${riskCls}`}>
                           {a.risk_level} risk
                         </span>
-                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                        <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">
                           {a.action.replace(/_/g, " ")}
                         </span>
                       </div>
-                      <span className="text-xs font-medium text-slate-500 shrink-0">waiting {waitLabel}</span>
+                      <span className="text-xs font-medium text-neutral-500 shrink-0">waiting {waitLabel}</span>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-neutral-100">
                       {a.arguments_summary}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {a.evidence_refs.map(ref => (
-                        <span key={ref} className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{ref}</span>
+                        <span key={ref} className="rounded-full border border-neutral-700 bg-neutral-800 px-2.5 py-0.5 text-xs font-medium text-neutral-300">{ref}</span>
                       ))}
                     </div>
                     <div className="mt-3 flex items-center gap-2">
@@ -825,7 +825,7 @@ function SupervisorHome() {
                         type="button"
                         disabled={decidingId === a.approval_id}
                         onClick={() => decide(a.approval_id, "approved")}
-                        className="flex items-center gap-1.5 rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-md bg-[#c8f135] px-4 py-2 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
                       >
                         <CheckCircle2 className="size-4" />
                         Approve
@@ -840,7 +840,7 @@ function SupervisorHome() {
                         Reject
                       </button>
                       {decidingId === a.approval_id && (
-                        <Loader2 className="size-4 animate-spin text-slate-600" />
+                        <Loader2 className="size-4 animate-spin text-neutral-400" />
                       )}
                     </div>
                   </div>
@@ -856,19 +856,19 @@ function SupervisorHome() {
         {approvals === null ? (
           <LoadingBlock />
         ) : displayDecided.length === 0 ? (
-          <p className="py-4 text-sm text-slate-600">No decisions recorded yet.</p>
+          <p className="py-4 text-sm text-neutral-400">No decisions recorded yet.</p>
         ) : (
           <div className="space-y-2">
             {displayDecided.map((a) => (
               <div
                 key={a.approval_id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
+                className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900 px-4 py-3 hover:bg-neutral-800"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">
+                  <p className="truncate text-sm font-semibold text-neutral-100">
                     {a.arguments_summary}
                   </p>
-                  <p className="mt-0.5 font-mono text-xs font-medium text-slate-500">
+                  <p className="mt-0.5 font-mono text-xs font-medium text-neutral-500">
                     {a.work_order_id ? `work order ${a.work_order_id}` : "rejected"}{a.decided_at ? ` · ${new Date(a.decided_at).toLocaleDateString()}` : ""}
                   </p>
                 </div>
@@ -957,7 +957,7 @@ function actionLabel(action: string): { label: string; dot: string; ink: string 
 
 /** Restrained semantic markers — five tones, no rainbows. */
 const TONE_DOT: Record<string, string> = {
-  neutral: "bg-slate-400",
+  neutral: "bg-neutral-500",
   blue:    "bg-blue-600",
   green:   "bg-emerald-600",
   amber:   "bg-amber-500",
@@ -981,7 +981,7 @@ function SafetyJobRow({ job, divider }: { job: JobSummary; divider: boolean }) {
   return (
     <Link
       href={`/investigations/${job.job_id}`}
-      className="group flex items-start gap-5 px-5 py-4 transition hover:bg-slate-50"
+      className="group flex items-start gap-5 px-5 py-4 transition hover:bg-neutral-800"
       style={divider ? { borderTop: `1px solid ${WB.border}` } : undefined}
     >
       <div className="w-[128px] shrink-0">
@@ -1276,7 +1276,7 @@ const svcTone = (status: string) => (status === "up" ? SVC_UP : SVC_DOWN);
  */
 function ServiceBar({ up }: { up: boolean }) {
   return (
-    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-neutral-700">
       <span className={`block h-full rounded-full ${up ? SVC_UP.bar : SVC_DOWN.bar}`} style={{ width: up ? "100%" : "40%" }} />
     </span>
   );
@@ -1547,7 +1547,7 @@ function AdminHome() {
                         }
                       >
                         <span
-                          className={`size-1.5 shrink-0 rounded-full ${m.loaded ? "bg-emerald-600" : "bg-slate-400"}`}
+                          className={`size-1.5 shrink-0 rounded-full ${m.loaded ? "bg-emerald-600" : "bg-neutral-500"}`}
                           aria-hidden
                         />
                         {m.loaded ? "loaded" : "not loaded"}
@@ -1604,7 +1604,7 @@ function AdminHome() {
               </div>
               <Link
                 href="/documents"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-4 py-2 text-[13px] font-semibold transition hover:bg-slate-50"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-4 py-2 text-[13px] font-semibold transition hover:bg-neutral-800"
                 style={{ borderColor: WB.border, color: WB.ink, background: WB.raised }}
               >
                 Open library
@@ -1636,7 +1636,7 @@ export default function WorkbenchPage() {
   if (!auth) {
     return (
       <div className="min-h-screen bg-background" aria-busy="true">
-        <div className="flex items-center gap-2 p-6 text-sm text-slate-600">Loading…</div>
+        <div className="flex items-center gap-2 p-6 text-sm text-neutral-400">Loading…</div>
       </div>
     );
   }

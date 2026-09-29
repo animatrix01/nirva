@@ -26,7 +26,7 @@ import { Fragment, useSyncExternalStore, useEffect, useState } from "react";
 import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, login, storeAuth } from "@/lib/api";
 
-const LIME = "#B9FF52";
+const LIME = "#c8f135";
 
 // ─── Hydration ────────────────────────────────────────────────────────────────
 
@@ -94,11 +94,11 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white p-10 shadow-2xl"
+        className="relative z-10 w-full max-w-[480px] rounded-2xl border border-neutral-800 bg-neutral-900 p-10 shadow-2xl"
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="absolute right-4 top-4 flex size-7 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900 text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-300"
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
@@ -107,12 +107,12 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
         <div className="mb-8 flex flex-col items-center gap-4">
           <NirvaLogo className="size-20" />
-          <h1 className="text-2xl font-bold tracking-wider text-slate-900">NIRVA</h1>
+          <h1 className="text-2xl font-bold tracking-wider text-neutral-100">NIRVA</h1>
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <label htmlFor="modal-username" className="text-xs font-medium uppercase tracking-wider text-slate-600">Username</label>
+            <label htmlFor="modal-username" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Username</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
               <input id="modal-username" type="text"
@@ -120,13 +120,13 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 autoComplete="off"
                 value={username} onChange={e => setUsername(e.target.value)}
                 placeholder="Enter username" required
-                className="w-full rounded-lg border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-slate-300 focus:text-slate-900 transition-colors"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none focus:border-neutral-700 focus:text-neutral-100 transition-colors"
                 style={{ WebkitTextFillColor: "inherit", WebkitBoxShadow: "0 0 0 1000px white inset", caretColor: LIME }}
               />
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <label htmlFor="modal-password" className="text-xs font-medium uppercase tracking-wider text-slate-600">Password</label>
+            <label htmlFor="modal-password" className="text-xs font-medium uppercase tracking-wider text-neutral-400">Password</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 size-4 -translate-y-1/2" style={{ color: LIME }} />
               <input id="modal-password" type="password"
@@ -134,7 +134,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 autoComplete="new-password"
                 value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="Enter password" required
-                className="w-full rounded-lg border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-slate-300 focus:text-slate-900 transition-colors"
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-900 py-3.5 pl-12 pr-4 text-sm text-neutral-200 placeholder:text-neutral-600 outline-none focus:border-neutral-700 focus:text-neutral-100 transition-colors"
                 style={{ WebkitTextFillColor: "inherit", WebkitBoxShadow: "0 0 0 1000px white inset", caretColor: LIME }}
               />
             </div>
@@ -149,25 +149,25 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           </button>
         </form>
 
-        <div className="mt-8 border-t border-slate-200 pt-6">
-          <p className="mb-4 text-center text-xs uppercase tracking-widest text-slate-500">Demo accounts</p>
+        <div className="mt-8 border-t border-neutral-800 pt-6">
+          <p className="mb-4 text-center text-xs uppercase tracking-widest text-neutral-500">Demo accounts</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
             {DEMO_ACCOUNTS.map((a) => (
               <button
                 key={a.username}
                 type="button"
                 onClick={() => { setUsername(a.username); setPassword("nirva-demo-pass"); }}
-                className={`rounded-lg border px-3 py-2.5 text-left transition hover:border-slate-300 ${
-                  username === a.username ? "border-[#B9FF52]/50 bg-[#B9FF52]/10" : "border-slate-200 bg-white"
+                className={`rounded-lg border px-3 py-2.5 text-left transition hover:border-neutral-700 ${
+                  username === a.username ? "border-[#c8f135]/50 bg-[#c8f135]/10" : "border-neutral-800 bg-neutral-900"
                 }`}
               >
-                <p className="text-xs font-semibold text-slate-800">{a.role}</p>
-                <p className="mt-0.5 text-[10px] text-slate-500">{a.line}</p>
+                <p className="text-xs font-semibold text-neutral-200">{a.role}</p>
+                <p className="mt-0.5 text-[10px] text-neutral-500">{a.line}</p>
               </button>
             ))}
           </div>
-          <p className="text-center text-xs text-slate-500">
-            password: <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700">nirva-demo-pass</code>
+          <p className="text-center text-xs text-neutral-500">
+            password: <code className="rounded bg-neutral-800 px-2 py-0.5 font-mono text-xs text-neutral-300">nirva-demo-pass</code>
           </p>
         </div>
       </div>
@@ -181,8 +181,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
 function InvestigationTerminal() {
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+    <div className="w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-800 px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-red-500/70" />
           <span className="size-2.5 rounded-full bg-yellow-500/70" />
@@ -195,17 +195,17 @@ function InvestigationTerminal() {
         </span>
       </div>
 
-      <div className="space-y-4 p-5 bg-white">
+      <div className="space-y-4 p-5 bg-neutral-900">
         <div>
-          <p className="mb-1.5 text-[11px] uppercase tracking-widest text-slate-500">Investigation objective</p>
-          <p className="text-sm leading-relaxed text-slate-800">
-            &ldquo;Investigate why <span className="font-semibold text-slate-900">Pump P-204</span> has failed repeatedly.
+          <p className="mb-1.5 text-[11px] uppercase tracking-widest text-neutral-500">Investigation objective</p>
+          <p className="text-sm leading-relaxed text-neutral-200">
+            &ldquo;Investigate why <span className="font-semibold text-neutral-100">Pump P-204</span> has failed repeatedly.
             Cross-reference maintenance history, OEM manual, and safety SOP.&rdquo;
           </p>
         </div>
 
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-widest text-slate-500">Investigation plan</p>
+          <p className="mb-2 text-[11px] uppercase tracking-widest text-neutral-500">Investigation plan</p>
           <div className="space-y-1.5">
             {[
               { done: true,  active: false, label: "Read maintenance history",         sub: "7 work orders · 18 months" },
@@ -214,7 +214,7 @@ function InvestigationTerminal() {
               { done: false, active: false, label: "Compare safety SOP rev 4",         sub: "" },
               { done: false, active: false, label: "Compose cited recommendation",     sub: "" },
             ].map((s, i) => (
-              <div key={i} className={`flex items-start gap-3 rounded px-3 py-2 ${s.active ? "border border-slate-200 bg-slate-50" : ""}`}>
+              <div key={i} className={`flex items-start gap-3 rounded px-3 py-2 ${s.active ? "border border-neutral-800 bg-neutral-800" : ""}`}>
                 {s.done ? (
                   <BadgeCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
                 ) : s.active ? (
@@ -223,7 +223,7 @@ function InvestigationTerminal() {
                   <span className="mt-0.5 inline-block size-4 shrink-0 rounded-full border border-stone-700" />
                 )}
                 <div>
-                  <span className={`text-[13px] ${s.done ? "text-slate-500" : s.active ? "font-medium text-slate-800" : "text-slate-400"}`}>
+                  <span className={`text-[13px] ${s.done ? "text-neutral-500" : s.active ? "font-medium text-neutral-200" : "text-neutral-500"}`}>
                     {s.label}
                     {s.done && <span className="ml-2 text-[11px] text-emerald-600">✓</span>}
                   </span>
@@ -245,22 +245,22 @@ function InvestigationTerminal() {
         </div>
 
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-widest text-slate-500">Evidence citations</p>
+          <p className="mb-2 text-[11px] uppercase tracking-widest text-neutral-500">Evidence citations</p>
           <div className="flex flex-wrap gap-1.5">
             {["OEM Manual, rev C, p.41", "SOP-MRPL-004, rev 4, §3.2", "WO-88712, rev 2", "Incident IR-2024-031"].map((c) => (
-              <a key={c} href="#how-it-works" className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-700 transition hover:border-slate-300 hover:text-slate-900">{c}</a>
+              <a key={c} href="#how-it-works" className="rounded border border-neutral-800 bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-300 transition hover:border-neutral-700 hover:text-neutral-100">{c}</a>
             ))}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[11px] uppercase tracking-widest text-slate-500">Confidence</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">87%</p>
-            <div className="mt-2 h-1 rounded-full bg-slate-200">
+          <div className="rounded border border-neutral-800 bg-neutral-800 p-3">
+            <p className="text-[11px] uppercase tracking-widest text-neutral-500">Confidence</p>
+            <p className="mt-1 text-xl font-bold text-neutral-100">87%</p>
+            <div className="mt-2 h-1 rounded-full bg-neutral-700">
               <div className="h-1 w-[87%] rounded-full bg-emerald-600" />
             </div>
-            <p className="mt-1 text-[10px] text-slate-500">live demo data</p>
+            <p className="mt-1 text-[10px] text-neutral-500">live demo data</p>
           </div>
           <div className="rounded border border-amber-200 bg-amber-50 p-3">
             <p className="text-[11px] uppercase tracking-widest text-amber-700">Status</p>
@@ -311,8 +311,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         onClick={() => setOpen(!open)}
         className="group flex w-full items-center justify-between gap-4 py-5 text-left"
       >
-        <span className="text-base font-semibold text-slate-800 group-hover:text-slate-900">{q}</span>
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white">
+        <span className="text-base font-semibold text-neutral-200 group-hover:text-neutral-100">{q}</span>
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900">
           <svg
             width="10" height="10" viewBox="0 0 10 10" fill="none"
             className="transition-transform duration-200"
@@ -327,7 +327,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         className="overflow-hidden transition-all duration-300"
         style={{ maxHeight: open ? "300px" : "0" }}
       >
-        <p className="pb-6 text-base leading-relaxed text-slate-600">{a}</p>
+        <p className="pb-6 text-base leading-relaxed text-neutral-400">{a}</p>
       </div>
     </div>
   );
@@ -504,29 +504,29 @@ export default function LandingPage() {
   }, [showLogin]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-700">
+    <div className="min-h-screen bg-neutral-900 text-neutral-300">
 
       {showLogin && !authed && <LoginModal onClose={() => setShowLogin(false)} />}
 
       {/* ── NAVBAR ── */}
-      <nav className="w-full border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-50">
+      <nav className="w-full border-b border-neutral-800 bg-neutral-900/95 backdrop-blur sticky top-0 z-50">
         <div className="w-full px-8 lg:pl-[120px] lg:pr-16 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <NirvaLogo className="size-14" />
-            <span className="font-bold text-3xl tracking-tight text-slate-900">NIRVA</span>
+            <span className="font-bold text-3xl tracking-tight text-neutral-100">NIRVA</span>
           </Link>
           <div className="flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-8 text-sm text-slate-500">
-              <a href="#overview" className="hover:text-slate-900 transition">Overview</a>
-              <a href="#how-it-works" className="hover:text-slate-900 transition">How it works</a>
-              <a href="#roles" className="hover:text-slate-900 transition">Roles</a>
-              <a href="#faq" className="hover:text-slate-900 transition">FAQ</a>
-              <a href="#demo" className="hover:text-slate-900 transition">Demo</a>
+            <div className="hidden md:flex items-center gap-8 text-sm text-neutral-500">
+              <a href="#overview" className="hover:text-neutral-100 transition">Overview</a>
+              <a href="#how-it-works" className="hover:text-neutral-100 transition">How it works</a>
+              <a href="#roles" className="hover:text-neutral-100 transition">Roles</a>
+              <a href="#faq" className="hover:text-neutral-100 transition">FAQ</a>
+              <a href="#demo" className="hover:text-neutral-100 transition">Demo</a>
             </div>
             <Link
               href={authed ? "/workbench" : "#"}
               onClick={!authed ? (e) => { e.preventDefault(); setShowLogin(true); } : undefined}
-              className="flex items-center gap-2 rounded-lg border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
+              className="flex items-center gap-2 rounded-lg border border-[#c8f135] bg-[#c8f135] px-4 py-2 text-sm font-semibold text-black hover:bg-[#b4e125] transition"
             >
               {authed ? "Open workbench" : "Sign in"}
               <ArrowRight className="size-3.5" />
@@ -549,14 +549,14 @@ export default function LandingPage() {
               the terminal keep their existing geometry. */}
           <div className="flex flex-col pt-12 pl-14">
             {/* Headline */}
-            <h1 className="max-w-[14ch] text-[56px] font-bold leading-[1.06] tracking-[-0.032em] text-slate-900">
+            <h1 className="max-w-[14ch] text-[56px] font-bold leading-[1.06] tracking-[-0.032em] text-neutral-100">
               The offline industrial investigation{" "}
               <span style={{ color: LIME }}>workbench.</span>
             </h1>
             <div className="mt-6 mb-[22px] h-1 w-12 rounded-[2px]" style={{ backgroundColor: LIME }} />
 
             {/* Description */}
-            <p className="max-w-[560px] text-[15.5px] leading-[1.68] text-slate-600">
+            <p className="max-w-[560px] text-[15.5px] leading-[1.68] text-neutral-400">
               Ask about any equipment failure in plain language. NIRVA checks OEM manuals, SOPs,
               maintenance history, drawings and work orders, flags conflicts between sources, and
               drafts a cited recommendation — paused for supervisor sign-off with a full audit trail.
@@ -570,9 +570,9 @@ export default function LandingPage() {
                 { k: "Source-traceable", v: "Every claim linked" },
                 { k: "Human-approved",   v: "Actions under control" },
               ].map((p) => (
-                <div key={p.k} className="px-5 first:pl-0 [&:not(:first-child)]:border-l [&:not(:first-child)]:border-slate-200">
-                  <dt className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-slate-900">{p.k}</dt>
-                  <dd className="mt-1 text-[12.5px] text-slate-600">{p.v}</dd>
+                <div key={p.k} className="px-5 first:pl-0 [&:not(:first-child)]:border-l [&:not(:first-child)]:border-neutral-800">
+                  <dt className="text-[12.5px] font-semibold uppercase tracking-[0.06em] text-neutral-100">{p.k}</dt>
+                  <dd className="mt-1 text-[12.5px] text-neutral-400">{p.v}</dd>
                 </div>
               ))}
             </dl>
@@ -590,7 +590,7 @@ export default function LandingPage() {
               </Link>
               <a
                 href="#how-it-works"
-                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-[26px] py-3 text-[15px] font-semibold text-slate-800 transition hover:border-slate-300"
+                className="inline-flex items-center rounded-xl border border-neutral-800 bg-neutral-900 px-[26px] py-3 text-[15px] font-semibold text-neutral-200 transition hover:border-neutral-700"
                 style={{ boxShadow: "0 1px 3px rgba(15,23,42,0.06)" }}
               >
                 How it works
@@ -599,13 +599,13 @@ export default function LandingPage() {
 
             {/* Source row — editorial listing, not a diagram. No arrows, no
                 connectors; the sibling rule supplies the dividers. */}
-            <div className="mt-11 max-w-[644px] border-t border-slate-200 pt-[26px]">
-              <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-slate-600">
+            <div className="mt-11 max-w-[644px] border-t border-neutral-800 pt-[26px]">
+              <p className="text-[12.5px] font-bold uppercase tracking-[0.16em] text-neutral-400">
                 One question. Multiple plant sources. One traceable investigation.
               </p>
-              <div className="mt-5 flex flex-wrap items-center gap-y-3 [&>*+*]:ml-5 [&>*+*]:border-l [&>*+*]:border-slate-200 [&>*+*]:pl-5">
+              <div className="mt-5 flex flex-wrap items-center gap-y-3 [&>*+*]:ml-5 [&>*+*]:border-l [&>*+*]:border-neutral-800 [&>*+*]:pl-5">
                 {SOURCE_TYPES.map((s) => (
-                  <div key={s.label} className="flex items-center gap-2.5 text-[15px] text-slate-900">
+                  <div key={s.label} className="flex items-center gap-2.5 text-[15px] text-neutral-100">
                     <svg
                       viewBox="0 0 16 16"
                       fill="none"
@@ -613,7 +613,7 @@ export default function LandingPage() {
                       strokeWidth={1.3}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="size-[19px] shrink-0 text-slate-400"
+                      className="size-[19px] shrink-0 text-neutral-500"
                       aria-hidden="true"
                     >
                       {s.glyph}
@@ -626,7 +626,7 @@ export default function LandingPage() {
           </div>
           {/* Right column */}
           <div className="flex flex-col gap-2 w-full pt-14">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-800">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-200">
               Live investigation — Pump P-204 · golden demo
             </p>
             <InvestigationTerminal />
@@ -643,7 +643,7 @@ export default function LandingPage() {
           ══════════════════════════════════════════════════════════════════════ */}
       <section
         id="how-it-works"
-        className="w-full border-t border-slate-200 bg-[#FBFCFD] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
+        className="w-full border-t border-neutral-800 bg-[#FBFCFD] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px)",
@@ -654,55 +654,55 @@ export default function LandingPage() {
 
           {/* Header */}
           <div className="mb-14 text-center">
-            <p className="text-base font-bold uppercase tracking-[0.2em] text-slate-800">
+            <p className="text-base font-bold uppercase tracking-[0.2em] text-neutral-200">
               Differentiation
             </p>
-            <h2 className="mt-[18px] text-[50px] font-bold leading-[1.05] tracking-[-0.03em] text-slate-900">
+            <h2 className="mt-[18px] text-[50px] font-bold leading-[1.05] tracking-[-0.03em] text-neutral-100">
               Same plant evidence.{" "}
               <br />
               A <span style={{ color: LIME }}>different kind</span>{" "}
               of answer.
             </h2>
-            <p className="mx-auto mt-[18px] max-w-[780px] text-[16px] leading-[1.6] text-slate-500">
+            <p className="mx-auto mt-[18px] max-w-[780px] text-[16px] leading-[1.6] text-neutral-500">
               When records conflict or evidence is missing, NIRVA makes the uncertainty visible
               instead of guessing.
             </p>
           </div>
 
-          <div className="grid border-t border-l border-slate-200 lg:grid-cols-[33fr_31fr_36fr]">
+          <div className="grid border-t border-l border-neutral-800 lg:grid-cols-[33fr_31fr_36fr]">
 
             {/* ── column headers ── */}
-            <div className="hidden border-r border-b border-slate-200 px-4 py-3 lg:block">
+            <div className="hidden border-r border-b border-neutral-800 px-4 py-3 lg:block">
               <div className="flex items-center gap-3">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden="true">
                   <path d="M14 3H7a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V7.5z" />
                   <path d="M14 3v4.5h4.5" />
                   <path d="M8.75 12.5h6.5M8.75 16h4" />
                 </svg>
-                <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-slate-900">
+                <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-neutral-100">
                   Industrial situation
                 </span>
               </div>
             </div>
 
-            <div className="hidden border-r border-b border-slate-200 px-4 py-3 lg:block">
+            <div className="hidden border-r border-b border-neutral-800 px-4 py-3 lg:block">
               <div className="flex items-center gap-3">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0" aria-hidden="true">
                   <path d="M12 3l1.7 4.6L18.3 9.3 13.7 11 12 15.6 10.3 11 5.7 9.3l4.6-1.7z" />
                   <path d="M18 15.6l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z" />
                 </svg>
                 <span>
-                  <span className="block text-[13px] font-semibold uppercase tracking-[0.1em] text-slate-900">
+                  <span className="block text-[13px] font-semibold uppercase tracking-[0.1em] text-neutral-100">
                     General AI assistants
                   </span>
-                  <span className="mt-0.5 block text-[12px] text-slate-500">
+                  <span className="mt-0.5 block text-[12px] text-neutral-500">
                     ChatGPT &middot; Claude &middot; Copilot
                   </span>
                 </span>
               </div>
             </div>
 
-            <div className="hidden border-r border-b border-slate-200 px-4 py-3 lg:block">
+            <div className="hidden border-r border-b border-neutral-800 px-4 py-3 lg:block">
               <div className="flex items-center gap-3">
                 <img
                   src="/nirva_logo_-removebg-preview.png"
@@ -710,10 +710,10 @@ export default function LandingPage() {
                   className="size-8 shrink-0 object-contain"
                 />
                 <span>
-                  <span className="block text-[13px] font-semibold uppercase tracking-[0.1em] text-slate-900">
+                  <span className="block text-[13px] font-semibold uppercase tracking-[0.1em] text-neutral-100">
                     NIRVA
                   </span>
-                  <span className="mt-0.5 block text-[12px] text-slate-500">
+                  <span className="mt-0.5 block text-[12px] text-neutral-500">
                     Evidence-grounded investigation
                   </span>
                 </span>
@@ -724,16 +724,16 @@ export default function LandingPage() {
             {DIFF_ROWS.map((r) => (
               <Fragment key={r.n}>
                 {/* industrial situation */}
-                <div className="border-r border-b border-slate-200 px-[26px] py-[28px]">
+                <div className="border-r border-b border-neutral-800 px-[26px] py-[28px]">
                   <div className="flex items-start gap-[18px]">
                     <span className="w-[32px] shrink-0 text-[18px] font-semibold leading-[1.4] text-[#A8B3BF]">
                       {r.n}
                     </span>
                     <span>
-                      <span className="block text-[15px] font-semibold leading-[1.4] text-slate-900">
+                      <span className="block text-[15px] font-semibold leading-[1.4] text-neutral-100">
                         {r.title}
                       </span>
-                      <span className="mt-1 block text-[13px] leading-[1.5] text-slate-500">
+                      <span className="mt-1 block text-[13px] leading-[1.5] text-neutral-500">
                         {r.cond}
                       </span>
                     </span>
@@ -741,16 +741,16 @@ export default function LandingPage() {
                 </div>
 
                 {/* general AI assistants */}
-                <div className="border-r border-b border-slate-200 px-[26px] py-[28px]">
-                  <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 lg:hidden">
+                <div className="border-r border-b border-neutral-800 px-[26px] py-[28px]">
+                  <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-neutral-500 lg:hidden">
                     General AI assistants
                   </p>
-                  <p className="text-[15px] leading-[1.55] text-slate-500">{r.ai}</p>
+                  <p className="text-[15px] leading-[1.55] text-neutral-500">{r.ai}</p>
                 </div>
 
                 {/* NIRVA */}
-                <div className="border-r border-b border-slate-200 px-[26px] py-[28px]">
-                  <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 lg:hidden">
+                <div className="border-r border-b border-neutral-800 px-[26px] py-[28px]">
+                  <p className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-neutral-500 lg:hidden">
                     NIRVA
                   </p>
                   <div className="flex items-start gap-3">
@@ -759,10 +759,10 @@ export default function LandingPage() {
                       <path d="M7.9 12.3l2.9 2.9 5.3-6" stroke={LIME} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>
-                      <span className="block text-[15px] font-semibold leading-[1.4] text-slate-900">
+                      <span className="block text-[15px] font-semibold leading-[1.4] text-neutral-100">
                         {r.nirva}
                       </span>
-                      <span className="mt-1 block text-[13px] leading-[1.5] text-slate-500">
+                      <span className="mt-1 block text-[13px] leading-[1.5] text-neutral-500">
                         {r.nirvaSub}
                       </span>
                     </span>
@@ -777,7 +777,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SOVEREIGN / OFFLINE — Full-bleed, visual treatment
           ══════════════════════════════════════════════════════════════════════ */}
-      <section className="w-full bg-white px-8 py-20 lg:px-16 lg:py-24"
+      <section className="w-full bg-neutral-900 px-8 py-20 lg:px-16 lg:py-24"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px)",
@@ -787,11 +787,11 @@ export default function LandingPage() {
         <div className="mx-auto w-full max-w-[1600px]">
           <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-center">
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Sovereign by Design</p>
-              <h2 className="mb-6 text-3xl font-bold text-slate-900 lg:text-4xl">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">Sovereign by Design</p>
+              <h2 className="mb-6 text-3xl font-bold text-neutral-100 lg:text-4xl">
                 Plant data stays <span style={{ color: LIME }}>inside the facility</span>
               </h2>
-              <p className="mb-8 text-base leading-relaxed text-slate-600">
+              <p className="mb-8 text-base leading-relaxed text-neutral-400">
                 NIRVA runs entirely on-premise. All models, retrieval, and indexing happen locally.
                 No cloud dependency. Air-gapped deployment supported.
               </p>
@@ -802,49 +802,49 @@ export default function LandingPage() {
                   { icon: ShieldCheck, label: "Air-gapped capable", desc: "Fully operational without internet. Supports isolated plant networks." },
                 ].map((f) => (
                   <div key={f.label} className="flex items-start gap-4">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm">
-                      <f.icon className="size-5 text-slate-700" />
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 shadow-sm">
+                      <f.icon className="size-5 text-neutral-300" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{f.label}</p>
-                      <p className="mt-1 text-sm text-slate-500">{f.desc}</p>
+                      <p className="text-sm font-bold text-neutral-100">{f.label}</p>
+                      <p className="mt-1 text-sm text-neutral-500">{f.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-neutral-800 shadow-sm">
               {/* Dark header bar */}
-              <div className="bg-slate-900 px-6 py-5 flex items-center justify-between">
+              <div className="bg-neutral-900 px-6 py-5 flex items-center justify-between">
                 <div>
                   <p className="text-base font-bold text-white">Network Status</p>
-                  <p className="mt-0.5 text-xs text-slate-400">All systems local · zero external calls</p>
+                  <p className="mt-0.5 text-xs text-neutral-500">All systems local · zero external calls</p>
                 </div>
-                <span className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1.5 text-xs font-semibold text-emerald-400">
+                <span className="flex items-center gap-2 rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-emerald-400">
                   <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Operational
                 </span>
               </div>
               {/* White content */}
-              <div className="bg-white p-6 space-y-3">
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5">
-                  <span className="text-base font-medium text-slate-700">External network</span>
+              <div className="bg-neutral-900 p-6 space-y-3">
+                <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3.5">
+                  <span className="text-base font-medium text-neutral-300">External network</span>
                   <span className="text-base font-bold text-red-600">Disconnected</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5">
-                  <span className="text-base font-medium text-slate-700">Local vector store</span>
+                <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3.5">
+                  <span className="text-base font-medium text-neutral-300">Local vector store</span>
                   <span className="text-base font-bold text-emerald-600">Active</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5">
-                  <span className="text-base font-medium text-slate-700">On-device inference</span>
+                <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3.5">
+                  <span className="text-base font-medium text-neutral-300">On-device inference</span>
                   <span className="text-base font-bold text-emerald-600">Running</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5">
-                  <span className="text-base font-medium text-slate-700">Investigation engine</span>
+                <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3.5">
+                  <span className="text-base font-medium text-neutral-300">Investigation engine</span>
                   <span className="text-base font-bold text-emerald-600">Operational</span>
                 </div>
-                <p className="pt-2 text-sm leading-relaxed text-slate-500">
+                <p className="pt-2 text-sm leading-relaxed text-neutral-500">
                   Verified operational with zero external dependencies. All plant knowledge remains on-premise.
                 </p>
               </div>
@@ -870,53 +870,53 @@ export default function LandingPage() {
 
           <div className="mb-[52px] grid grid-cols-1 gap-[48px] lg:grid-cols-[1.3fr_1fr]">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-500">
                 Human control
               </p>
-              <h2 className="mt-4 text-[48px] font-bold leading-[1.1] tracking-[-0.03em] text-slate-900">
+              <h2 className="mt-4 text-[48px] font-bold leading-[1.1] tracking-[-0.03em] text-neutral-100">
                 The right view for{" "}
                 <br />
                 <span style={{ color: LIME }}>every role</span>{" "}
                 on the investigation.
               </h2>
             </div>
-            <p className="border-l-2 border-[#D3DBE2] pl-6 text-[17px] leading-[1.5] text-slate-600">
+            <p className="border-l-2 border-[#D3DBE2] pl-6 text-[17px] leading-[1.5] text-neutral-400">
               One investigation, four purpose-built responsibilities. Each role sees what it needs,
               and consequential actions remain under authorized approval.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 border-t border-l border-slate-200 lg:grid-cols-4">
+          <div className="grid grid-cols-1 border-t border-l border-neutral-800 lg:grid-cols-4">
             {HC_ROLES.map((r) => (
               <div
                 key={r.n}
-                className="flex flex-col border-r border-b border-slate-200 px-[26px] pb-7 pt-[30px]"
+                className="flex flex-col border-r border-b border-neutral-800 px-[26px] pb-7 pt-[30px]"
               >
                 <div className="mb-[26px] flex items-center justify-between">
                   <span className="text-[18px] font-semibold text-[#A8B3BF]">{r.n}</span>
                   <span className="block size-2 rounded-full" style={{ background: r.dot }} />
                 </div>
-                <h3 className="text-[21px] font-bold tracking-[-0.015em] text-slate-900">
+                <h3 className="text-[21px] font-bold tracking-[-0.015em] text-neutral-100">
                   {r.label}
                 </h3>
-                <p className="mt-3 text-[16px] leading-[1.45] text-slate-600">{r.desc}</p>
-                <span className="mt-auto pt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                <p className="mt-3 text-[16px] leading-[1.45] text-neutral-400">{r.desc}</p>
+                <span className="mt-auto pt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500">
                   {r.tag}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="mt-[30px] grid grid-cols-1 border-t border-slate-200 lg:grid-cols-4">
+          <div className="mt-[30px] grid grid-cols-1 border-t border-neutral-800 lg:grid-cols-4">
             {HC_PRINCIPLES.map((p, i) => (
               <div
                 key={p}
                 className={`flex items-center gap-3 pt-[26px] ${
-                  i > 0 ? "lg:border-l lg:border-slate-200 lg:pl-[26px] lg:pr-5" : "pr-5"
+                  i > 0 ? "lg:border-l lg:border-neutral-800 lg:pl-[26px] lg:pr-5" : "pr-5"
                 }`}
               >
                 <span className="block size-[7px] shrink-0 rounded-full" style={{ background: LIME }} />
-                <span className="text-[15px] text-slate-600">{p}</span>
+                <span className="text-[15px] text-neutral-400">{p}</span>
               </div>
             ))}
           </div>
@@ -927,7 +927,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           FAQ — Simplified accordion
           ══════════════════════════════════════════════════════════════════════ */}
-      <section id="faq" className="w-full bg-white px-8 py-20 lg:px-16 lg:py-24"
+      <section id="faq" className="w-full bg-neutral-900 px-8 py-20 lg:px-16 lg:py-24"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px)",
@@ -936,11 +936,11 @@ export default function LandingPage() {
       >
         <div className="mx-auto w-full max-w-4xl">
           <div className="mb-12 text-center">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">FAQ</p>
-            <h2 className="text-3xl font-bold text-slate-900 lg:text-4xl">Common questions</h2>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">FAQ</p>
+            <h2 className="text-3xl font-bold text-neutral-100 lg:text-4xl">Common questions</h2>
           </div>
 
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-neutral-800">
             {FAQ_ITEMS.map((faq) => (
               <FaqItem key={faq.q} q={faq.q} a={faq.a} />
             ))}
@@ -951,7 +951,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           CTA — Ready to investigate
           ══════════════════════════════════════════════════════════════════════ */}
-      <section id="demo" className="relative w-full overflow-hidden border-t border-slate-200">
+      <section id="demo" className="relative w-full overflow-hidden border-t border-neutral-800">
         <img
           src="/cta-refinery.jpg"
           alt=""
@@ -985,21 +985,21 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           FOOTER
           ══════════════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="border-t border-neutral-800 bg-neutral-900">
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-5 px-8 py-8 lg:px-16">
           <div className="flex items-center gap-3">
             <NirvaLogo className="size-10" />
             <div>
-              <p className="text-base font-extrabold text-slate-900">NIRVA</p>
-              <p className="text-xs font-semibold text-slate-500">Offline industrial investigation workbench</p>
+              <p className="text-base font-extrabold text-neutral-100">NIRVA</p>
+              <p className="text-xs font-semibold text-neutral-500">Offline industrial investigation workbench</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm font-semibold text-slate-600">
+          <div className="flex items-center gap-4 text-sm font-semibold text-neutral-400">
             <span>SIH26117 · PSC26117 · MRPL</span>
             <span>·</span>
             <span>All demo data synthetic</span>
           </div>
-          <Link href="/login" className="text-sm font-bold text-slate-700 transition hover:text-slate-900 hover:underline">
+          <Link href="/login" className="text-sm font-bold text-neutral-300 transition hover:text-neutral-100 hover:underline">
             Sign in →
           </Link>
         </div>

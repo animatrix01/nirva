@@ -13,7 +13,7 @@ export function roleLabel(role: string): string {
 
 export function RoleBadge({ role }: { role: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+    <span className="inline-flex items-center rounded-full border border-neutral-700 bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-300">
       {roleLabel(role)}
     </span>
   );

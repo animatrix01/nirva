@@ -53,10 +53,10 @@ function relativeTime(iso: string): string {
 function SectionTitle({ label, count }: { label: string; count: number }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
+      <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
         {label}
       </h2>
-      <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+      <span className="rounded-full bg-neutral-700 px-2.5 py-0.5 text-xs font-bold text-neutral-300">
         {count}
       </span>
     </div>
@@ -65,7 +65,7 @@ function SectionTitle({ label, count }: { label: string; count: number }) {
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs text-slate-800">
+    <span className="rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs text-neutral-200">
       {children}
     </span>
   );
@@ -81,22 +81,22 @@ function Kebab({ jobId }: { jobId: string }) {
         aria-label="More actions"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="rounded-md p-1 text-slate-500 transition hover:bg-slate-50 hover:text-slate-600"
+        className="rounded-md p-1 text-neutral-500 transition hover:bg-slate-50 hover:text-neutral-400"
       >
         <MoreVertical className="size-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-7 z-30 w-44 rounded-md border border-neutral-700 bg-white py-1 shadow-xl">
+        <div className="absolute right-0 top-7 z-30 w-44 rounded-md border border-neutral-700 bg-neutral-900 py-1 shadow-xl">
           <button
             type="button"
-            className="block w-full px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-slate-50"
+            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-200 hover:bg-slate-50"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/investigations/${jobId}`); setOpen(false); }}
           >
             Open investigation
           </button>
           <button
             type="button"
-            className="block w-full px-3 py-1.5 text-left text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-400 hover:bg-slate-50 hover:text-neutral-200"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); void navigator.clipboard.writeText(jobId); setOpen(false); }}
           >
             Copy job ID
@@ -117,7 +117,7 @@ function OutlineLink({
   return (
     <Link
       href={href}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#A8EF47]"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[#c8f135] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#b4e125]"
     >
       {children}
       <ArrowRight className="size-4" />
@@ -220,14 +220,14 @@ export default function InvestigationsPage() {
         {/* 1. Page header & stats */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Investigations</h1>
-            <p className="mt-1 text-sm text-slate-600">
+            <h1 className="text-3xl font-bold text-neutral-100">Investigations</h1>
+            <p className="mt-1 text-sm text-neutral-400">
               Equipment problems and operational investigations
             </p>
           </div>
           <Link
             href="/investigations/new"
-            className="flex items-center gap-1.5 rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-medium text-black transition hover:bg-[#A8EF47]"
+            className="flex items-center gap-1.5 rounded-md bg-[#c8f135] px-4 py-2 text-sm font-medium text-black transition hover:bg-[#b4e125]"
           >
             <Plus className="size-4" />
             New investigation
@@ -238,10 +238,10 @@ export default function InvestigationsPage() {
           {stats.map((s) => (
             <div key={s.label} className="flex items-center gap-2">
               <span className={`size-2.5 rounded-full ${s.dot}`} />
-              <span className="text-sm font-bold text-slate-900">
+              <span className="text-sm font-bold text-neutral-100">
                 {s.count}
               </span>
-              <span className="text-sm font-medium text-slate-500">
+              <span className="text-sm font-medium text-neutral-500">
                 {s.label}
               </span>
             </div>
@@ -260,7 +260,7 @@ export default function InvestigationsPage() {
               aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as JobStatus | "all")}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
+              className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-400 outline-none transition focus:border-[#c8f135]"
             >
               <option value="all">All statuses</option>
               <option value="queued">Queued</option>
@@ -274,7 +274,7 @@ export default function InvestigationsPage() {
               aria-label="Filter by asset"
               value={assetFilter}
               onChange={(e) => setAssetFilter(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
+              className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-400 outline-none transition focus:border-[#c8f135]"
             >
               <option value="all">All assets</option>
               {assets
@@ -289,7 +289,7 @@ export default function InvestigationsPage() {
               aria-label="Filter by time"
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-slate-400"
+              className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-400 outline-none transition focus:border-[#c8f135]"
             >
               <option value="all">All time</option>
               <option value="24h">Last 24 hours</option>
@@ -300,13 +300,13 @@ export default function InvestigationsPage() {
 
           <div className="flex shrink-0 items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
               <input
                 type="text"
                 placeholder="Search investigations..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-[240px] rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-400 sm:w-[300px] lg:w-[340px]"
+                className="w-[240px] rounded-md border border-neutral-700 bg-neutral-900 py-2 pl-9 pr-3 text-sm text-neutral-200 outline-none transition placeholder:text-neutral-600 focus:border-[#c8f135] sm:w-[300px] lg:w-[340px]"
               />
             </div>
             <button
@@ -314,7 +314,7 @@ export default function InvestigationsPage() {
               onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters}
               aria-controls="investigation-filters"
-              className="flex items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="flex items-center gap-2 rounded-md bg-[#c8f135] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#b4e125]"
             >
               <Filter className="size-4" />
               Filters
@@ -328,7 +328,7 @@ export default function InvestigationsPage() {
             <button
               type="button"
               onClick={() => void load()}
-              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-slate-800 hover:bg-slate-50"
+              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-slate-50"
             >
               Retry
             </button>
@@ -362,10 +362,10 @@ export default function InvestigationsPage() {
                         <p className="text-xs font-bold tracking-wide text-amber-600">
                           AWAITING APPROVAL
                         </p>
-                        <h3 className="mt-1 text-base font-semibold text-slate-900">
+                        <h3 className="mt-1 text-base font-semibold text-neutral-100">
                           {j.objective_summary}
                         </h3>
-                        <p className="mt-1 text-sm text-slate-600">
+                        <p className="mt-1 text-sm text-neutral-400">
                           Work-order draft ready — the investigation surfaced findings
                           that require a supervisor decision.
                         </p>
@@ -384,21 +384,21 @@ export default function InvestigationsPage() {
 
                     <div className="mt-5 grid grid-cols-3 gap-6 border-t border-amber-500/15 pt-4">
                       <div>
-                        <p className="text-xs text-slate-600">Last updated</p>
-                        <p className="mt-1 font-mono text-sm text-slate-800">
+                        <p className="text-xs text-neutral-400">Last updated</p>
+                        <p className="mt-1 font-mono text-sm text-neutral-200">
                           {relativeTime(j.created_at)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-600">Confidence</p>
+                        <p className="text-xs text-neutral-400">Confidence</p>
                         {j.confidence === null ? (
-                          <p className="mt-1 font-mono text-xs text-slate-500">—</p>
+                          <p className="mt-1 font-mono text-xs text-neutral-500">—</p>
                         ) : (
                           <div className="mt-1.5 flex items-center gap-2">
-                            <span className="font-mono text-base font-bold text-slate-900">
+                            <span className="font-mono text-base font-bold text-neutral-100">
                               {Math.round(j.confidence * 100)}%
                             </span>
-                            <div className="h-1.5 flex-1 rounded-full bg-slate-100">
+                            <div className="h-1.5 flex-1 rounded-full bg-neutral-800">
                               <div
                                 className="h-1.5 rounded-full bg-amber-500"
                                 style={{ width: `${Math.round(j.confidence * 100)}%` }}
@@ -408,7 +408,7 @@ export default function InvestigationsPage() {
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-slate-600">Next step</p>
+                        <p className="text-xs text-neutral-400">Next step</p>
                         <p className="mt-1 text-sm font-medium text-amber-600">
                           {NEXT_STEP.awaiting_approval}
                         </p>
@@ -423,16 +423,16 @@ export default function InvestigationsPage() {
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
                     Recently completed
                   </h2>
-                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                  <span className="rounded-full bg-neutral-700 px-2.5 py-0.5 text-xs font-bold text-neutral-300">
                     {completedCount}
                   </span>
                 </div>
                 <a
                   href="#all-investigations"
-                  className="flex items-center gap-1 text-xs font-semibold text-slate-600 transition hover:text-slate-900"
+                  className="flex items-center gap-1 text-xs font-semibold text-neutral-400 transition hover:text-neutral-100"
                 >
                   View all
                   <ArrowRight className="size-3.5" />
@@ -440,7 +440,7 @@ export default function InvestigationsPage() {
               </div>
 
               {recent.length === 0 ? (
-                <p className="rounded-xl border border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">
+                <p className="rounded-xl border border-neutral-800 bg-neutral-900 px-5 py-6 text-sm text-neutral-500">
                   No completed investigations yet.
                 </p>
               ) : (
@@ -449,42 +449,42 @@ export default function InvestigationsPage() {
                     <Link
                       key={j.job_id}
                       href={`/investigations/${j.job_id}`}
-                      className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-400 hover:shadow-md"
+                      className="flex flex-col rounded-xl border border-neutral-800 bg-neutral-900 p-4 shadow-sm transition hover:border-neutral-600 hover:shadow-md"
                     >
                       {/* status + relative time */}
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
-                          <CheckCircle2 className="size-4 text-slate-400" />
-                          <span className="text-xs font-semibold text-slate-500">
+                          <CheckCircle2 className="size-4 text-neutral-500" />
+                          <span className="text-xs font-semibold text-neutral-500">
                             Completed
                           </span>
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-neutral-500">
                           {relativeTime(j.created_at)}
                         </span>
                       </div>
 
-                      <h3 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
+                      <h3 className="mt-2.5 line-clamp-2 text-sm font-semibold leading-snug text-neutral-100">
                         {j.objective_summary}
                       </h3>
-                      <p className="mt-1 truncate text-xs text-slate-500">
+                      <p className="mt-1 truncate text-xs text-neutral-500">
                         {j.equipment_id ?? "General investigation"}
                       </p>
 
-                      <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                      <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
                         <FileText className="size-3.5 shrink-0" />
                         {j.sources} sources
                         {j.confidence === null ? null : (
                           <>
                             <span aria-hidden>·</span>
-                            <span className="font-semibold text-slate-700">
+                            <span className="font-semibold text-neutral-300">
                               {Math.round(j.confidence * 100)}% confidence
                             </span>
                           </>
                         )}
                       </p>
 
-                      <span className="mt-4 flex items-center justify-end gap-1 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-700">
+                      <span className="mt-4 flex items-center justify-end gap-1 border-t border-neutral-800 pt-3 text-xs font-semibold text-neutral-300">
                         Open
                         <ArrowUpRight className="size-3.5" />
                       </span>
@@ -498,10 +498,10 @@ export default function InvestigationsPage() {
             <section id="all-investigations">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-600">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
                     All investigations
                   </h2>
-                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                  <span className="rounded-full bg-neutral-700 px-2.5 py-0.5 text-xs font-bold text-neutral-300">
                     {filtered.length}
                   </span>
                 </div>
@@ -513,15 +513,15 @@ export default function InvestigationsPage() {
                     setTimeFilter("all");
                     setSearch("");
                   }}
-                  className="flex items-center gap-1 text-xs text-slate-600 underline-offset-2 transition hover:text-slate-800 hover:underline"
+                  className="flex items-center gap-1 text-xs text-neutral-400 underline-offset-2 transition hover:text-neutral-200 hover:underline"
                 >
                   Reset filters
                   <ExternalLink className="size-3.5" />
                 </button>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div className="grid grid-cols-12 gap-3 border-b border-slate-200 bg-slate-50 px-4 pb-3 pt-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-sm">
+                <div className="grid grid-cols-12 gap-3 border-b border-neutral-800 bg-slate-50 px-4 pb-3 pt-3 text-xs font-bold uppercase tracking-wider text-neutral-500">
                   <div className="col-span-1">Status</div>
                   <div className="col-span-4">Investigation</div>
                   <div className="col-span-1">Asset</div>
@@ -532,7 +532,7 @@ export default function InvestigationsPage() {
                 </div>
 
                 {filtered.length === 0 ? (
-                  <p className="px-4 py-6 text-sm text-slate-500">
+                  <p className="px-4 py-6 text-sm text-neutral-500">
                     No investigations match the current filters.
                   </p>
                 ) : (
@@ -541,31 +541,31 @@ export default function InvestigationsPage() {
                       <Link
                         key={j.job_id}
                         href={`/investigations/${j.job_id}`}
-                        className="grid grid-cols-12 items-center gap-3 border-b border-slate-100 px-4 py-3.5 transition-colors hover:bg-slate-50 last:border-0"
+                        className="grid grid-cols-12 items-center gap-3 border-b border-neutral-800 px-4 py-3.5 transition-colors hover:bg-slate-50 last:border-0"
                       >
                         <div className="col-span-1">
                           <JobStatusBadge status={j.status} />
                         </div>
                         <div className="col-span-4 min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-800">
+                          <p className="truncate text-sm font-medium text-neutral-200">
                             {j.objective_summary}
                           </p>
                         </div>
-                        <div className="col-span-1 text-sm font-medium text-slate-600">
-                          {j.equipment_id || <span className="text-slate-300">—</span>}
+                        <div className="col-span-1 text-sm font-medium text-neutral-400">
+                          {j.equipment_id || <span className="text-neutral-400">—</span>}
                         </div>
-                        <div className="col-span-1 text-sm font-medium text-slate-600">
+                        <div className="col-span-1 text-sm font-medium text-neutral-400">
                           {j.sources}
                         </div>
                         <div className="col-span-2">
                           {j.confidence === null ? (
-                            <span className="font-mono text-xs text-slate-300">—</span>
+                            <span className="font-mono text-xs text-neutral-400">—</span>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-semibold text-slate-800">
+                              <span className="font-mono text-sm font-semibold text-neutral-200">
                                 {Math.round(j.confidence * 100)}%
                               </span>
-                              <div className="h-2 w-16 rounded-full bg-slate-100">
+                              <div className="h-2 w-16 rounded-full bg-neutral-800">
                                 <div
                                   className={`h-2 rounded-full ${
                                     j.status === "awaiting_approval"
@@ -578,11 +578,11 @@ export default function InvestigationsPage() {
                             </div>
                           )}
                         </div>
-                        <div className="col-span-1 font-mono text-xs font-medium text-slate-500">
+                        <div className="col-span-1 font-mono text-xs font-medium text-neutral-500">
                           {relativeTime(j.created_at)}
                         </div>
                         <div className="col-span-2 flex items-center justify-end gap-1">
-                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400">
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-neutral-300 transition hover:border-neutral-600">
                             Open
                             <ArrowRight className="size-3" />
                           </span>

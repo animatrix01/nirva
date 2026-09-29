@@ -165,14 +165,14 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
         <div
           className={cn(
             "relative z-10 mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-            isDone    && "border-[#B9FF52] bg-[#B9FF52]/20",
+            isDone    && "border-[#c8f135] bg-[#c8f135]/20",
             isRunning && "border-slate-400 bg-slate-100",
             isPending && "border-slate-300 bg-transparent",
           )}
           aria-hidden
         >
           {isDone && (
-            <span className="text-[9px] font-bold text-[#B9FF52]">✓</span>
+            <span className="text-[9px] font-bold text-[#c8f135]">✓</span>
           )}
           {isRunning && (
             <span
@@ -224,7 +224,7 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           )}
 
           {isDone && !isTerminalEvent(row.events[row.events.length - 1]?.type ?? "node_started") && (
-            <span className="rounded bg-[#B9FF52]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-[#B9FF52]">
+            <span className="rounded bg-[#c8f135]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-[#c8f135]">
               Done
             </span>
           )}
@@ -245,7 +245,7 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
             {evidenceCount > 0 && (
               <span className="text-[11px] text-slate-500">
-                <span className="text-[#B9FF52]">{evidenceCount}</span> evidence item{evidenceCount !== 1 ? "s" : ""}
+                <span className="text-[#c8f135]">{evidenceCount}</span> evidence item{evidenceCount !== 1 ? "s" : ""}
               </span>
             )}
             {toolCount > 0 && (

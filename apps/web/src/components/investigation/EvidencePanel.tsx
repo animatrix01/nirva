@@ -127,7 +127,7 @@ function SourceRecord({
     <article className="border-b border-slate-200 last:border-0 py-4 first:pt-0">
       {/* ── Always-visible header row ── */}
       <div className="flex w-full items-start gap-3 text-left">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded bg-[#B9FF52] text-sm font-bold text-black tabular-nums select-none">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded bg-[#c8f135] text-sm font-bold text-black tabular-nums select-none">
           {index + 1}
         </span>
         <span className="min-w-0 flex-1">

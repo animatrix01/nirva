@@ -18,7 +18,7 @@ const AT = {
   border:"#D9D9D4",
   ink:   "#15191D",
   ink2:  "#66717A",
-  lime:  "#B9FF52",
+  lime:  "#c8f135",
   hair:  "var(--audit-row-hair)",
 } as const;
 
@@ -223,7 +223,7 @@ export default function AuditPage() {
   }
 
   const selectClass =
-    "rounded-md border bg-white px-3 py-2 text-[13px] outline-none transition";
+    "rounded-md border bg-neutral-900 px-3 py-2 text-[13px] outline-none transition";
 
   const controlStyle = { background: AT.card, borderColor: AT.border, color: AT.ink2 };
 

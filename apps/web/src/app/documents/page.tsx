@@ -236,34 +236,34 @@ function EvidenceCard({
       onClick={() => onOpen(doc)}
       aria-label={`View evidence for ${title}`}
       className={cn(
-        "group flex w-full flex-col gap-1.5 rounded-lg border bg-white px-4 py-3 text-left transition",
-        "hover:border-slate-400 hover:shadow-sm",
-        isFailed ? "border-amber-200 bg-amber-50/20" : "border-slate-200"
+        "group flex w-full flex-col gap-1.5 rounded-lg border bg-neutral-900 px-4 py-3 text-left transition",
+        "hover:border-neutral-600 hover:shadow-sm",
+        isFailed ? "border-amber-200 bg-amber-50/20" : "border-neutral-800"
       )}
     >
       {/* Primary — title followed immediately by the classification/state tags.
           No `ml-auto` here on purpose: pushing the tag group to the far edge
           left a ~400px dead gap in the middle of the row. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="min-w-0 truncate text-[0.9375rem] font-semibold text-slate-900">
+        <span className="min-w-0 truncate text-[0.9375rem] font-semibold text-neutral-100">
           {title}
         </span>
         <DocTypePill type={doc.document_type} />
-        <span className="text-[11px] font-medium text-slate-500">Rev {doc.revision}</span>
+        <span className="text-[11px] font-medium text-neutral-500">Rev {doc.revision}</span>
         <DocStatusBadge status={doc.status} />
       </div>
 
       {/* Secondary — what this class of document is for */}
       {context && (
-        <p className="text-[0.8125rem] leading-relaxed text-slate-600">{context}</p>
+        <p className="text-[0.8125rem] leading-relaxed text-neutral-400">{context}</p>
       )}
 
       {/* Tertiary — metadata ladder; placeholders keep it scannable */}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-neutral-500">
         {doc.equipment_id ? (
-          <span className="font-mono font-semibold text-slate-700">{doc.equipment_id}</span>
+          <span className="font-mono font-semibold text-neutral-300">{doc.equipment_id}</span>
         ) : (
-          <span className="text-slate-400">No asset tag</span>
+          <span className="text-neutral-500">No asset tag</span>
         )}
         <span aria-hidden>·</span>
         <span>{doc.department}</span>
@@ -314,14 +314,14 @@ function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200">
+      <div className="h-1 w-16 overflow-hidden rounded-full bg-neutral-800">
         <div
           className="h-full rounded-full bg-stone-500"
           style={{ width: `${pct}%` }}
           aria-hidden
         />
       </div>
-      <span className="text-[11px] tabular-nums text-slate-600">{pct}</span>
+      <span className="text-[11px] tabular-nums text-neutral-400">{pct}</span>
     </div>
   );
 }
@@ -349,15 +349,15 @@ function SourceLocator({
 
   if (isTool) {
     return (
-      <p className="text-[11px] text-slate-600">
+      <p className="text-[11px] text-neutral-400">
         Source: {docTitle}
       </p>
     );
   }
 
   return (
-    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] text-slate-600">
-      <span className="font-medium text-slate-600">{docTitle}</span>
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] text-neutral-400">
+      <span className="font-medium text-neutral-400">{docTitle}</span>
       <span>·</span>
       <span>Rev {revision}</span>
       {leafSection && leafSection !== docTitle && (
@@ -392,7 +392,7 @@ function VisionObservations({
 
   if (items.length === 0) {
     return (
-      <p className="text-sm italic text-slate-600">
+      <p className="text-sm italic text-neutral-400">
         {isMock
           ? "Vision model offline — observations unavailable in development mode."
           : "No observations recorded."}
@@ -418,7 +418,7 @@ function VisionObservations({
               <span
                 className={cn(
                   "mt-[3px] shrink-0 text-[11px] font-bold",
-                  notable ? "text-amber-500" : "text-slate-600"
+                  notable ? "text-amber-500" : "text-neutral-400"
                 )}
                 aria-hidden
               >
@@ -426,7 +426,7 @@ function VisionObservations({
               </span>
               <span className={cn(
                 "text-sm leading-relaxed",
-                notable ? "text-orange-700" : "text-slate-800"
+                notable ? "text-orange-700" : "text-neutral-200"
               )}>
                 {obs}
               </span>
@@ -447,12 +447,12 @@ function TextPassage({ text }: { text: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">{shown}</p>
+      <p className="text-sm leading-relaxed text-neutral-200 whitespace-pre-wrap">{shown}</p>
       {long && (
         <button
           type="button"
           onClick={() => setExp((v) => !v)}
-          className="self-start text-[11px] text-slate-600 transition hover:text-slate-600"
+          className="self-start text-[11px] text-neutral-400 transition hover:text-neutral-400"
         >
           {exp ? "Show less ↑" : `Show full passage ↓`}
         </button>
@@ -486,23 +486,23 @@ function PhotoEvidence({
           <img
             src={imageUrl}
             alt={`Equipment photo — ${doc.equipment_id ?? doc.title}`}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 object-contain"
+            className="w-full rounded-lg border border-neutral-800 bg-neutral-800 object-contain"
             style={{ maxHeight: 360 }}
           />
-          <p className="mt-1.5 text-[11px] text-slate-600">
+          <p className="mt-1.5 text-[11px] text-neutral-400">
             Original stored image · {doc.equipment_id ? `Equipment ${doc.equipment_id}` : doc.title}
           </p>
         </div>
       ) : (
-        <div className="flex h-24 items-center justify-center rounded-lg border border-slate-200 bg-white/40">
-          <ImageIcon className="size-6 text-slate-600" />
+        <div className="flex h-24 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/40">
+          <ImageIcon className="size-6 text-neutral-400" />
         </div>
       )}
 
       {/* Observations — directly below the image */}
       <div>
         <div className="mb-3 flex items-baseline justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-600">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400">
             AI Equipment Inspection
           </h3>
           {anomalies > 0 && (
@@ -512,7 +512,7 @@ function PhotoEvidence({
           )}
         </div>
         <VisionObservations text={allText} isMock={isMock} />
-        <p className="mt-3 text-[11px] text-slate-600">
+        <p className="mt-3 text-[11px] text-neutral-400">
           Factual observations only. NIRVA reports visible conditions — not root cause or diagnosis.
         </p>
       </div>
@@ -534,14 +534,14 @@ function TextEvidence({
 
   if (allChunks.length === 0) {
     return (
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-neutral-400">
         No extracted passages available for this document.
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col divide-y divide-slate-200">
+    <div className="flex flex-col divide-y divide-neutral-800">
       {retrievalChunks.map((chunk) => (
         <div key={chunk.chunk_id} className="py-4 first:pt-0">
           <TextPassage text={chunk.text} />
@@ -559,7 +559,7 @@ function TextEvidence({
 
       {toolChunks.length > 0 && (
         <div className="pt-4">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
             Operational data
           </p>
           {toolChunks.map((chunk) => (
@@ -589,16 +589,16 @@ function ViewerSkeleton() {
     <div className="flex flex-col gap-5 p-5" aria-busy="true">
       {/* Header skeleton */}
       <div className="flex flex-col gap-2">
-        <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200/60" />
+        <div className="h-5 w-2/3 animate-pulse rounded bg-neutral-800" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-800/60" />
       </div>
       {/* Evidence skeleton */}
       <div className="flex flex-col gap-3 pt-2">
-        <div className="h-3 w-1/4 animate-pulse rounded bg-slate-200/40" />
-        <div className="h-[200px] animate-pulse rounded-lg bg-slate-200/30" />
-        <div className="h-4 w-full animate-pulse rounded bg-slate-200/30" />
-        <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200/30" />
-        <div className="h-4 w-4/6 animate-pulse rounded bg-slate-200/30" />
+        <div className="h-3 w-1/4 animate-pulse rounded bg-neutral-800/40" />
+        <div className="h-[200px] animate-pulse rounded-lg bg-neutral-800/30" />
+        <div className="h-4 w-full animate-pulse rounded bg-neutral-800/30" />
+        <div className="h-4 w-5/6 animate-pulse rounded bg-neutral-800/30" />
+        <div className="h-4 w-4/6 animate-pulse rounded bg-neutral-800/30" />
       </div>
     </div>
   );
@@ -715,7 +715,7 @@ export function ChunkViewer({
       {/* Slide-over panel */}
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-40 flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[580px] lg:w-[640px]",
+          "fixed inset-y-0 right-0 z-40 flex w-full flex-col bg-neutral-900 shadow-2xl transition-transform duration-300 ease-in-out sm:w-[580px] lg:w-[640px]",
           open ? "translate-x-0" : "translate-x-full"
         )}
         role="complementary"
@@ -723,17 +723,17 @@ export function ChunkViewer({
         aria-hidden={!open}
       >
         {/* ── PANEL HEADER ── */}
-        <div className="shrink-0 border-b border-slate-200 bg-white px-5 pt-5 pb-4">
+        <div className="shrink-0 border-b border-neutral-800 bg-neutral-900 px-5 pt-5 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               {/* Title */}
               {doc ? (
                 <>
-                  <h2 className="truncate text-base font-semibold text-slate-900">
+                  <h2 className="truncate text-base font-semibold text-neutral-100">
                     {sanitizeTitle(doc.title) ?? "Untitled document"}
                   </h2>
                   {/* Metadata strip */}
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-400">
                     <span>{docTypeLabel(doc.document_type)}</span>
                     <span>·</span>
                     <span>Rev {doc.revision}</span>
@@ -754,7 +754,7 @@ export function ChunkViewer({
                     {doc.equipment_id && (
                       <>
                         <span>·</span>
-                        <span className="font-mono font-semibold text-slate-700">
+                        <span className="font-mono font-semibold text-neutral-300">
                           {doc.equipment_id}
                         </span>
                       </>
@@ -784,11 +784,11 @@ export function ChunkViewer({
                 </>
               ) : loading ? (
                 <>
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
-                  <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-slate-200/60" />
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-neutral-800" />
+                  <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-neutral-800/60" />
                 </>
               ) : (
-                <p className="text-sm text-slate-600">Evidence</p>
+                <p className="text-sm text-neutral-400">Evidence</p>
               )}
             </div>
 
@@ -796,7 +796,7 @@ export function ChunkViewer({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="shrink-0 rounded p-1.5 text-slate-600 transition hover:bg-slate-200 hover:text-slate-800"
+              className="shrink-0 rounded p-1.5 text-neutral-400 transition hover:bg-neutral-800 hover:text-neutral-200"
               aria-label="Close evidence viewer"
             >
               <X className="size-4" />
@@ -822,8 +822,8 @@ export function ChunkViewer({
 
           {/* Dev-mode notice — ONE notice at document level, not per chunk */}
           {isMock && doc && (
-            <div className="border-b border-slate-200/60 bg-slate-50 px-5 py-2">
-              <p className="text-[11px] text-slate-600">
+            <div className="border-b border-neutral-800/60 bg-neutral-800 px-5 py-2">
+              <p className="text-[11px] text-neutral-400">
                 Development data · retrieval services unavailable
               </p>
             </div>
@@ -834,7 +834,7 @@ export function ChunkViewer({
             <div className="p-5">
               <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
                 <p className="text-sm font-semibold text-orange-700">Not available for investigations</p>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="mt-1 text-xs text-neutral-400">
                   The original file was retained but could not be indexed. Possible causes: unsupported format, corrupted content, or processing timeout. Re-upload to try again.
                 </p>
               </div>
@@ -866,15 +866,15 @@ export function ChunkViewer({
 
               {/* Empty — indexed but no chunks returned */}
               {!isPhoto && effectiveChunks.length === 0 && (
-                <p className="py-4 text-sm text-slate-600">
+                <p className="py-4 text-sm text-neutral-400">
                   No extracted passages available for this document.
                 </p>
               )}
 
               {/* ── INVESTIGATION AVAILABILITY ── */}
               {isReady && (
-                <div className="mt-6 border-t border-slate-200 pt-4">
-                  <p className="text-xs text-slate-600">
+                <div className="mt-6 border-t border-neutral-800 pt-4">
+                  <p className="text-xs text-neutral-400">
                     This evidence is indexed and available for retrieval during investigations
                     {doc.equipment_id
                       ? ` involving equipment ${doc.equipment_id}.`
@@ -884,11 +884,11 @@ export function ChunkViewer({
               )}
 
               {/* ── TECHNICAL DETAILS — collapsed ── */}
-              <div className="mt-4 border-t border-slate-200 pt-3">
+              <div className="mt-4 border-t border-neutral-800 pt-3">
                 <button
                   type="button"
                   onClick={() => setTechOpen((v) => !v)}
-                  className="flex w-full items-center justify-between py-1 text-[11px] font-bold uppercase tracking-widest text-slate-600 transition hover:text-slate-600"
+                  className="flex w-full items-center justify-between py-1 text-[11px] font-bold uppercase tracking-widest text-neutral-400 transition hover:text-neutral-400"
                   aria-expanded={techOpen}
                 >
                   <span>Technical details</span>
@@ -901,8 +901,8 @@ export function ChunkViewer({
                 {techOpen && (
                   <div className="mt-3 flex flex-col gap-3 text-[11px]">
                     {/* Document */}
-                    <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
-                      <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Document</p>
+                    <div className="rounded border border-neutral-800 bg-neutral-900/50 px-3 py-2.5">
+                      <p className="mb-2 font-bold uppercase tracking-widest text-neutral-400">Document</p>
                       <div className="flex flex-col gap-1.5">
                         <TechRow label="ID"         value={doc.document_id}                    mono />
                         <TechRow label="Hash"       value={doc.content_hash.slice(0, 16) + "…"} mono />
@@ -914,8 +914,8 @@ export function ChunkViewer({
                     </div>
 
                     {/* Retrieval */}
-                    <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
-                      <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Retrieval</p>
+                    <div className="rounded border border-neutral-800 bg-neutral-900/50 px-3 py-2.5">
+                      <p className="mb-2 font-bold uppercase tracking-widest text-neutral-400">Retrieval</p>
                       <div className="flex flex-col gap-1.5">
                         <TechRow label="Store"   value="Qdrant" />
                         <TechRow label="Index"   value="nirva_chunks" mono />
@@ -926,8 +926,8 @@ export function ChunkViewer({
 
                     {/* Vision (photo only) */}
                     {isPhoto && (
-                      <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
-                        <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Vision</p>
+                      <div className="rounded border border-neutral-800 bg-neutral-900/50 px-3 py-2.5">
+                        <p className="mb-2 font-bold uppercase tracking-widest text-neutral-400">Vision</p>
                         <div className="flex flex-col gap-1.5">
                           <TechRow label="Model" value="qwen2.5-vl" mono />
                           <TechRow label="Mode"  value="Equipment inspection" />
@@ -937,19 +937,19 @@ export function ChunkViewer({
 
                     {/* Chunk-level details */}
                     {effectiveChunks.length > 0 && (
-                      <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
-                        <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">
+                      <div className="rounded border border-neutral-800 bg-neutral-900/50 px-3 py-2.5">
+                        <p className="mb-2 font-bold uppercase tracking-widest text-neutral-400">
                           Chunks ({effectiveChunks.length})
                         </p>
                         <div className="flex flex-col gap-2.5">
                           {effectiveChunks.map((c) => (
-                            <div key={c.chunk_id} className="flex flex-col gap-1 border-t border-slate-200/60 pt-2 first:border-t-0 first:pt-0">
+                            <div key={c.chunk_id} className="flex flex-col gap-1 border-t border-neutral-800/60 pt-2 first:border-t-0 first:pt-0">
                               <TechRow label="Chunk ID" value={c.chunk_id}  mono truncate />
                               {c.page  != null && <TechRow label="Page"     value={String(c.page)} />}
                               {c.section       && <TechRow label="Section"  value={c.section} truncate />}
                               {c.score != null && (
                                 <div className="flex items-start gap-2">
-                                  <span className="w-[68px] shrink-0 text-slate-600">Rank score</span>
+                                  <span className="w-[68px] shrink-0 text-neutral-400">Rank score</span>
                                   <ScoreBar score={c.score} />
                                 </div>
                               )}
@@ -986,10 +986,10 @@ function TechRow({
 }) {
   return (
     <div className="flex items-start gap-2 text-[11px]">
-      <span className="w-[68px] shrink-0 text-slate-600">{label}</span>
+      <span className="w-[68px] shrink-0 text-neutral-400">{label}</span>
       <span
         className={cn(
-          "min-w-0 text-slate-600",
+          "min-w-0 text-neutral-400",
           mono       && "font-mono text-[10px]",
           doCap      && "capitalize",
           doTruncate && "truncate"
@@ -1065,7 +1065,7 @@ export function UploadForm({
 
   // Compact (rail) layout keeps the four fields that identify a source up top
   // and folds the rest behind a disclosure, so the rail stays scannable.
-  const fieldLabel = "text-[11px] font-semibold uppercase tracking-wide text-slate-600";
+  const fieldLabel = "text-[11px] font-semibold uppercase tracking-wide text-neutral-400";
 
   const secondaryFields = (
     <>
@@ -1080,7 +1080,7 @@ export function UploadForm({
             value={revision}
             onChange={(e) => setRevision(e.target.value)}
             required
-            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
+            className="h-8 text-sm text-neutral-200 placeholder:text-neutral-600"
             placeholder="Rev 3.2"
           />
         </div>
@@ -1095,7 +1095,7 @@ export function UploadForm({
             value={effectiveDate}
             onChange={(e) => setEffDate(e.target.value)}
             required
-            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
+            className="h-8 text-sm text-neutral-200 placeholder:text-neutral-600"
           />
         </div>
       </div>
@@ -1111,7 +1111,7 @@ export function UploadForm({
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
             required
-            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
+            className="h-8 text-sm text-neutral-200 placeholder:text-neutral-600"
             placeholder="e.g., Mechanical"
           />
         </div>
@@ -1126,10 +1126,10 @@ export function UploadForm({
             value={equipmentId}
             onChange={(e) => setEquipmentId(e.target.value)}
             required={isImg}
-            className="h-8 font-mono text-sm text-slate-800 placeholder:text-slate-400"
+            className="h-8 font-mono text-sm text-neutral-200 placeholder:text-neutral-600"
             placeholder="PUMP-045"
           />
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-neutral-500">
             Links evidence to a specific asset during retrieval
           </p>
         </div>
@@ -1142,7 +1142,7 @@ export function UploadForm({
         </p>
         <div className="flex flex-wrap gap-3">
           {ROLES.map((r) => (
-            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-neutral-300">
               <input
                 type="checkbox"
                 checked={allowedRoles.includes(r)}
@@ -1170,10 +1170,10 @@ export function UploadForm({
           type="file"
           accept=".pdf,.csv,.jpg,.jpeg,.png"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="h-9 text-xs text-slate-800"
+          className="h-9 text-xs text-neutral-200"
           required
         />
-        <p className="text-[11px] text-slate-500">
+        <p className="text-[11px] text-neutral-500">
           PDF, CSV · JPG, PNG
         </p>
         {isImg && (
@@ -1193,7 +1193,7 @@ export function UploadForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="h-9 text-sm text-slate-800 placeholder:text-slate-400"
+          className="h-9 text-sm text-neutral-200 placeholder:text-neutral-600"
           placeholder="e.g., PUMP-045 Maintenance Manual"
         />
       </div>
@@ -1206,7 +1206,7 @@ export function UploadForm({
         <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
           <SelectTrigger
             id="doc-type"
-            className="h-9 text-sm text-slate-800 data-placeholder:text-slate-400"
+            className="h-9 text-sm text-neutral-200 data-placeholder:text-neutral-600"
           >
             <SelectValue />
           </SelectTrigger>
@@ -1228,14 +1228,14 @@ export function UploadForm({
         <Button
           type="submit"
           className={cn(
-            "h-9 bg-[#B9FF52] px-5 text-sm font-semibold text-black hover:bg-[#A8EF47]",
+            "h-9 bg-[#c8f135] px-5 text-sm font-semibold text-black hover:bg-[#b4e125]",
             compact && "w-full"
           )}
         >
           Queue for processing
         </Button>
         {!compact && (
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-neutral-400">
             {isImg ? "Photo will be inspected by Vision AI" : "Content will be extracted and indexed"}
           </span>
         )}
@@ -1340,11 +1340,11 @@ export default function DocumentsPage() {
 
         {/* ── Page header ── */}
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-slate-700">
+          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-neutral-300">
             Plant knowledge
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">Evidence library</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+          <h1 className="mt-1 text-2xl font-bold text-neutral-100">Evidence library</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-neutral-400">
             These are not stored files. Each source has been processed into extracted
             sections or image observations, tagged to equipment, and made retrievable
             for future investigations — within the access rules that came with the
@@ -1361,20 +1361,20 @@ export default function DocumentsPage() {
             {documents !== null && documents.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-500" />
                   <input
                     type="text"
                     placeholder="Search title, equipment, department"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-72 rounded-md border border-slate-300 bg-white py-1.5 pl-8 pr-8 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-500"
+                    className="w-72 rounded-md border border-neutral-700 bg-neutral-900 py-1.5 pl-8 pr-8 text-xs text-neutral-200 outline-none transition placeholder:text-neutral-600 focus:border-neutral-500"
                     aria-label="Search documents"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-200"
                       aria-label="Clear search"
                     >
                       <X className="size-3" />
@@ -1399,21 +1399,21 @@ export default function DocumentsPage() {
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition",
                           active
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                            ? "border-[#c8f135] bg-neutral-800 text-white"
+                            : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
                         )}
                       >
                         {t !== "all" && (
                           <span
                             className={cn(
                               "size-1.5 rounded-full",
-                              active ? "bg-white/70" : docTypeAccent(t).dot
+                              active ? "bg-neutral-900/70" : docTypeAccent(t).dot
                             )}
                             aria-hidden
                           />
                         )}
                         {t === "all" ? "All" : DOC_TYPE_LABELS[t]}
-                        <span className={active ? "text-white/70" : "text-slate-500"}>{count}</span>
+                        <span className={active ? "text-white/70" : "text-neutral-500"}>{count}</span>
                       </button>
                     );
                   })}
@@ -1425,7 +1425,7 @@ export default function DocumentsPage() {
                     size="sm"
                     onClick={onExportLibrary}
                     disabled={exportBusy}
-                    className="bg-white"
+                    className="bg-neutral-900"
                   >
                     {exportBusy ? "Exporting…" : "Export Excel"}
                   </Button>
@@ -1445,29 +1445,29 @@ export default function DocumentsPage() {
               <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
-                  <span className="font-bold text-slate-900">{readyCount}</span>
-                  <span className="text-slate-600">indexed</span>
+                  <span className="font-bold text-neutral-100">{readyCount}</span>
+                  <span className="text-neutral-400">indexed</span>
                 </span>
                 {processingCount > 0 && (
                   <span className="flex items-center gap-1.5">
                     <span className="size-2 animate-pulse rounded-full bg-sky-500" aria-hidden />
-                    <span className="font-bold text-slate-900">{processingCount}</span>
-                    <span className="text-slate-600">processing</span>
+                    <span className="font-bold text-neutral-100">{processingCount}</span>
+                    <span className="text-neutral-400">processing</span>
                   </span>
                 )}
                 {failedCount > 0 && (
                   <span className="flex items-center gap-1.5">
                     <span className="size-2 rounded-full bg-amber-500" aria-hidden />
-                    <span className="font-bold text-slate-900">{failedCount}</span>
-                    <span className="text-slate-600">failed</span>
+                    <span className="font-bold text-neutral-100">{failedCount}</span>
+                    <span className="text-neutral-400">failed</span>
                   </span>
                 )}
-                <span className="text-slate-500">
+                <span className="text-neutral-500">
                   {role && (
                     <>
                       Sources outside your clearance are withheld from this view and will not
                       be used for retrieval
-                      {role ? <> (<span className="font-semibold text-slate-700">{role}</span>)</> : null}.
+                      {role ? <> (<span className="font-semibold text-neutral-300">{role}</span>)</> : null}.
                     </>
                   )}
                 </span>
@@ -1484,20 +1484,20 @@ export default function DocumentsPage() {
             {/* ── Loading skeleton ── */}
             {documents === null && !loadError && (
               <div className="mt-5 space-y-2.5" aria-busy="true">
-                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-20 animate-pulse rounded-lg bg-neutral-800" />
+                <div className="h-20 animate-pulse rounded-lg bg-neutral-800" />
+                <div className="h-20 animate-pulse rounded-lg bg-neutral-800" />
+                <div className="h-20 animate-pulse rounded-lg bg-neutral-800" />
               </div>
             )}
 
             {/* Empty state — no sources at all */}
             {documents !== null && documents.length === 0 && (
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-12 text-center">
-                <p className="text-base font-semibold text-slate-800">
+              <div className="mt-5 rounded-xl border border-neutral-800 bg-neutral-900 px-5 py-12 text-center">
+                <p className="text-base font-semibold text-neutral-200">
                   No documents in the evidence library
                 </p>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-neutral-400">
                   Upload manuals, SOPs, work orders, or equipment photos to build the evidence base
                 </p>
               </div>
@@ -1505,18 +1505,18 @@ export default function DocumentsPage() {
 
             {/* No results for the current query */}
             {documents !== null && documents.length > 0 && visible.length === 0 && (
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-10 text-center">
-                <p className="text-sm text-slate-600">
+              <div className="mt-5 rounded-xl border border-neutral-800 bg-neutral-900 px-5 py-10 text-center">
+                <p className="text-sm text-neutral-400">
                   No sources match{" "}
                   {q ? (
-                    <span className="font-semibold text-slate-900">&ldquo;{searchQuery}&rdquo;</span>
+                    <span className="font-semibold text-neutral-100">&ldquo;{searchQuery}&rdquo;</span>
                   ) : (
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-neutral-100">
                       {DOC_TYPE_LABELS[typeFilter as DocumentType]}
                     </span>
                   )}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-neutral-500">
                   Try equipment ID, title, or department
                 </p>
               </div>
@@ -1534,11 +1534,11 @@ export default function DocumentsPage() {
           {/* ═══ RIGHT — add plant knowledge rail ═══ */}
           <aside className="lg:sticky lg:top-16 lg:self-start">
             {canUpload ? (
-              <div className="rounded-xl lg:rounded-r-none border border-slate-200 bg-white p-5 lg:pr-10">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <div className="rounded-xl lg:rounded-r-none border border-neutral-800 bg-neutral-900 p-5 lg:pr-10">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
                   Add plant knowledge
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                <p className="mt-2 text-xs leading-relaxed text-neutral-400">
                   A source is queued, processed into sections, then becomes retrievable
                   evidence.
                 </p>
@@ -1547,11 +1547,11 @@ export default function DocumentsPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <div className="rounded-xl border border-neutral-800 bg-neutral-800 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500">
                   Add plant knowledge
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                <p className="mt-2 text-xs leading-relaxed text-neutral-400">
                   Document upload is available to engineers and admins.
                 </p>
               </div>

@@ -32,11 +32,11 @@ export const DOC_TYPE_LABELS: Record<DocumentType, string> = {
 
 /** Tailwind class sets per document type — shared by pills and facets. */
 const DOC_TYPE_ACCENT: Record<DocumentType, { pill: string; dot: string }> = {
-  manual:     { pill: "border-slate-300 bg-slate-100 text-slate-700",            dot: "bg-slate-500"     },
-  sop:        { pill: "border-indigo-200 bg-indigo-50 text-indigo-700",          dot: "bg-indigo-500"   },
-  work_order: { pill: "border-amber-200 bg-amber-50 text-amber-700",             dot: "bg-amber-500"    },
-  incident:   { pill: "border-red-200 bg-red-50 text-red-700",                   dot: "bg-red-500"      },
-  data:       { pill: "border-sky-200 bg-sky-50 text-sky-700",                   dot: "bg-sky-500"      },
+  manual:     { pill: "border-neutral-700 bg-neutral-500/10 text-neutral-300",   dot: "bg-neutral-500"   },
+  sop:        { pill: "border-indigo-500/30 bg-indigo-500/10 text-indigo-400",   dot: "bg-indigo-500"   },
+  work_order: { pill: "border-amber-500/30 bg-amber-500/10 text-amber-400",      dot: "bg-amber-500"    },
+  incident:   { pill: "border-red-500/30 bg-red-500/10 text-red-400",            dot: "bg-red-500"      },
+  data:       { pill: "border-sky-500/30 bg-sky-500/10 text-sky-400",            dot: "bg-sky-500"      },
 };
 
 export function docTypeAccent(type: string) {
@@ -71,9 +71,9 @@ export function DocStatusBadge({
   className?: string;
 }) {
   const map = {
-    indexed:     { label: "Indexed",     cls: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-    processing:  { label: "Processing",  cls: "border-sky-200 bg-sky-50 text-sky-700" },
-    quarantined: { label: "Failed",      cls: "border-amber-200 bg-amber-50 text-amber-700" },
+    indexed:     { label: "Indexed",     cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+    processing:  { label: "Processing",  cls: "border-sky-500/30 bg-sky-500/10 text-sky-400" },
+    quarantined: { label: "Failed",      cls: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
   } as const;
   const { label, cls } = map[status] ?? map.quarantined;
   return (

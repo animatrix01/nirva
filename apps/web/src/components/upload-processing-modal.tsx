@@ -128,7 +128,7 @@ function Waveform({ active }: { active: boolean }) {
         const centre = Math.abs(i - (BAR_COUNT - 1) / 2) < 2.5;
 
         if (active && centre) {
-          ctx.fillStyle = "#B9FF52";
+          ctx.fillStyle = "#c8f135";
           ctx.globalAlpha = 0.85 + 0.15 * raw;
         } else {
           ctx.fillStyle = active ? "#44403c" : "#2a2826";
@@ -164,7 +164,7 @@ function StageRow({ stage }: { stage: StageState }) {
     <div className="flex items-start gap-3" role="listitem" aria-label={`${def.label}: ${status}`}>
       <div className="mt-[2px] flex w-4 shrink-0 items-center justify-center">
         {status === "complete" && (
-          <span className="text-[13px] font-bold text-[#B9FF52]" aria-hidden>✓</span>
+          <span className="text-[13px] font-bold text-[#c8f135]" aria-hidden>✓</span>
         )}
         {status === "active" && (
           <span
@@ -308,7 +308,7 @@ function ResultView({
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black hover:bg-[#A8EF47]"
+            className="rounded-md bg-[#c8f135] px-4 py-2 text-sm font-semibold text-black hover:bg-[#b4e125]"
           >
             Back to library
           </button>
@@ -323,8 +323,8 @@ function ResultView({
 
       {/* Status header */}
       <div className="flex items-center gap-2.5">
-        <CheckCircle2 className="size-4 shrink-0 text-[#B9FF52]" aria-hidden />
-        <span className="text-xs font-bold uppercase tracking-widest text-[#B9FF52]">
+        <CheckCircle2 className="size-4 shrink-0 text-[#c8f135]" aria-hidden />
+        <span className="text-xs font-bold uppercase tracking-widest text-[#c8f135]">
           {evidenceReady ? "Indexed" : "Processing complete"}
         </span>
       </div>
@@ -359,7 +359,7 @@ function ResultView({
         {meta.equipmentId && (
           <div className="flex items-baseline gap-2">
             <span className="w-20 shrink-0 text-stone-500">Equipment</span>
-            <span className="font-mono font-semibold text-[#B9FF52]">{meta.equipmentId}</span>
+            <span className="font-mono font-semibold text-[#c8f135]">{meta.equipmentId}</span>
           </div>
         )}
         {hasChunks && (
@@ -451,7 +451,7 @@ function ResultView({
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black hover:bg-[#A8EF47]"
+          className="rounded-md bg-[#c8f135] px-4 py-2 text-sm font-semibold text-black hover:bg-[#b4e125]"
         >
           View in library
         </button>

@@ -4,27 +4,27 @@ import { cn } from "@/lib/utils";
 const STATUS_META: Record<JobStatus, { label: string; className: string }> = {
   queued: {
     label: "Queued",
-    className: "border-2 border-slate-400 bg-slate-100 text-slate-800",
+    className: "border border-neutral-700 bg-neutral-500/10 text-neutral-400",
   },
   running: {
     label: "Running",
-    className: "border-2 border-sky-400 bg-sky-50 text-sky-800",
+    className: "border border-sky-500/30 bg-sky-500/10 text-sky-400",
   },
   awaiting_approval: {
     label: "Awaiting approval",
-    className: "border-2 border-amber-400 bg-amber-50 text-amber-800",
+    className: "border border-amber-500/30 bg-amber-500/10 text-amber-400",
   },
   completed: {
     label: "Completed",
-    className: "border-2 border-emerald-400 bg-emerald-50 text-emerald-800",
+    className: "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
   },
   failed: {
     label: "Failed",
-    className: "border-2 border-red-400 bg-red-50 text-red-700",
+    className: "border border-red-500/30 bg-red-500/10 text-red-400",
   },
   blocked_injection: {
     label: "Blocked injection",
-    className: "border-2 border-fuchsia-400 bg-fuchsia-50 text-fuchsia-800",
+    className: "border border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400",
   },
 };
 

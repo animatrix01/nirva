@@ -79,7 +79,7 @@ type StreamState = "connecting" | "open" | "reconnecting" | "closed";
 /** Eyebrow label — strong uppercase heading for major sections */
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-900 select-none">
+    <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-neutral-100 select-none">
       {children}
     </h2>
   );
@@ -87,7 +87,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 /** Thin horizontal rule */
 function Divider({ className }: { className?: string }) {
-  return <div className={cn("h-px w-full bg-slate-200", className)} aria-hidden />;
+  return <div className={cn("h-px w-full bg-neutral-800", className)} aria-hidden />;
 }
 
 /** Vertical rule for column separation */
@@ -130,7 +130,7 @@ function MetricPill({
   variant?: "neutral" | "amber" | "green" | "red";
 }) {
   const cls = {
-    neutral: "border-slate-400 bg-slate-100 text-slate-800",
+    neutral: "border-neutral-600 bg-neutral-800 text-neutral-200",
     amber:   "border-amber-400 bg-amber-50 text-amber-800",
     green:   "border-emerald-400 bg-emerald-50 text-emerald-800",
     red:     "border-red-400 bg-red-50 text-red-700",
@@ -248,9 +248,9 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
 
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      <span className="h-5 w-px bg-slate-200" aria-hidden />
+      <span className="h-5 w-px bg-neutral-800" aria-hidden />
       <span
-        className="inline-flex items-center overflow-hidden rounded-lg border border-slate-300/60"
+        className="inline-flex items-center overflow-hidden rounded-lg border border-neutral-700/60"
         role="group"
         aria-label="Narration language"
       >
@@ -266,7 +266,7 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
               "px-2.5 py-1 text-xs font-bold transition disabled:opacity-50",
               lang === l
                 ? "bg-stone-100 text-stone-900"
-                : "text-slate-500 hover:text-slate-900",
+                : "text-neutral-500 hover:text-neutral-100",
             )}
           >
             {l === "en" ? "EN" : "HI"}
@@ -278,7 +278,7 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
         aria-label={speaking ? "Stop narration" : "Listen to report"}
         onClick={speaking ? handleStop : () => handleListen(lang)}
         disabled={!script || busy !== null}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/60 px-2.5 py-1 text-xs font-bold text-slate-700 transition hover:border-stone-500 hover:text-slate-900 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700/60 px-2.5 py-1 text-xs font-bold text-neutral-300 transition hover:border-stone-500 hover:text-neutral-100 disabled:opacity-50"
       >
         {speaking ? (
           <Square className="size-3" aria-hidden />
@@ -293,7 +293,7 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
         onClick={() => void handleVoiceCheck()}
         disabled={busy !== null}
         title="Check which narration voice is selected"
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300/60 px-2.5 py-1 text-xs font-bold text-slate-600 transition hover:border-stone-500 hover:text-slate-900 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700/60 px-2.5 py-1 text-xs font-bold text-neutral-400 transition hover:border-stone-500 hover:text-neutral-100 disabled:opacity-50"
       >
         <Mic className="size-3" aria-hidden />
         Voice check
@@ -302,16 +302,16 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
         <span
           role="status"
           data-testid="voice-diagnosis"
-          className="inline-flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+          className="inline-flex flex-col gap-1 rounded-lg border border-neutral-800 bg-neutral-800 px-3 py-2 text-xs"
         >
-          <span className="font-bold text-slate-900">
+          <span className="font-bold text-neutral-100">
             {diag.isHouseVoice ? "✓ House voice" : "⚠ Fallback voice"} —{" "}
             <span className="font-mono font-semibold">
               {diag.selected ?? "none"}
             </span>
             {diag.selectedLang ? ` (${diag.selectedLang})` : ""}
           </span>
-          <span className="text-slate-500">
+          <span className="text-neutral-500">
             {diag.local.length} local voice
             {diag.local.length === 1 ? "" : "s"} available · source: {diag.source}
           </span>
@@ -321,7 +321,7 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
         </span>
       )}
       {(busy ?? notice) && !diag && (
-        <span role="status" className="text-xs text-slate-500">
+        <span role="status" className="text-xs text-neutral-500">
           {busy ?? notice}
         </span>
       )}
@@ -337,14 +337,14 @@ function ListenControl({ parsed }: { parsed: ParsedFindings | null }) {
  */
 function RagShowcase({ citationCount }: { citationCount: number }) {
   return (
-    <section className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3" aria-label="How NIRVA found this">
+    <section className="mb-6 rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3" aria-label="How NIRVA found this">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-700">🔍 How NIRVA found this</span>
-        <span className="h-4 w-px bg-slate-300" aria-hidden />
-        <span className="text-sm font-semibold text-slate-800">{citationCount > 0 ? '800+ documents searched' : 'No documents searched'}</span>
-        <span className="text-slate-400 font-bold" aria-hidden>→</span>
-        <span className="text-sm font-semibold text-slate-800">{citationCount > 0 ? `Top ${citationCount} selected` : 'Nothing selected'}</span>
-        <span className="text-slate-400 font-bold" aria-hidden>→</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-neutral-300">🔍 How NIRVA found this</span>
+        <span className="h-4 w-px bg-neutral-700" aria-hidden />
+        <span className="text-sm font-semibold text-neutral-200">{citationCount > 0 ? '800+ documents searched' : 'No documents searched'}</span>
+        <span className="text-neutral-500 font-bold" aria-hidden>→</span>
+        <span className="text-sm font-semibold text-neutral-200">{citationCount > 0 ? `Top ${citationCount} selected` : 'Nothing selected'}</span>
+        <span className="text-neutral-500 font-bold" aria-hidden>→</span>
         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
           <CheckCircle2 className="size-4 text-emerald-500" aria-hidden />
           Citations verified · Role-filtered
@@ -377,9 +377,9 @@ function DecisionSummaryCard({
   const riskLevel = contradictionCount > 0 ? "Medium-High" : pct >= 75 ? "Low" : "Medium";
 
   return (
-    <section className="mb-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="mb-6 rounded-xl border border-neutral-800 bg-neutral-900 p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-neutral-400">
           Decision summary
         </h3>
         <span className={`rounded px-2 py-0.5 text-xs font-semibold ${
@@ -393,7 +393,7 @@ function DecisionSummaryCard({
 
       <div className="mb-5 grid grid-cols-3 gap-4">
         <div>
-          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Confidence</p>
+          <p className="mb-1 text-xs uppercase tracking-wider text-neutral-500">Confidence</p>
           <p className={`text-2xl font-bold tabular-nums ${
             pct >= 75 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-red-600"
           }`}>
@@ -401,18 +401,18 @@ function DecisionSummaryCard({
           </p>
         </div>
         <div>
-          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Evidence</p>
+          <p className="mb-1 text-xs uppercase tracking-wider text-neutral-500">Evidence</p>
           <p className="text-2xl font-bold text-emerald-600 tabular-nums">{sourceCount}</p>
-          <p className="text-[10px] text-slate-500">sources</p>
+          <p className="text-[10px] text-neutral-500">sources</p>
         </div>
         <div>
-          <p className="mb-1 text-xs uppercase tracking-wider text-slate-500">Conflicts</p>
+          <p className="mb-1 text-xs uppercase tracking-wider text-neutral-500">Conflicts</p>
           <p className={`text-2xl font-bold tabular-nums ${
-            contradictionCount > 0 ? "text-amber-600" : "text-slate-400"
+            contradictionCount > 0 ? "text-amber-600" : "text-neutral-500"
           }`}>
             {contradictionCount}
           </p>
-          <p className="text-[10px] text-slate-500">detected</p>
+          <p className="text-[10px] text-neutral-500">detected</p>
         </div>
       </div>
 
@@ -437,11 +437,11 @@ function PrimaryFindingHero({
 }) {
   return (
     <section
-      className="mb-6 border-b border-slate-200 pb-6"
+      className="mb-6 border-b border-neutral-800 pb-6"
       aria-label="Primary finding"
     >
       <SectionHeading>Primary finding</SectionHeading>
-      <p className="text-xl font-semibold leading-relaxed text-slate-900 tracking-tight max-w-4xl">
+      <p className="text-xl font-semibold leading-relaxed text-neutral-100 tracking-tight max-w-4xl">
         {finding}
       </p>
     </section>
@@ -496,12 +496,12 @@ function SummaryColumn({
             {parsed.supportingEvidence.map((bullet, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span
-                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#B9FF52] text-xs font-bold text-black"
+                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#c8f135] text-xs font-bold text-black"
                   aria-hidden
                 >
                   {i + 1}
                 </span>
-                <span className="text-base font-semibold leading-relaxed text-slate-900">
+                <span className="text-base font-semibold leading-relaxed text-neutral-100">
                   {bullet}
                 </span>
               </li>
@@ -522,7 +522,7 @@ function SummaryColumn({
 
           {parsed.contradiction && (
             <div className="rounded-lg border-2 border-amber-400 bg-amber-50 px-5 py-4 mb-4">
-              <p className="text-sm font-semibold leading-relaxed text-slate-800">
+              <p className="text-sm font-semibold leading-relaxed text-neutral-200">
                 {parsed.contradiction}
               </p>
               <p className="mt-3 text-xs font-bold text-amber-700 uppercase tracking-wider">
@@ -540,25 +540,25 @@ function SummaryColumn({
                 <p className="text-sm font-semibold text-amber-800">{c.topic}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 p-3 bg-amber-50/30">
-                <div className="rounded-lg border border-amber-200 bg-white px-4 py-4">
+                <div className="rounded-lg border border-amber-200 bg-neutral-900 px-4 py-4">
                   <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-700">
                     Claim A
                   </p>
-                  <p className="text-sm font-medium leading-relaxed text-slate-800 mb-3">
+                  <p className="text-sm font-medium leading-relaxed text-neutral-200 mb-3">
                     &ldquo;{c.claim_a}&rdquo;
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-neutral-500">
                     {c.source_a.title} · {c.source_a.locator}
                   </p>
                 </div>
-                <div className="rounded-lg border border-amber-200 bg-white px-4 py-4">
+                <div className="rounded-lg border border-amber-200 bg-neutral-900 px-4 py-4">
                   <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-700">
                     Claim B
                   </p>
-                  <p className="text-sm font-medium leading-relaxed text-slate-800 mb-3">
+                  <p className="text-sm font-medium leading-relaxed text-neutral-200 mb-3">
                     &ldquo;{c.claim_b}&rdquo;
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-neutral-500">
                     {c.source_b.title} · {c.source_b.locator}
                   </p>
                 </div>
@@ -573,7 +573,7 @@ function SummaryColumn({
         <section className="mb-2">
           <SectionHeading>Recommended action</SectionHeading>
           <div className="rounded-lg border-2 border-emerald-400 bg-emerald-50 px-5 py-5">
-            <p className="text-sm font-bold leading-relaxed text-slate-900">
+            <p className="text-sm font-bold leading-relaxed text-neutral-100">
               {parsed.recommendedAction}
             </p>
           </div>
@@ -584,8 +584,8 @@ function SummaryColumn({
       {parsed.remainder && !parsed.primaryFinding && (
         <section className="mb-2">
           <SectionHeading>Findings</SectionHeading>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+          <div className="rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-200">
               {parsed.remainder}
             </p>
           </div>
@@ -602,7 +602,7 @@ function SummaryColumn({
                 {report.gaps.map((g, i) => (
                   <li key={i} className="flex items-start gap-2.5">
                     <span className="mt-0.5 shrink-0 text-sm text-amber-600" aria-hidden>○</span>
-                    <span className="text-sm font-semibold leading-relaxed text-slate-800">{g}</span>
+                    <span className="text-sm font-semibold leading-relaxed text-neutral-200">{g}</span>
                   </li>
                 ))}
               </ul>
@@ -615,8 +615,8 @@ function SummaryColumn({
               <ul className="flex flex-col gap-2.5">
                 {report.assumptions.map((a, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-slate-500" aria-hidden />
-                    <span className="text-sm font-semibold leading-relaxed text-slate-800">{a}</span>
+                    <span className="mt-1 size-1.5 shrink-0 rounded-full bg-neutral-8000" aria-hidden />
+                    <span className="text-sm font-semibold leading-relaxed text-neutral-200">{a}</span>
                   </li>
                 ))}
               </ul>
@@ -714,8 +714,8 @@ function AssetContextPanel({
   if (!hasImage && !equipmentId) return null;
 
   return (
-    <div className="mb-5 pb-5 border-b border-slate-200">
-      <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-600">
+    <div className="mb-5 pb-5 border-b border-neutral-800">
+      <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-neutral-400">
         Asset / issue
       </p>
 
@@ -723,7 +723,7 @@ function AssetContextPanel({
       {hasImage && !imgError && (
         <div className="mb-3">
           {imgSrc ? (
-            <div className="rounded-lg border border-slate-200 overflow-hidden w-full">
+            <div className="rounded-lg border border-neutral-800 overflow-hidden w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imgSrc}
@@ -733,7 +733,7 @@ function AssetContextPanel({
             </div>
           ) : (
             <div
-              className="rounded-lg border border-slate-200 bg-slate-100 animate-pulse"
+              className="rounded-lg border border-neutral-800 bg-neutral-800 animate-pulse"
               style={{ width: '100%', height: '120px' }}
               aria-busy="true"
             />
@@ -748,38 +748,38 @@ function AssetContextPanel({
             <button
               type="button"
               onClick={() => void handleInspect()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 px-2.5 py-1.5 text-xs font-bold text-neutral-300 transition hover:border-neutral-600 hover:text-neutral-100"
             >
               <Eye className="size-3.5" aria-hidden />
               Inspect photo with on-device vision
             </button>
           )}
           {obsState === "working" && (
-            <p role="status" className="inline-flex items-center gap-2 text-xs text-slate-500">
+            <p role="status" className="inline-flex items-center gap-2 text-xs text-neutral-500">
               <Loader2 className="size-3.5 animate-spin" aria-hidden />
               Analyzing visible condition on-device…
             </p>
           )}
           {obsState === "done" && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            <div className="rounded-lg border border-neutral-800 bg-neutral-800 px-3 py-2.5">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                 Vision observations
               </p>
               <ul className="flex flex-col gap-1">
                 {observations.map((o, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
-                    <span aria-hidden className="mt-1.5 size-1 shrink-0 rounded-full bg-slate-400" />
+                  <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-neutral-300">
+                    <span aria-hidden className="mt-1.5 size-1 shrink-0 rounded-full bg-neutral-600" />
                     {o}
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-[10px] leading-snug text-slate-400">
+              <p className="mt-2 text-[10px] leading-snug text-neutral-500">
                 Factual observations only — visible conditions, never causes or actions.
               </p>
             </div>
           )}
           {obsState === "unavailable" && (
-            <p role="status" className="text-xs text-slate-500">
+            <p role="status" className="text-xs text-neutral-500">
               Vision model offline — photo stored as investigation context.
             </p>
           )}
@@ -788,7 +788,7 @@ function AssetContextPanel({
 
       {/* Equipment metadata */}
       {equipmentId && (
-        <p className="text-sm font-semibold text-slate-800">
+        <p className="text-sm font-semibold text-neutral-200">
           {equipmentId}
         </p>
       )}
@@ -797,7 +797,7 @@ function AssetContextPanel({
       {historyAvailable && equipmentId && (
         <a
           href="#asset-history"
-          className="mt-2 inline-block text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-800"
+          className="mt-2 inline-block text-xs font-semibold text-neutral-500 underline decoration-neutral-600 underline-offset-4 hover:text-neutral-200"
         >
           📈 View asset history →
         </a>
@@ -812,7 +812,7 @@ function RunningColumn({ events }: { events: SseEvent[] }) {
   return (
     <div className="flex flex-col gap-2">
       <SectionHeading>Investigation in progress</SectionHeading>
-      <p className="mb-3 text-sm text-slate-500">
+      <p className="mb-3 text-sm text-neutral-500">
         Real-time · hybrid retrieval · evidence-grounded
       </p>
       <EventTimeline events={events} />
@@ -826,11 +826,11 @@ function RunningEvidencePlaceholder() {
       <SectionHeading>Evidence Grounding</SectionHeading>
       
       {/* System overview */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+      <div className="rounded-lg border border-neutral-800 bg-neutral-800 px-4 py-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-neutral-400 mb-2">
           RAG System Architecture
         </p>
-        <p className="text-sm text-slate-700 leading-relaxed">
+        <p className="text-sm text-neutral-300 leading-relaxed">
           Hybrid retrieval combines semantic and keyword search across indexed plant knowledge, 
           with role-based filtering and conflict detection for operational safety.
         </p>
@@ -838,33 +838,33 @@ function RunningEvidencePlaceholder() {
 
       {/* Evidence cards with real example data */}
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
           Retrieved Sources
         </p>
         
         {/* Evidence card 1 - High match */}
-        <div className="rounded-lg border border-emerald-200 bg-white overflow-hidden">
+        <div className="rounded-lg border border-emerald-200 bg-neutral-900 overflow-hidden">
           <div className="flex items-center justify-between bg-emerald-50 px-3 py-2 border-b border-emerald-200">
             <span className="text-xs font-bold text-emerald-800">Match: 94%</span>
             <span className="text-xs font-semibold text-emerald-700">Semantic + Keyword</span>
           </div>
           <div className="px-3 py-3">
-            <p className="text-xs font-bold text-slate-800 mb-1">
+            <p className="text-xs font-bold text-neutral-200 mb-1">
               Centrifugal Pump Maintenance Manual
             </p>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-neutral-400 leading-relaxed">
               &ldquo;Bearing vibration above 7.5 mm/s indicates imminent failure. 
               Replace bearings within 24 hours to prevent catastrophic damage...&rdquo;
             </p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
+              <span className="size-1 rounded-full bg-neutral-600" aria-hidden />
               Section 4.2 · Page 47
             </div>
           </div>
         </div>
 
         {/* Evidence card 2 - Medium match with conflict flag */}
-        <div className="rounded-lg border-2 border-amber-300 bg-white overflow-hidden">
+        <div className="rounded-lg border-2 border-amber-300 bg-neutral-900 overflow-hidden">
           <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-300">
             <span className="text-xs font-bold text-amber-800">Match: 87%</span>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
@@ -873,15 +873,15 @@ function RunningEvidencePlaceholder() {
             </span>
           </div>
           <div className="px-3 py-3">
-            <p className="text-xs font-bold text-slate-800 mb-1">
+            <p className="text-xs font-bold text-neutral-200 mb-1">
               Operational Procedures Rev 3.1
             </p>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-neutral-400 leading-relaxed">
               &ldquo;Pumps may operate up to 48 hours with elevated vibration
               if production schedule requires...&rdquo;
             </p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
+              <span className="size-1 rounded-full bg-neutral-600" aria-hidden />
               Section 2.7 · Page 18
             </div>
             <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5">
@@ -893,21 +893,21 @@ function RunningEvidencePlaceholder() {
         </div>
 
         {/* Evidence card 3 - Supporting data */}
-        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-          <div className="flex items-center justify-between bg-slate-50 px-3 py-2 border-b border-slate-200">
-            <span className="text-xs font-bold text-slate-700">Match: 78%</span>
-            <span className="text-xs font-semibold text-slate-600">Historical Data</span>
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
+          <div className="flex items-center justify-between bg-neutral-800 px-3 py-2 border-b border-neutral-800">
+            <span className="text-xs font-bold text-neutral-300">Match: 78%</span>
+            <span className="text-xs font-semibold text-neutral-400">Historical Data</span>
           </div>
           <div className="px-3 py-3">
-            <p className="text-xs font-bold text-slate-800 mb-1">
+            <p className="text-xs font-bold text-neutral-200 mb-1">
               P-204 Service History Log
             </p>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-neutral-400 leading-relaxed">
               &ldquo;Previous bearing failure at 8.2 mm/s resulted in 72-hour
               production downtime and &#8377;1,12,500 repair cost...&rdquo;
             </p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="size-1 rounded-full bg-slate-400" aria-hidden />
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
+              <span className="size-1 rounded-full bg-neutral-600" aria-hidden />
               Entry #2891 · March 2025
             </div>
           </div>
@@ -922,10 +922,10 @@ function RunningEvidencePlaceholder() {
           </p>
         </div>
         <div className="px-4 py-3">
-          <p className="text-sm font-bold text-slate-900 mb-2">
+          <p className="text-sm font-bold text-neutral-100 mb-2">
             Schedule immediate bearing replacement
           </p>
-          <p className="text-xs text-slate-700 leading-relaxed mb-3">
+          <p className="text-xs text-neutral-300 leading-relaxed mb-3">
             Evidence-grounded analysis prioritizes maintenance manual safety threshold 
             over operational flexibility. Historical failure data supports preventive action.
           </p>
@@ -939,23 +939,23 @@ function RunningEvidencePlaceholder() {
       </div>
 
       {/* System features footer */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+      <div className="rounded-lg border border-neutral-800 bg-neutral-800 px-3 py-2.5">
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-1.5">
             <div className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-            <span className="text-slate-700">Conflict detection</span>
+            <span className="text-neutral-300">Conflict detection</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="size-1.5 rounded-full bg-blue-500" aria-hidden />
-            <span className="text-slate-700">Human approval gate</span>
+            <span className="text-neutral-300">Human approval gate</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="size-1.5 rounded-full bg-purple-500" aria-hidden />
-            <span className="text-slate-700">Source traceability</span>
+            <span className="text-neutral-300">Source traceability</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="size-1.5 rounded-full bg-amber-500" aria-hidden />
-            <span className="text-slate-700">Safety prioritization</span>
+            <span className="text-neutral-300">Safety prioritization</span>
           </div>
         </div>
       </div>
@@ -1011,7 +1011,7 @@ function ExportButton({
         type="button"
         onClick={onDownload}
         disabled={!jobId || busy}
-        className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+        className="rounded-md border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-neutral-100 shadow-sm hover:bg-neutral-800 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
       >
         {busy ? "…" : label}
       </button>
@@ -1135,10 +1135,10 @@ export default function InvestigationDetailPage() {
       <AppShell title="Investigation">
         <BackTo href="/investigations" />
         <div aria-busy="true" className="flex flex-col gap-3 mt-4">
-          <div className="h-4 w-1/5 animate-pulse rounded bg-slate-200/50" />
-          <div className="h-7 w-2/3 animate-pulse rounded bg-slate-200/40" />
-          <div className="h-5 w-1/3 animate-pulse rounded bg-slate-200/30" />
-          <div className="mt-4 h-48 w-full animate-pulse rounded bg-slate-200/20" />
+          <div className="h-4 w-1/5 animate-pulse rounded bg-neutral-800/50" />
+          <div className="h-7 w-2/3 animate-pulse rounded bg-neutral-800/40" />
+          <div className="h-5 w-1/3 animate-pulse rounded bg-neutral-800/30" />
+          <div className="mt-4 h-48 w-full animate-pulse rounded bg-neutral-800/20" />
         </div>
       </AppShell>
     );
@@ -1221,7 +1221,7 @@ export default function InvestigationDetailPage() {
   return (
     <AppShell title="Investigation">
       <div
-        className="w-[calc(100%+2rem)] flex-1 pb-12 bg-white -mx-4 -mt-4 min-h-screen px-4 pt-4 lg:w-[calc(100%+3rem)] lg:-mx-6 lg:px-6"
+        className="w-[calc(100%+2rem)] flex-1 pb-12 bg-neutral-900 -mx-4 -mt-4 min-h-screen px-4 pt-4 lg:w-[calc(100%+3rem)] lg:-mx-6 lg:px-6"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.08) 1px, transparent 1px)",
@@ -1236,12 +1236,12 @@ export default function InvestigationDetailPage() {
         {/* ══════════════════════════════════════════════════════════
             CASE HEADER
         ══════════════════════════════════════════════════════════ */}
-        <header className="mb-0 pb-5 border-b border-slate-200">
+        <header className="mb-0 pb-5 border-b border-neutral-800">
 
           {/* Metadata row — small, quiet */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-xs text-neutral-500">
             {equipmentId && (
-              <span className="font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="font-semibold text-neutral-500 uppercase tracking-wider">
                 Equipment · {equipmentId}
               </span>
             )}
@@ -1252,7 +1252,7 @@ export default function InvestigationDetailPage() {
 
             {/* Live indicator */}
             {live && (
-              <span className="ml-2 inline-flex items-center gap-1.5 text-slate-500">
+              <span className="ml-2 inline-flex items-center gap-1.5 text-neutral-500">
                 <span
                   className="size-1.5 rounded-full bg-stone-400"
                   style={{ animation: "nirva-breathe 1.4s ease-in-out infinite" }}
@@ -1264,13 +1264,13 @@ export default function InvestigationDetailPage() {
           </div>
 
           {/* Case title — dominant */}
-          <h1 className="text-3xl font-bold leading-snug text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-bold leading-snug text-neutral-100 tracking-tight">
             {job.objective}
           </h1>
 
           {/* Parsed report title as subtitle */}
           {parsedFindings?.title && (
-            <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-neutral-500">
               {parsedFindings.title}
             </p>
           )}
@@ -1281,7 +1281,7 @@ export default function InvestigationDetailPage() {
 
             {isCompleted && job.final_report && (
               <>
-                <span className="h-5 w-px bg-slate-200" aria-hidden />
+                <span className="h-5 w-px bg-neutral-800" aria-hidden />
                 <div className="flex flex-wrap items-center gap-2">
                   <ConfidencePill value={job.final_report.confidence} />
                   {citations.length > 0 && (
@@ -1304,7 +1304,7 @@ export default function InvestigationDetailPage() {
             )}
             {(job.status === "completed" || job.status === "awaiting_approval") && (
               <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Download report">
-                <span className="text-xs font-medium text-slate-500">Download</span>
+                <span className="text-xs font-medium text-neutral-500">Download</span>
                 <ExportButton jobId={jobId} format="pptx" label="PPT" ext="pptx" />
                 <ExportButton jobId={jobId} format="word" label="Word" ext="docx" />
                 <ExportButton jobId={jobId} format="excel" label="Excel" ext="xlsx" />
@@ -1353,7 +1353,7 @@ export default function InvestigationDetailPage() {
         {live && (
           <div className="relative mt-6">
             <div
-              className="pointer-events-none absolute inset-y-0 left-[60%] hidden w-px bg-slate-200 lg:block"
+              className="pointer-events-none absolute inset-y-0 left-[60%] hidden w-px bg-neutral-800 lg:block"
               aria-hidden
             />
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[60fr_40fr]">
@@ -1374,7 +1374,7 @@ export default function InvestigationDetailPage() {
             <div className="relative mt-6">
               {/* Column divider */}
               <div
-                className="pointer-events-none absolute inset-y-0 left-[55%] hidden w-px bg-slate-200 lg:block"
+                className="pointer-events-none absolute inset-y-0 left-[55%] hidden w-px bg-neutral-800 lg:block"
                 aria-hidden
               />
 
@@ -1441,7 +1441,7 @@ export default function InvestigationDetailPage() {
 
             {/* Resolved approval record (if not awaiting) */}
             {approval && job.status !== "awaiting_approval" && (
-              <section className="mt-6 border-t border-slate-200 pt-6">
+              <section className="mt-6 border-t border-neutral-800 pt-6">
                 <SectionHeading>Approval record</SectionHeading>
                 <ApprovalCard
                   approval={approval}
@@ -1455,14 +1455,14 @@ export default function InvestigationDetailPage() {
 
         {/* Completed but no report */}
         {isCompleted && !job.final_report && (
-          <p className="mt-6 text-sm text-slate-500">
+          <p className="mt-6 text-sm text-neutral-500">
             Investigation did not produce a final report.
           </p>
         )}
 
         {/* Non-running, non-completed status */}
         {!live && !isCompleted && (
-          <p className="mt-6 text-sm text-slate-500">
+          <p className="mt-6 text-sm text-neutral-500">
             Investigation status: {job.status}
           </p>
         )}

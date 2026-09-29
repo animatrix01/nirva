@@ -57,10 +57,10 @@ export function HealthIndicator() {
         aria-hidden
         className={cn(
           "size-2 rounded-full",
-          isHealthy ? "bg-[#B9FF52]" : "animate-pulse bg-amber-500"
+          isHealthy ? "bg-[#c8f135]" : "animate-pulse bg-amber-500"
         )}
       />
-      <span className={isHealthy ? "text-slate-600" : "text-amber-600"}>
+      <span className={isHealthy ? "text-neutral-400" : "text-amber-600"}>
         {label}
       </span>
     </span>

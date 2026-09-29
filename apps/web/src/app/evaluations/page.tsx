@@ -235,20 +235,20 @@ export default function EvaluationsPage() {
           <button
             type="button"
             onClick={() => void load()}
-            className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-slate-800 hover:bg-neutral-800"
+            className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800"
           >
             Retry
           </button>
         </div>
       ) : notFound ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-5 py-6 text-sm text-slate-500">
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900 px-5 py-6 text-sm text-neutral-500">
           No evaluation run yet — run the eval suite and the latest results will
           appear here.
         </div>
       ) : evals === null ? (
         <div className="space-y-3" aria-busy="true">
-          <div className="h-24 animate-pulse rounded-xl bg-slate-50" />
-          <div className="h-40 animate-pulse rounded-xl bg-slate-50" />
+          <div className="h-24 animate-pulse rounded-xl bg-neutral-800" />
+          <div className="h-40 animate-pulse rounded-xl bg-neutral-800" />
         </div>
       ) : (
         <div className="flex flex-col gap-5">
