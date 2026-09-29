@@ -80,7 +80,7 @@ function Panel({
             ? "flex items-center gap-2.5 border-b px-5 py-3"
             : "border-b border-neutral-800 bg-neutral-900 px-5 py-3.5"
         }
-        style={ops ? { backgroundColor: "#E8EDF2", borderColor: "#D7DEE3" } : undefined}
+        style={ops ? { backgroundColor: "#252420", borderColor: "#2E2D29" } : undefined}
       >
         {Icon && <Icon className={ops ? "size-4 shrink-0 text-neutral-500" : "hidden"} aria-hidden />}
         <p
@@ -89,12 +89,12 @@ function Panel({
               ? "text-[11px] font-bold uppercase tracking-[0.14em]"
               : "text-xs font-bold uppercase tracking-widest text-neutral-400"
           }
-          style={ops ? { color: "#0F172A" } : undefined}
+          style={ops ? { color: "#E8E5DD" } : undefined}
         >
           {label}
         </p>
         {ops && meta && (
-          <span className="ml-auto text-[12px] font-semibold tabular-nums" style={{ color: "#52606D" }}>
+          <span className="ml-auto text-[12px] font-semibold tabular-nums" style={{ color: "#7A7668" }}>
             {meta}
           </span>
         )}
@@ -1504,8 +1504,8 @@ function AdminHome() {
 
                   {modelNote && (
                     <div
-                      className="shrink-0 rounded-lg px-3.5 py-2.5"
-                      style={{ background: "#EEF2F6", maxWidth: 200 }}
+                      className="shrink-0 rounded-lg border px-3.5 py-2.5"
+                      style={{ background: "#252420", borderColor: WB.border, maxWidth: 200 }}
                     >
                       <p className="text-center text-[12px] leading-snug" style={{ color: WB.ink2 }}>
                         {modelNote}
@@ -1539,8 +1539,8 @@ function AdminHome() {
                         className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-medium`}
                         style={
                           m.loaded
-                            ? { borderColor: "#A7F3D0", background: "#ECFDF5", color: "#047857" }
-                            : { borderColor: WB.border, background: "#F1F5F9", color: WB.ink2 }
+                            ? { borderColor: "#34D39955", background: "#34D39918", color: "#6EE7B7" }
+                            : { borderColor: WB.border, background: "#252420", color: WB.ink2 }
                         }
                       >
                         <span
@@ -1569,9 +1569,9 @@ function AdminHome() {
           <div className="flex flex-wrap items-center gap-5">
             <div className="flex flex-wrap gap-3">
               {[
-                { n: docs.length, label: "documents", tint: "#F1F5F9", ink: WB.ink },
-                { n: indexed, label: "indexed", tint: "#ECFDF5", ink: "#047857" },
-                { n: quarantined, label: "quarantined", tint: "#FFFBEB", ink: "#B45309" },
+                { n: docs.length, label: "documents", tint: "#252420", ink: WB.ink },
+                { n: indexed, label: "indexed", tint: "#34D39918", ink: "#6EE7B7" },
+                { n: quarantined, label: "quarantined", tint: "#FBBF2418", ink: "#FCD34D" },
               ].map((m) => (
                 <div
                   key={m.label}

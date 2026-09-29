@@ -354,7 +354,7 @@ export default function InvestigationsPage() {
                 {needs.map((j) => (
                   <div
                     key={j.job_id}
-                    className="rounded-xl border border-amber-300 bg-amber-50/40 p-6"
+                    className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-6"
                   >
                     <div className="flex gap-4">
                       <TriangleAlert className="mt-1 size-5 shrink-0 text-amber-600" />
