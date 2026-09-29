@@ -7,21 +7,20 @@ import { useStoredAuth } from "@/lib/auth-client";
 import { ApiError, getEvals } from "@/lib/api";
 import type { EvalsCase, EvalsResponse } from "@/lib/types";
 
-// ─── Evals design tokens ──────────────────────────────────────────────────────
-// File-scoped so no global theme is touched. The page keeps the AppShell
-// blue-grey canvas; these apply to the white surfaces inside it.
+// ─── Evals design tokens (Claude-black) ───────────────────────────────────────
+// File-scoped so no global theme is touched.
 const EV = {
-  card:   "#FFFFFF",
-  border: "#E2E8F0",
-  head:   "#F8FAFC",
-  ink:    "#0F172A",
-  ink2:   "#475569",
-  muted:  "#64748B",
-  good:   "#15803D",
-  goodBg: "#ECFDF5",
-  bad:    "#B91C1C",
-  badBg:  "#FEF2F2",
-  amber:  "#B45309",
+  card:   "#201F1C",
+  border: "#2E2D29",
+  head:   "#252420",
+  ink:    "#E8E5DD",
+  ink2:   "#A8A29E",
+  muted:  "#7A7668",
+  good:   "#4ADE80",
+  goodBg: "#052E22",
+  bad:    "#F87171",
+  badBg:  "#450A0A",
+  amber:  "#FBBF24",
 } as const;
 
 const PAGE_SIZE = 10;

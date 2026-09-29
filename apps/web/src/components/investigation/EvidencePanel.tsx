@@ -124,17 +124,17 @@ function SourceRecord({
       : null;
 
   return (
-    <article className="border-b border-slate-200 last:border-0 py-4 first:pt-0">
+    <article className="border-b border-neutral-800 last:border-0 py-4 first:pt-0">
       {/* ── Always-visible header row ── */}
       <div className="flex w-full items-start gap-3 text-left">
         <span className="flex size-7 shrink-0 items-center justify-center rounded bg-[#c8f135] text-sm font-bold text-black tabular-nums select-none">
           {index + 1}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-bold leading-snug text-slate-900" title={citation.title}>
+          <span className="block truncate text-base font-bold leading-snug text-neutral-100" title={citation.title}>
             {citation.title}
           </span>
-          <span className="block truncate text-xs font-medium text-slate-500 mt-0.5">
+          <span className="block truncate text-xs font-medium text-neutral-500 mt-0.5">
             {[
               detail?.document_type ? docTypeLabel(detail.document_type) : null,
               locationParts.join(" · ") || null,
@@ -150,14 +150,14 @@ function SourceRecord({
       <div className="mt-3 pl-10">
           {/* Equipment ID */}
           {detail?.equipment_id && (
-            <p className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">
+            <p className="text-xs font-bold text-neutral-300 mb-2 uppercase tracking-wide">
               Equipment · {detail.equipment_id}
             </p>
           )}
 
           {/* Loading skeleton */}
           {loading && (
-            <div className="h-12 animate-pulse rounded bg-slate-100" aria-busy="true" />
+            <div className="h-12 animate-pulse rounded bg-neutral-800" aria-busy="true" />
           )}
 
           {/* Error */}
@@ -171,11 +171,11 @@ function SourceRecord({
               className={cn(
                 "rounded border-l-2 px-3 py-3 mb-3",
                 isTool
-                  ? "border-blue-400 bg-blue-50"
-                  : "border-slate-400 bg-slate-50"
+                  ? "border-blue-500 bg-blue-500/10"
+                  : "border-neutral-600 bg-neutral-800"
               )}
             >
-              <p className="text-sm leading-relaxed text-slate-800 line-clamp-4">
+              <p className="text-sm leading-relaxed text-neutral-200 line-clamp-4">
                 {detail.passage_text}
               </p>
             </div>
@@ -185,13 +185,13 @@ function SourceRecord({
           <div className="flex items-center justify-between gap-3">
             {detail && !isTool && typeof detail.score === "number" && detail.score > 0 ? (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
                   Retrieval score
                 </span>
                 <ScoreBar score={detail.score} />
               </div>
             ) : detail && isTool ? (
-              <span className="text-xs font-semibold text-blue-600">
+              <span className="text-xs font-semibold text-blue-400">
                 Read-only operational tool
               </span>
             ) : (
@@ -215,9 +215,9 @@ function SourceRecord({
 
 function EmptyState() {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 px-5 py-6">
-      <p className="text-sm font-medium text-slate-600">No evidence sources cited.</p>
-      <p className="mt-1 text-sm text-slate-500 leading-relaxed">
+    <div className="rounded-lg border border-dashed border-neutral-700 px-5 py-6">
+      <p className="text-sm font-medium text-neutral-400">No evidence sources cited.</p>
+      <p className="mt-1 text-sm text-neutral-500 leading-relaxed">
         Citations appear once the investigation retrieves and grounds its findings.
       </p>
     </div>
@@ -241,11 +241,11 @@ export function EvidencePanel({
 
       {/* ── HEADER (method folded in — no separate tag box) ── */}
       <div className="mb-4 flex items-baseline justify-between">
-        <p className="text-sm font-bold uppercase tracking-wide text-slate-900">
+        <p className="text-sm font-bold uppercase tracking-wide text-neutral-100">
           Evidence
           {citations.length > 0 &&
             ` · ${citations.length} source${citations.length !== 1 ? "s" : ""}`}
-          <span className="ml-2 font-medium normal-case tracking-normal text-slate-500">
+          <span className="ml-2 font-medium normal-case tracking-normal text-neutral-500">
             hybrid retrieval
           </span>
         </p>
@@ -257,7 +257,7 @@ export function EvidencePanel({
       {retrievalCitations.length > 0 && (
         <section className="mb-2">
           {toolCitations.length > 0 && (
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">
               Document sources
             </p>
           )}
@@ -277,7 +277,7 @@ export function EvidencePanel({
       {/* ── TOOL RESULTS (collapsed) ── */}
       {toolCitations.length > 0 && (
         <section className="mt-2">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-900">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-100">
             Tool results
           </p>
           <div>

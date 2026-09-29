@@ -81,7 +81,7 @@ function Kebab({ jobId }: { jobId: string }) {
         aria-label="More actions"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="rounded-md p-1 text-neutral-500 transition hover:bg-slate-50 hover:text-neutral-400"
+        className="rounded-md p-1 text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-400"
       >
         <MoreVertical className="size-4" />
       </button>
@@ -89,14 +89,14 @@ function Kebab({ jobId }: { jobId: string }) {
         <div className="absolute right-0 top-7 z-30 w-44 rounded-md border border-neutral-700 bg-neutral-900 py-1 shadow-xl">
           <button
             type="button"
-            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-200 hover:bg-slate-50"
+            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-200 hover:bg-neutral-800"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/investigations/${jobId}`); setOpen(false); }}
           >
             Open investigation
           </button>
           <button
             type="button"
-            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-400 hover:bg-slate-50 hover:text-neutral-200"
+            className="block w-full px-3 py-1.5 text-left text-xs text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); void navigator.clipboard.writeText(jobId); setOpen(false); }}
           >
             Copy job ID
@@ -328,7 +328,7 @@ export default function InvestigationsPage() {
             <button
               type="button"
               onClick={() => void load()}
-              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-slate-50"
+              className="mt-2 rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-800"
             >
               Retry
             </button>
@@ -521,7 +521,7 @@ export default function InvestigationsPage() {
               </div>
 
               <div className="overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-sm">
-                <div className="grid grid-cols-12 gap-3 border-b border-neutral-800 bg-slate-50 px-4 pb-3 pt-3 text-xs font-bold uppercase tracking-wider text-neutral-500">
+                <div className="grid grid-cols-12 gap-3 border-b border-neutral-800 bg-neutral-800 px-4 pb-3 pt-3 text-xs font-bold uppercase tracking-wider text-neutral-500">
                   <div className="col-span-1">Status</div>
                   <div className="col-span-4">Investigation</div>
                   <div className="col-span-1">Asset</div>
@@ -541,7 +541,7 @@ export default function InvestigationsPage() {
                       <Link
                         key={j.job_id}
                         href={`/investigations/${j.job_id}`}
-                        className="grid grid-cols-12 items-center gap-3 border-b border-neutral-800 px-4 py-3.5 transition-colors hover:bg-slate-50 last:border-0"
+                        className="grid grid-cols-12 items-center gap-3 border-b border-neutral-800 px-4 py-3.5 transition-colors hover:bg-neutral-800 last:border-0"
                       >
                         <div className="col-span-1">
                           <JobStatusBadge status={j.status} />

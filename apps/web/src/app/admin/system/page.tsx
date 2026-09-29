@@ -17,16 +17,16 @@ interface ModelRow {
   loaded: boolean;
 }
 
-// ─── System page design tokens ────────────────────────────────────────────────
+// ─── System page design tokens (Claude-black) ─────────────────────────────────
 // Mirrors the Admin Workbench palette but is declared locally: this page must not
 // depend on another page's internals, and no global token may change.
 const T = {
-  raised: "#FFFFFF",
-  thead:  "#EDF1F5",
-  border: "#D7DEE3",
-  ink:    "#101820",
-  ink2:   "#52606D",
-  muted:  "#74818D",
+  raised: "#201F1C",
+  thead:  "#252420",
+  border: "#2E2D29",
+  ink:    "#E8E5DD",
+  ink2:   "#7A7668",
+  muted:  "#7A7668",
 } as const;
 
 export default function AdminSystemPage() {

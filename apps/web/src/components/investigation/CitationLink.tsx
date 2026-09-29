@@ -388,7 +388,7 @@ export function CitationLink({
         <button
           type="button"
           onClick={() => void handleOpen()}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400 whitespace-nowrap"
+          className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-bold text-neutral-300 transition hover:bg-neutral-800 hover:border-neutral-600 whitespace-nowrap"
           aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
         >
           View source →
@@ -400,34 +400,34 @@ export function CitationLink({
           className={cn(
             "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-medium transition-colors",
             tool
-              ? "border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100"
-              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
+              ? "border-blue-500/30 bg-blue-500/10 text-blue-400 hover:border-blue-500/50"
+              : "border-neutral-700 bg-neutral-800 text-neutral-300 hover:border-neutral-600"
           )}
           title={`Open source: ${citation.title} ${citation.revision} ${citation.locator}`}
           aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
         >
           {index != null && (
-            <span className="flex size-4 items-center justify-center rounded bg-slate-200 text-[9px] font-bold text-slate-600">
+            <span className="flex size-4 items-center justify-center rounded bg-neutral-700 text-[9px] font-bold text-neutral-300">
               {index + 1}
             </span>
           )}
           <span className="max-w-[180px] truncate">{citation.title}</span>
-          <span className="shrink-0 text-slate-400">{citation.locator}</span>
+          <span className="shrink-0 text-neutral-500">{citation.locator}</span>
         </button>
       )}
 
       {/* ── Evidence inspection modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="overflow-hidden flex flex-col p-0 !max-w-none bg-white"
+          className="overflow-hidden flex flex-col p-0 !max-w-none bg-[#201F1C]"
           style={{ width: "min(96vw, 860px)", maxHeight: "90vh" }}
         >
           {/* Modal header */}
-          <DialogHeader className="shrink-0 border-b border-slate-200 bg-slate-50 px-8 pt-5 pb-4">
-            <DialogTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+          <DialogHeader className="shrink-0 border-b border-[#2E2D29] bg-[#252420] px-8 pt-5 pb-4">
+            <DialogTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A7668]">
               Source inspection
             </DialogTitle>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#7A7668]">
               {citation.title}
               {citation.revision && ` · ${citation.revision}`}
               {citation.locator && ` · ${citation.locator}`}
@@ -435,18 +435,18 @@ export function CitationLink({
           </DialogHeader>
 
           {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto bg-white">
+          <div className="flex-1 overflow-y-auto bg-[#201F1C]">
             {loading && (
               <div className="px-8 py-8 flex flex-col gap-4">
-                <div className="h-6 w-2/3 animate-pulse rounded bg-slate-200" />
-                <div className="h-32 w-full animate-pulse rounded bg-slate-100" />
-                <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+                <div className="h-6 w-2/3 animate-pulse rounded bg-neutral-800" />
+                <div className="h-32 w-full animate-pulse rounded bg-neutral-800" />
+                <div className="h-4 w-1/2 animate-pulse rounded bg-neutral-800" />
               </div>
             )}
 
             {error && (
               <div className="px-8 py-6">
-                <p role="alert" className="text-sm text-red-600">
+                <p role="alert" className="text-sm text-red-400">
                   {error}
                 </p>
               </div>

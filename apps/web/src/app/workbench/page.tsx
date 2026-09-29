@@ -129,19 +129,16 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-// ─── Workbench design tokens ──────────────────────────────────────────────────
-// Industrial/technical palette for the Engineer and Safety Officer workbenches.
-// Kept local to this file so the Supervisor / Admin homes are untouched. The
-// canvas colour (`page`) is applied by the engineer home only; the safety home
-// inherits the AppShell's existing blue-grey, per its own spec.
+// ─── Workbench design tokens (Claude-black) ───────────────────────────────────
+// Kept local to this file so the Supervisor / Admin homes are untouched.
 const WB = {
-  page:   "#EEF2F4",
-  panel:  "#F8FAFB",
-  raised: "#FFFFFF",
-  border: "#D7DEE3",
-  ink:    "#101820",
-  ink2:   "#52606D",
-  muted:  "#74818D",
+  page:   "#1C1B18",
+  panel:  "#201F1C",
+  raised: "#201F1C",
+  border: "#2E2D29",
+  ink:    "#E8E5DD",
+  ink2:   "#A8A29E",
+  muted:  "#7A7668",
   lime:   "#c8f135",
 } as const;
 
@@ -767,10 +764,10 @@ function SupervisorHome() {
       )}
 
       {/* Pending approvals - prominent */}
-      <div className="rounded-xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-amber-200 px-5 py-3">
-          <TriangleAlert className="size-4 text-amber-600" />
-          <p className="text-xs font-bold uppercase tracking-widest text-amber-700">
+      <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-amber-500/20 px-5 py-3">
+          <TriangleAlert className="size-4 text-amber-400" />
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-300">
             Pending Approval ({displayPending.length})
           </p>
         </div>
@@ -792,14 +789,14 @@ function SupervisorHome() {
                   ? `${waitMins}m ago`
                   : `${Math.floor(waitMins / 60)}h ${waitMins % 60}m ago`;
                 const riskCls = a.risk_level === "high"
-                  ? "border-red-300 bg-red-100 text-red-800"
+                  ? "border-red-500/30 bg-red-500/10 text-red-400"
                   : a.risk_level === "medium"
-                  ? "border-amber-300 bg-amber-100 text-amber-800"
-                  : "border-emerald-300 bg-emerald-100 text-emerald-800";
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
                 return (
                   <div
                     key={a.approval_id}
-                    className="rounded-lg border border-amber-200 bg-neutral-900 p-4 shadow-sm"
+                    className="rounded-lg border border-amber-500/20 bg-neutral-900 p-4 shadow-sm"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
@@ -834,7 +831,7 @@ function SupervisorHome() {
                         type="button"
                         disabled={decidingId === a.approval_id}
                         onClick={() => decide(a.approval_id, "rejected")}
-                        className="flex items-center gap-1.5 rounded-md border-2 border-red-300 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-md border-2 border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
                       >
                         <XCircle className="size-4" />
                         Reject
@@ -874,8 +871,8 @@ function SupervisorHome() {
                 </div>
                 <span className={`shrink-0 rounded border px-2.5 py-0.5 text-xs font-bold ${
                   a.status === "approved"
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                    : "border-red-300 bg-red-50 text-red-700"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                    : "border-red-500/30 bg-red-500/10 text-red-400"
                 }`}>
                   {a.status}
                 </span>
@@ -1253,16 +1250,16 @@ const SERVICE_ROLE: Record<string, string> = {
 
 /** up = green, down = red. Two tones, and nothing else. */
 const SVC_UP = {
-  dot: "bg-emerald-600",
+  dot: "bg-emerald-500",
   bar: "bg-emerald-500",
-  pill: "border-emerald-200 bg-emerald-50",
-  ink: "#047857",
+  pill: "border-emerald-500/30 bg-emerald-500/10",
+  ink: "#6EE7B7",
 } as const;
 const SVC_DOWN = {
-  dot: "bg-red-600",
+  dot: "bg-red-500",
   bar: "bg-red-500",
-  pill: "border-red-200 bg-red-50",
-  ink: "#B91C1C",
+  pill: "border-red-500/30 bg-red-500/10",
+  ink: "#FCA5A5",
 } as const;
 
 const svcTone = (status: string) => (status === "up" ? SVC_UP : SVC_DOWN);
@@ -1333,10 +1330,10 @@ function AdminHome() {
   const overall = !health
     ? null
     : downCount > 0
-      ? { label: "Degraded", note: "Some services are unavailable", pill: "border-amber-200 bg-amber-50", ink: "#B45309", dot: "bg-amber-500" }
+      ? { label: "Degraded", note: "Some services are unavailable", pill: "border-amber-500/30 bg-amber-500/10", ink: "#FCD34D", dot: "bg-amber-500" }
       : health.status === "degraded"
-        ? { label: "Degraded", note: "Service reports degraded", pill: "border-amber-200 bg-amber-50", ink: "#B45309", dot: "bg-amber-500" }
-        : { label: "OK", note: "All services responding", pill: "border-emerald-200 bg-emerald-50", ink: "#047857", dot: "bg-emerald-600" };
+        ? { label: "Degraded", note: "Service reports degraded", pill: "border-amber-500/30 bg-amber-500/10", ink: "#FCD34D", dot: "bg-amber-500" }
+        : { label: "OK", note: "All services responding", pill: "border-emerald-500/30 bg-emerald-500/10", ink: "#6EE7B7", dot: "bg-emerald-500" };
 
   const loadedCount = (models ?? []).filter((m) => m.loaded).length;
   const modelHeadline =

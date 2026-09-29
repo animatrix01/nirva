@@ -293,11 +293,11 @@ export function AssetTimeline({ history }: { history: AssetHistory }) {
   return (
     <section id="asset-history" aria-label={`Asset history for ${history.equipmentId}`} className="mb-6">
       <div className="mb-3 flex flex-wrap items-center gap-2.5">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800 select-none">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-200 select-none">
           Asset history — {history.equipmentId}
         </h2>
         {history.contradiction && (
-          <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-700">
+          <span className="inline-flex items-center gap-1 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-xs font-semibold text-orange-400">
             <AlertTriangle className="size-3" aria-hidden />
             {history.events.filter(
               (e) => e.id === history.contradiction!.a || e.id === history.contradiction!.b
@@ -308,10 +308,10 @@ export function AssetTimeline({ history }: { history: AssetHistory }) {
       </div>
 
       {/* Legend — one quiet row */}
-      <div className="mb-2 hidden flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-900 md:flex" aria-hidden>
-        <span><span className="mr-1 inline-block size-2 rounded-full bg-slate-900 align-middle" />work order</span>
-        <span><span className="mr-1 inline-block size-2 rounded-full border-2 border-slate-900 align-middle" />inspection</span>
-        <span><span className="mr-1 inline-block size-2 rotate-45 bg-slate-900 align-middle" />incident</span>
+      <div className="mb-2 hidden flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold text-neutral-100 md:flex" aria-hidden>
+        <span><span className="mr-1 inline-block size-2 rounded-full bg-neutral-100 align-middle" />work order</span>
+        <span><span className="mr-1 inline-block size-2 rounded-full border-2 border-neutral-100 align-middle" />inspection</span>
+        <span><span className="mr-1 inline-block size-2 rotate-45 bg-neutral-100 align-middle" />incident</span>
         <span className="text-slate-600">- - alarm {history.thresholds.alarm} · shutdown {history.thresholds.shutdown} mm/s</span>
       </div>
 

@@ -126,10 +126,10 @@ function activityLine(e: SseEvent): ActivityLine | null {
 // ─── Terminal display ────────────────────────────────────────────────────────
 
 const TERMINAL_STYLE: Record<TerminalEventType, string> = {
-  completed:         "border-emerald-200 bg-emerald-50 text-emerald-700",
-  failed:            "border-red-200     bg-red-50     text-red-700",
-  blocked_injection: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
-  awaiting_approval: "border-amber-200   bg-amber-50   text-amber-700",
+  completed:         "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  failed:            "border-red-500/30     bg-red-500/10     text-red-400",
+  blocked_injection: "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400",
+  awaiting_approval: "border-amber-500/30   bg-amber-500/10   text-amber-400",
 };
 
 const TERMINAL_LABEL: Record<TerminalEventType, string> = {
@@ -166,8 +166,8 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           className={cn(
             "relative z-10 mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
             isDone    && "border-[#c8f135] bg-[#c8f135]/20",
-            isRunning && "border-slate-400 bg-slate-100",
-            isPending && "border-slate-300 bg-transparent",
+            isRunning && "border-neutral-600 bg-neutral-800",
+            isPending && "border-neutral-700 bg-transparent",
           )}
           aria-hidden
         >
@@ -176,12 +176,12 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           )}
           {isRunning && (
             <span
-              className="size-1.5 rounded-full bg-slate-500"
+              className="size-1.5 rounded-full bg-neutral-500"
               style={{ animation: "nirva-breathe 1.1s ease-in-out infinite" }}
             />
           )}
           {isPending && (
-            <span className="size-1 rounded-full bg-slate-300" />
+            <span className="size-1 rounded-full bg-neutral-700" />
           )}
         </div>
         {/* Connector line to next node */}

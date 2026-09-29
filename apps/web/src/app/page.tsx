@@ -643,7 +643,7 @@ export default function LandingPage() {
           ══════════════════════════════════════════════════════════════════════ */}
       <section
         id="how-it-works"
-        className="w-full border-t border-neutral-800 bg-[#FBFCFD] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
+        className="w-full border-t border-neutral-800 bg-[#1a1917] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px)",
@@ -859,7 +859,7 @@ export default function LandingPage() {
           matrix, no card fills, no radius. The tag uses mt-auto so all four sit
           on the same baseline despite differing description lengths.
           ══════════════════════════════════════════════════════════════════════ */}
-      <section className="w-full bg-[#E9EEF3] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
+      <section className="w-full bg-[#1a1917] py-[96px] pl-[100px] pr-[64px] pb-[88px]"
         style={{
           backgroundImage:
             "linear-gradient(to right, rgba(148,163,184,0.10) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.10) 1px, transparent 1px)",

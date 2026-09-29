@@ -10,14 +10,14 @@ import { ApiError, getAudit } from "@/lib/api";
 import type { AuditEvent, AuditResponse } from "@/lib/types";
 
 // ─── Audit ledger design tokens ───────────────────────────────────────────────
-// Warm neutral palette, file-scoped so no global theme shifts. See the class on
-// the page root for the canvas colour.
+// Claude-black surfaces, file-scoped so no global theme shifts. See the class
+// on the page root for the canvas colour.
 const AT = {
-  page:  "#f1f5f9",
-  card:  "#FFFFFF",
-  border:"#D9D9D4",
-  ink:   "#15191D",
-  ink2:  "#66717A",
+  page:  "#1C1B18",
+  card:  "#201F1C",
+  border:"#2E2D29",
+  ink:   "#E8E5DD",
+  ink2:  "#7A7668",
   lime:  "#c8f135",
   hair:  "var(--audit-row-hair)",
 } as const;
@@ -32,11 +32,11 @@ const AT = {
 type Tone = "neutral" | "blue" | "amber" | "red" | "green";
 
 const TONE: Record<Tone, { label: string; text: string; marker: string; dot: string }> = {
-  neutral: { label: "ok",   text: "#4B5563", marker: "#9CA3AF", dot: "#16A34A" },
-  blue:    { label: "ok",   text: "#1D4ED8", marker: "#2563EB", dot: "#16A34A" },
-  green:   { label: "ok",   text: "#15803D", marker: "#16A34A", dot: "#16A34A" },
-  amber:   { label: "warn", text: "#B45309", marker: "#D97706", dot: "#D97706" },
-  red:     { label: "bad",  text: "#B91C1C", marker: "#DC2626", dot: "#DC2626" },
+  neutral: { label: "ok",   text: "#A8A29E", marker: "#9CA3AF", dot: "#34D399" },
+  blue:    { label: "ok",   text: "#93C5FD", marker: "#60A5FA", dot: "#34D399" },
+  green:   { label: "ok",   text: "#6EE7B7", marker: "#34D399", dot: "#34D399" },
+  amber:   { label: "warn", text: "#FCD34D", marker: "#FBBF24", dot: "#FBBF24" },
+  red:     { label: "bad",  text: "#FCA5A5", marker: "#F87171", dot: "#F87171" },
 };
 
 /** Exact actions, checked first. */

@@ -586,8 +586,8 @@ export default function ApprovalsPage() {
             {/* Master-Detail Grid - Fixed Height */}
             <div className="h-[650px] grid grid-cols-1 gap-6 lg:grid-cols-12 mb-8">
               {/* Left Column: Queue */}
-              <div className="lg:col-span-4 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-                <div className="mb-4 sticky top-0 bg-[#f1f5f9] pb-2">
+              <div className="lg:col-span-4 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="mb-4 sticky top-0 bg-[#1C1B18] pb-2">
                   <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-100">
                     Pending Approvals <span className="ml-1 rounded-full bg-neutral-700 px-2 py-0.5 text-xs font-bold text-neutral-300">{pending.length}</span>
                   </h2>
