@@ -20,8 +20,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Copy, FileText, Image as ImageIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, Copy, FileText, Image as ImageIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { DocumentType, DocumentUploadResponse } from "@/lib/types";
 
 // ─── Public interface ────────────────────────────────────────────────────────
@@ -49,34 +49,28 @@ interface StageDef {
 }
 
 const PDF_STAGES: StageDef[] = [
-  { key: "received",     label: "Upload received",      operation: "File stored · SHA-256 dedup check" },
-  { key: "parsing",      label: "Document parsing",     operation: "Docling layout extraction · page structure" },
-  { key: "chunking",     label: "Structural chunking",  operation: "Hierarchy-preserved sections · §c.4 metadata" },
-  { key: "embedding",    label: "Embedding & indexing", operation: "Dense + sparse vectors · Qdrant upsert" },
-  { key: "verification", label: "Verification",         operation: "Index confirmed · provenance recorded" },
-  { key: "ready",        label: "Ready",                operation: "Available for retrieval" },
+  { key: "received",     label: "Uploading",            operation: "Storing document securely" },
+  { key: "parsing",      label: "Reading content",      operation: "Extracting text and structure" },
+  { key: "chunking",     label: "Creating evidence",    operation: "Building searchable sections" },
+  { key: "embedding",    label: "Indexing",             operation: "Making evidence retrievable" },
+  { key: "verification", label: "Finalizing",           operation: "Applying access permissions" },
+  { key: "ready",        label: "Ready",                operation: "Available for investigations" },
 ];
 
 const IMAGE_STAGES: StageDef[] = [
-  { key: "received",   label: "Upload received",        operation: "Image stored · SHA-256 dedup check" },
-  { key: "vision",     label: "Vision inspection",      operation: "qwen2.5vl · equipment observation recording" },
-  { key: "extraction", label: "Observation extraction", operation: "Structured notes · anomaly detection" },
-  { key: "indexing",   label: "Metadata & indexing",    operation: "Dense + sparse vectors · Qdrant upsert" },
-  { key: "ready",      label: "Ready",                  operation: "Available for retrieval" },
+  { key: "received",   label: "Uploading",              operation: "Storing equipment photo" },
+  { key: "vision",     label: "Inspecting equipment",   operation: "AI analyzing visible condition" },
+  { key: "extraction", label: "Recording observations", operation: "Detecting anomalies and features" },
+  { key: "indexing",   label: "Indexing evidence",      operation: "Making observations searchable" },
+  { key: "ready",      label: "Ready",                  operation: "Available for investigations" },
 ];
 
-/**
- * ms each stage is "active" — 1100 ms gives a clean cadence that reads
- * naturally. A 1 000 ms initial boot delay is added before stage 0.
- * Total: ~7.6 s for PDF (1 s boot + 6 × 1.1 s), ~6.5 s for image.
- */
-const STAGE_MS  = 1100;
+const STAGE_MS   = 1100;
 const BOOT_DELAY = 1000;
 
 // ─── Stage state ──────────────────────────────────────────────────────────────
 
 type StageStatus = "pending" | "active" | "complete" | "error";
-
 interface StageState { def: StageDef; status: StageStatus; }
 
 function buildStages(isImage: boolean): StageState[] {
@@ -105,11 +99,6 @@ export function hasWarningKeyword(observations: string[]): boolean {
 
 const BAR_COUNT = 16;
 
-/**
- * 16 vertical bars whose heights oscillate using sin() at different frequencies.
- * When active=true the centre bars glow lime; when false all bars are dim stone.
- * Uses requestAnimationFrame so the oscillation is smooth and frame-rate aware.
- */
 function Waveform({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
@@ -120,40 +109,31 @@ function Waveform({ active }: { active: boolean }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Bar geometry
     const W    = canvas.width;
     const H    = canvas.height;
     const gap  = 3;
     const barW = Math.floor((W - gap * (BAR_COUNT - 1)) / BAR_COUNT);
-
-    // Each bar gets a unique frequency + phase offset
     const freqs  = Array.from({ length: BAR_COUNT }, (_, i) => 0.8 + i * 0.18);
     const phases = Array.from({ length: BAR_COUNT }, (_, i) => (i * Math.PI * 0.4));
 
     const draw = (t: number) => {
       ctx.clearRect(0, 0, W, H);
-
       for (let i = 0; i < BAR_COUNT; i++) {
-        const x = i * (barW + gap);
+        const x   = i * (barW + gap);
         const raw = 0.5 + 0.5 * Math.sin(t * freqs[i] * 0.001 + phases[i]);
         const minH = active ? 0.15 : 0.08;
         const maxH = active ? 1.0  : 0.22;
-        const h = (minH + raw * (maxH - minH)) * H;
-        const y = H - h;
-
-        // Centre 4 bars get lime when active
+        const h    = (minH + raw * (maxH - minH)) * H;
+        const y    = H - h;
         const centre = Math.abs(i - (BAR_COUNT - 1) / 2) < 2.5;
-        const lime = "#c8f135";
-        const dim  = active ? "#44403c" : "#2a2826";
 
         if (active && centre) {
-          ctx.fillStyle = lime;
+          ctx.fillStyle = "#B9FF52";
           ctx.globalAlpha = 0.85 + 0.15 * raw;
         } else {
-          ctx.fillStyle = dim;
+          ctx.fillStyle = active ? "#44403c" : "#2a2826";
           ctx.globalAlpha = active ? 0.55 : 0.30;
         }
-
         ctx.fillRect(x, y, barW, h);
       }
       ctx.globalAlpha = 1;
@@ -176,16 +156,15 @@ function Waveform({ active }: { active: boolean }) {
   );
 }
 
-// ─── Stage row (right column) ─────────────────────────────────────────────────
+// ─── Stage row ────────────────────────────────────────────────────────────────
 
 function StageRow({ stage }: { stage: StageState }) {
   const { status, def } = stage;
   return (
     <div className="flex items-start gap-3" role="listitem" aria-label={`${def.label}: ${status}`}>
-      {/* Indicator */}
       <div className="mt-[2px] flex w-4 shrink-0 items-center justify-center">
         {status === "complete" && (
-          <span className="text-[13px] font-bold text-[#c8f135]" aria-hidden>✓</span>
+          <span className="text-[13px] font-bold text-[#B9FF52]" aria-hidden>✓</span>
         )}
         {status === "active" && (
           <span
@@ -201,14 +180,13 @@ function StageRow({ stage }: { stage: StageState }) {
           <span className="inline-block size-[5px] rounded-full bg-stone-700" aria-hidden />
         )}
       </div>
-
-      {/* Text */}
       <div className="flex min-w-0 flex-col gap-[2px]">
-        <span className={`text-[13px] font-semibold leading-tight transition-colors duration-200 ${
-          status === "active"   ? "text-white"    :
-          status === "complete" ? "text-stone-400":
-          status === "error"    ? "text-red-400"  : "text-stone-700"
-        }`}>
+        <span className={cn(
+          "text-[13px] font-semibold leading-tight transition-colors duration-200",
+          status === "active"   ? "text-white"     :
+          status === "complete" ? "text-stone-500"  :
+          status === "error"    ? "text-red-400"    : "text-stone-700"
+        )}>
           {def.label}
         </span>
         {status === "active" && (
@@ -226,7 +204,7 @@ function FileInfoStrip({ state }: { state: UploadProcessingState }) {
   const Icon = state.isImage ? ImageIcon : FileText;
   const tags = [
     ext,
-    state.meta.equipmentId ? `${state.meta.equipmentId}` : null,
+    state.meta.equipmentId ?? null,
     state.meta.department  || null,
     state.meta.revision    || null,
   ].filter(Boolean) as string[];
@@ -234,12 +212,12 @@ function FileInfoStrip({ state }: { state: UploadProcessingState }) {
   return (
     <div className="flex items-center gap-3 rounded border border-stone-800 bg-stone-900/50 px-4 py-2.5">
       <Icon className="size-3.5 shrink-0 text-stone-600" aria-hidden />
-      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-stone-200">
+      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-stone-200">
         {state.fileName}
       </span>
       <div className="flex shrink-0 items-center gap-2">
         {tags.map((t, i) => (
-          <span key={i} className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
+          <span key={i} className="text-[10px] font-semibold uppercase tracking-widest text-stone-600">
             {t}
           </span>
         ))}
@@ -259,9 +237,32 @@ function ResultView({
   state: UploadProcessingState;
   onDismiss: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copied,     setCopied]     = useState(false);
+  const [visionObs,  setVisionObs]  = useState<string[] | null>(null);
+  const [loadingObs, setLoadingObs] = useState(false);
   const { meta, fileName, isImage } = state;
-  const hasChunks = result.chunks > 0;
+  const hasChunks    = result.chunks > 0;
+  const evidenceReady = result.status === "indexed" && hasChunks;
+
+  // Fetch vision observations if this is an image with chunks
+  useEffect(() => {
+    if (!isImage || !hasChunks) return;
+    setLoadingObs(true);
+    import("@/lib/api").then(({ getDocumentContent }) => {
+      getDocumentContent(result.document_id)
+        .then((content) => {
+          const visionChunk = content.chunks.find((c) =>
+            /vision inspection/i.test(c.section ?? "")
+          );
+          if (visionChunk) {
+            const obs = parseVisionObservations(visionChunk.text);
+            setVisionObs(obs);
+          }
+          setLoadingObs(false);
+        })
+        .catch(() => setLoadingObs(false));
+    }).catch(() => setLoadingObs(false));
+  }, [isImage, hasChunks, result.document_id]);
 
   const copyHash = () => {
     void navigator.clipboard.writeText(result.content_hash).then(() => {
@@ -270,166 +271,198 @@ function ResultView({
     });
   };
 
+  const anomalyCount = visionObs ? visionObs.filter((o) => hasWarningKeyword([o])).length : 0;
+
+  // ── Duplicate ──
   if (result.duplicate) {
     return (
       <div className="animate-fade-up flex w-full flex-col gap-5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <AlertCircle className="size-4 shrink-0 text-amber-400" aria-hidden />
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400">
+          <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
             Already indexed
           </span>
         </div>
-        <div>
-          <p className="text-sm font-medium text-stone-300 leading-relaxed">
-            This file has already been indexed. No processing was performed.
-          </p>
-          <p className="mt-1 text-xs text-stone-600">
-            Exact SHA-256 content hash matched an existing document.
+
+        <div className="rounded-lg border border-amber-800/40 bg-amber-950/15 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-200">{fileName}</p>
+          <p className="mt-1 text-xs text-stone-400">
+            Exact content match. No reprocessing needed — evidence is already searchable in investigations.
           </p>
         </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-600">
-            Content hash
-          </span>
+
+        <div className="flex flex-col gap-1 text-xs">
+          <span className="font-semibold text-stone-500">Content hash</span>
           <div className="flex items-center gap-2">
-            <code className="font-mono text-[11px] text-stone-400 break-all">{result.content_hash}</code>
+            <code className="font-mono text-stone-600 break-all">{result.content_hash}</code>
             <button type="button" onClick={copyHash}
               className="shrink-0 rounded p-1 text-stone-600 transition hover:text-stone-300"
               aria-label="Copy hash">
               <Copy className="size-3" />
             </button>
-            {copied && <span className="text-[11px] text-stone-600">Copied</span>}
+            {copied && <span className="text-stone-600">Copied</span>}
           </div>
         </div>
-        <Button variant="outline" size="sm" className="self-start" onClick={onDismiss}>
-          Return to library
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black hover:bg-[#A8EF47]"
+          >
+            Back to library
+          </button>
+        </div>
       </div>
     );
   }
 
+  // ── Normal result ──
   return (
-    <div className="animate-fade-up flex w-full flex-col gap-0">
+    <div className="animate-fade-up flex w-full flex-col gap-5">
 
-      {/* STATUS HEADER */}
-      <div className="flex items-center gap-2 pb-4">
-        <CheckCircle2 className="size-4 shrink-0 text-[#c8f135]" aria-hidden />
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c8f135]">
-          Document processed
+      {/* Status header */}
+      <div className="flex items-center gap-2.5">
+        <CheckCircle2 className="size-4 shrink-0 text-[#B9FF52]" aria-hidden />
+        <span className="text-xs font-bold uppercase tracking-widest text-[#B9FF52]">
+          {evidenceReady ? "Indexed" : "Processing complete"}
         </span>
       </div>
 
-      {/* DOCUMENT NAME + STATUS */}
-      <div className="border-t border-stone-700/60 pt-4 pb-5">
-        <p className="text-[22px] font-bold leading-tight text-white break-words tracking-tight">
+      {/* Document name + status pill */}
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-lg font-bold leading-snug text-white break-words flex-1">
           {fileName}
         </p>
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <span className={`rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest border ${
-            result.status === "indexed"
-              ? "bg-emerald-900/60 text-emerald-300 border-emerald-700/50"
-              : "bg-amber-900/60 text-amber-300 border-amber-700/50"
-          }`}>
-            {result.status}
+        {evidenceReady && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 rounded border border-emerald-800/50 bg-emerald-950/30 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+            Searchable
           </span>
-          {hasChunks
-            ? <span className="text-[12px] font-medium text-stone-400">{result.chunks} chunk{result.chunks !== 1 ? "s" : ""} indexed</span>
-            : <span className="text-[12px] text-stone-500">Stored · vector index pending</span>
-          }
-        </div>
+        )}
       </div>
 
-      {/* TWO-COLUMN METADATA + PROCESSING */}
-      <div className="border-t border-stone-700/60 pt-4 pb-5 grid grid-cols-2 gap-x-8">
-        <div className="flex flex-col gap-0.5">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Document</p>
-          <MetaRow label="Type"       value={meta.docType.replace("_", " ")} />
-          <MetaRow label="Revision"   value={meta.revision || "—"} />
-          <MetaRow label="Department" value={meta.department || "—"} />
-          <MetaRow label="Equipment"  value={meta.equipmentId ?? "—"} accent={!!meta.equipmentId} />
-          <MetaRow label="Source"     value={isImage ? "Image / photo" : "Document"} />
+      {/* Metadata grid */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+        <div className="flex items-baseline gap-2">
+          <span className="w-20 shrink-0 text-stone-500">Type</span>
+          <span className="font-medium capitalize text-stone-200">{meta.docType.replace("_", " ")}</span>
         </div>
-        <div className="flex flex-col gap-0.5">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Processing</p>
-          <CheckRow label="File stored"                                         done />
-          <CheckRow label={isImage ? "Vision inspection run" : "Content parsed"} done />
-          <CheckRow label="Chunks created"                                      done />
-          <CheckRow label="Metadata attached"                                   done />
-          <CheckRow label="Indexed for retrieval"                               done={hasChunks} />
+        <div className="flex items-baseline gap-2">
+          <span className="w-20 shrink-0 text-stone-500">Revision</span>
+          <span className="font-medium text-stone-200">{meta.revision || "—"}</span>
         </div>
+        <div className="flex items-baseline gap-2">
+          <span className="w-20 shrink-0 text-stone-500">Department</span>
+          <span className="font-medium text-stone-200">{meta.department || "—"}</span>
+        </div>
+        {meta.equipmentId && (
+          <div className="flex items-baseline gap-2">
+            <span className="w-20 shrink-0 text-stone-500">Equipment</span>
+            <span className="font-mono font-semibold text-[#B9FF52]">{meta.equipmentId}</span>
+          </div>
+        )}
+        {hasChunks && (
+          <div className="flex items-baseline gap-2">
+            <span className="w-20 shrink-0 text-stone-500">Evidence</span>
+            <span className="font-medium text-stone-200">{result.chunks} source{result.chunks !== 1 ? "s" : ""}</span>
+          </div>
+        )}
       </div>
 
-      {/* VISION SECTION */}
-      {isImage && (
-        <div className="border-t border-stone-700/60 pt-4 pb-5">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Vision inspection</p>
-          {hasChunks ? (
-            <div className="flex flex-col gap-2">
-              <CheckRow label="Equipment observation recorded" done />
-              <CheckRow label="Visual condition analysed"      done />
-              <CheckRow label="Indexed for evidence retrieval" done />
-            </div>
+      {/* Vision observations — images only */}
+      {isImage && evidenceReady && (
+        <div className="border-t border-stone-800 pt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
+              Vision Inspection
+            </p>
+            {anomalyCount > 0 && (
+              <span className="flex items-center gap-1 rounded border border-amber-800/50 bg-amber-950/30 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                <AlertTriangle className="size-2.5" aria-hidden />
+                {anomalyCount} anomal{anomalyCount === 1 ? "y" : "ies"}
+              </span>
+            )}
+          </div>
+
+          {loadingObs ? (
+            <p className="text-xs text-stone-500">Loading observations…</p>
+          ) : visionObs && visionObs.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {visionObs.map((obs, i) => {
+                const warn = hasWarningKeyword([obs]);
+                return (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <span
+                      className={cn("mt-[3px] shrink-0 text-[11px]", warn ? "text-amber-400" : "text-stone-600")}
+                      aria-hidden
+                    >
+                      {warn ? "▲" : "–"}
+                    </span>
+                    <span className={warn ? "text-amber-200" : "text-stone-200"}>{obs}</span>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
-            <div className="flex flex-col gap-2">
-              <CheckRow label="Image stored on disk"                            done />
-              <CheckRow label="Inspection pending — vision model unavailable"   done={false} />
-              <p className="mt-1 text-[11px] text-stone-600 leading-relaxed">
-                Observations will be recorded when Ollama is running.
-              </p>
-            </div>
+            <p className="text-xs text-stone-600">No observations recorded</p>
           )}
         </div>
       )}
 
-      {/* PROVENANCE */}
-      <div className="border-t border-stone-700/60 pt-4 pb-4 flex flex-col gap-2">
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Provenance</p>
-        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[11px]">
-          <span className="text-stone-500 font-medium">Document ID</span>
-          <code className="font-mono text-stone-300 break-all">{result.document_id}</code>
-          <span className="text-stone-500 font-medium">Content hash</span>
-          <div className="flex items-center gap-1.5">
-            <code className="font-mono text-stone-300 break-all">{result.content_hash.slice(0, 24)}…</code>
-            <button type="button" onClick={copyHash}
-              className="shrink-0 rounded p-0.5 text-stone-600 transition hover:text-stone-300"
-              aria-label="Copy full hash">
-              <Copy className="size-3" />
-            </button>
-            {copied && <span className="text-stone-500">Copied</span>}
+      {/* Technical details (collapsible) */}
+      <div className="border-t border-stone-800 pt-3">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between py-1 text-xs font-bold uppercase tracking-widest text-stone-600 transition hover:text-stone-400">
+            <span>Technical details</span>
+            <ChevronDown className="size-3 transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5 text-xs">
+            <div className="flex items-baseline gap-2">
+              <span className="w-28 shrink-0 text-stone-500">Document ID</span>
+              <code className="font-mono text-stone-400">{result.document_id}</code>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="w-28 shrink-0 text-stone-500">Content hash</span>
+              <div className="flex items-center gap-2">
+                <code className="font-mono text-stone-400 break-all">{result.content_hash.slice(0, 32)}…</code>
+                <button type="button" onClick={copyHash}
+                  className="shrink-0 rounded p-0.5 text-stone-600 transition hover:text-stone-300"
+                  aria-label="Copy hash">
+                  <Copy className="size-3" />
+                </button>
+                {copied && <span className="text-stone-500">Copied</span>}
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="w-28 shrink-0 text-stone-500">Status</span>
+              <span className="text-stone-400">{result.status}</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="w-28 shrink-0 text-stone-500">Chunks</span>
+              <span className="text-stone-400">{result.chunks}</span>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
 
-      {/* ACTIONS */}
-      <div className="border-t border-stone-800 pt-4 flex items-center gap-3">
-        <Button size="sm" className="bg-[#c8f135] text-stone-900 hover:bg-[#d4f55a]" onClick={onDismiss}>
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded-md bg-[#B9FF52] px-4 py-2 text-sm font-semibold text-black hover:bg-[#A8EF47]"
+        >
           View in library
-        </Button>
-        <Button variant="outline" size="sm" onClick={onDismiss}>
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
+        >
           Upload another
-        </Button>
+        </button>
       </div>
-    </div>
-  );
-}
-
-function MetaRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="flex items-baseline gap-2 py-0.5 text-[13px]">
-      <span className="w-20 shrink-0 text-stone-500 font-medium">{label}</span>
-      <span className={`capitalize font-semibold ${accent ? "text-[#c8f135]" : "text-white"}`}>{value}</span>
-    </div>
-  );
-}
-
-function CheckRow({ label, done, icon }: { label: string; done: boolean; icon?: string }) {
-  const marker = icon ?? (done ? "✓" : "○");
-  return (
-    <div className="flex items-center gap-2.5 py-0.5 text-[13px]">
-      <span className={`w-3.5 shrink-0 text-center text-[13px] font-bold ${done ? "text-[#c8f135]" : "text-stone-700"}`} aria-hidden>
-        {marker}
-      </span>
-      <span className={`font-medium ${done ? "text-stone-100" : "text-stone-600"}`}>{label}</span>
     </div>
   );
 }
@@ -468,7 +501,6 @@ export function UploadProcessingModal({ state, onDismiss }: Props) {
     let cancelled = false;
 
     async function runAnimation() {
-      // 1 s boot delay — let the waveform play before progress starts
       await new Promise<void>((r) => setTimeout(r, BOOT_DELAY));
       if (cancelled) return;
 
@@ -524,20 +556,16 @@ export function UploadProcessingModal({ state, onDismiss }: Props) {
       aria-modal="true"
       aria-label="Document processing"
     >
-      {/* Wider card for two-column layout */}
       <div className="flex w-full max-w-2xl flex-col gap-0">
 
-        {/* ── ANIMATING PHASE ── */}
+        {/* Animating phase */}
         {phase === "animating" && (
           <div className="flex flex-col gap-6">
-
-            {/* TOP ROW: logo (left) + stage list (right) */}
             <div className="grid grid-cols-[200px_1fr] gap-8 items-start">
-
-              {/* LEFT: logo + waveform */}
+              {/* Logo + waveform */}
               <div className="flex flex-col items-center gap-4">
-                {/* Logo */}
                 <div className="animate-nirva-breathe" aria-hidden>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/nirva_logo_-removebg-preview.png"
                     alt="NIRVA"
@@ -545,17 +573,13 @@ export function UploadProcessingModal({ state, onDismiss }: Props) {
                     style={{ width: 80, height: 80 }}
                   />
                 </div>
-
-                {/* Divider line from logo to waveform */}
                 <div className="h-4 w-px bg-stone-800" aria-hidden />
-
-                {/* Waveform */}
                 <div className="w-full px-1">
                   <Waveform active={waveformActive} />
                 </div>
               </div>
 
-              {/* RIGHT: stage list */}
+              {/* Stage list */}
               <div
                 className="flex flex-col gap-3 border-l border-stone-800 pl-8 pt-1"
                 role="list"
@@ -567,29 +591,32 @@ export function UploadProcessingModal({ state, onDismiss }: Props) {
               </div>
             </div>
 
-            {/* BOTTOM: file info strip — full width */}
             <FileInfoStrip state={state} />
           </div>
         )}
 
-        {/* ── RESULT PHASE ── */}
+        {/* Result phase */}
         {phase === "result" && result && (
           <ResultView result={result} state={state} onDismiss={onDismiss} />
         )}
 
-        {/* ── ERROR PHASE ── */}
+        {/* Error phase */}
         {phase === "error" && (
           <div className="animate-fade-up flex w-full flex-col gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <AlertCircle className="size-4 shrink-0 text-red-400" aria-hidden />
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-red-400">
+              <span className="text-xs font-bold uppercase tracking-widest text-red-400">
                 Upload failed
               </span>
             </div>
             <p className="text-sm text-stone-400 leading-relaxed">{errorMsg}</p>
-            <Button variant="outline" size="sm" className="self-start" onClick={onDismiss}>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="self-start rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
+            >
               Back to upload
-            </Button>
+            </button>
           </div>
         )}
 
