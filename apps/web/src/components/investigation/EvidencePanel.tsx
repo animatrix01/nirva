@@ -4,17 +4,13 @@
  * EvidencePanel — investigation evidence workspace (right column).
  *
  * Layout:
- *   EVIDENCE header + source count + hybrid retrieval tag
+ *   EVIDENCE header (count + hybrid-retrieval note folded in)
  *   ──────────────────────────────────────────────────
- *   For each citation (compact source record):
- *     NN  DOC TYPE                  [source method]
- *     Document title
- *     Revision · Page N · §Section
+ *   For each citation (always-expanded record):
+ *     NN  Document title (truncated)            score%
+ *     type · revision · page/section
  *     ┌─ Relevant passage excerpt ─┐
- *     Score bar if available
- *   ──────────────────────────────────────────────────
- *   SOURCE TRACE (compact index at bottom)
- *     01  Title .................. Page N
+ *     Score bar + View source
  *
  * Clicking a record's "View source" opens the CitationLink modal for full
  * evidence inspection without cluttering the panel view.
@@ -58,18 +54,18 @@ function sectionLeaf(section: string | null | undefined): string | null {
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
   const barColor =
-    pct >= 80 ? "bg-emerald-600" : pct >= 60 ? "bg-stone-400" : "bg-stone-600";
+    pct >= 85 ? "bg-emerald-500" : pct >= 70 ? "bg-amber-500" : "bg-red-400";
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-1 w-16 overflow-hidden rounded-full bg-stone-800">
+    <div className="flex items-center gap-2.5">
+      <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
         <div className={cn("h-full rounded-full", barColor)} style={{ width: `${pct}%` }} aria-hidden />
       </div>
-      <span className="text-[11px] tabular-nums text-stone-400">{pct}%</span>
+      <span className="text-sm font-bold tabular-nums text-slate-900">{pct}%</span>
     </div>
   );
 }
 
-// ─── Single source record ─────────────────────────────────────────────────────
+// ─── Single source record (always expanded) ───────────────────────────────────
 
 function SourceRecord({
   citation,
@@ -119,135 +115,96 @@ function SourceRecord({
   if (leaf && !locationParts.join(" ").includes(leaf))
     locationParts.push(`§ ${leaf}`);
 
+  const miniScore =
+    detail && !isTool && typeof detail.score === "number" && detail.score > 0
+      ? `${Math.round(detail.score * 100)}%`
+      : null;
+
   return (
-    <article className="border-b border-stone-800 last:border-0 py-4 first:pt-0">
-      {/* ── Top row: index + type + method ── */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="flex size-5 shrink-0 items-center justify-center rounded bg-stone-800 text-[10px] font-bold text-stone-400 tabular-nums select-none">
-          {String(index + 1).padStart(2, "0")}
+    <article className="border-b border-slate-200 last:border-0 py-4 first:pt-0">
+      {/* ── Always-visible header row ── */}
+      <div className="flex w-full items-start gap-3 text-left">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded bg-[#B9FF52] text-sm font-bold text-black tabular-nums select-none">
+          {index + 1}
         </span>
-        {detail?.document_type && (
-          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            {docTypeLabel(detail.document_type)}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-bold leading-snug text-slate-900" title={citation.title}>
+            {citation.title}
           </span>
-        )}
-        <span
-          className={cn(
-            "ml-auto text-[10px] font-semibold uppercase tracking-widest",
-            isTool ? "text-blue-500" : "text-stone-600"
-          )}
-        >
-          {isTool ? "Tool" : "Retrieval"}
+          <span className="block truncate text-xs font-medium text-slate-500 mt-0.5">
+            {[
+              detail?.document_type ? docTypeLabel(detail.document_type) : null,
+              locationParts.join(" · ") || null,
+              isTool ? "Tool" : "Retrieval",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
         </span>
       </div>
 
-      {/* ── Document title ── */}
-      <p className="text-[13px] font-semibold leading-snug text-stone-100 mb-0.5">
-        {citation.title}
-      </p>
-
-      {/* ── Location line ── */}
-      {locationParts.length > 0 && (
-        <p className="text-[11px] text-stone-500 mb-2">
-          {locationParts.join(" · ")}
-        </p>
-      )}
-
-      {/* Equipment ID */}
-      {detail?.equipment_id && (
-        <p className="text-[11px] font-medium text-stone-400 mb-2">
-          Equipment · {detail.equipment_id}
-        </p>
-      )}
-
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="h-12 animate-pulse rounded bg-stone-800/40" aria-busy="true" />
-      )}
-
-      {/* Error */}
-      {error && (
-        <p role="alert" className="text-[11px] text-red-400">{error}</p>
-      )}
-
-      {/* ── Source passage excerpt ── */}
-      {detail && (
-        <div
-          className={cn(
-            "rounded-sm border-l-2 px-3 py-2.5 mb-2.5",
-            isTool
-              ? "border-blue-700/40 bg-blue-950/15"
-              : "border-stone-600/40 bg-stone-900/50"
+      {/* ── Detail (always rendered) ── */}
+      <div className="mt-3 pl-10">
+          {/* Equipment ID */}
+          {detail?.equipment_id && (
+            <p className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">
+              Equipment · {detail.equipment_id}
+            </p>
           )}
-        >
-          {/* Truncate long passages to ~3 lines for panel view */}
-          <p className="text-[12px] leading-relaxed text-stone-300 line-clamp-4">
-            {detail.passage_text}
-          </p>
-        </div>
-      )}
 
-      {/* ── Retrieval score + view source link ── */}
-      <div className="flex items-center gap-3">
-        {detail && !isTool && typeof detail.score === "number" && detail.score > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-widest text-stone-700">
-              Score
-            </span>
-            <ScoreBar score={detail.score} />
+          {/* Loading skeleton */}
+          {loading && (
+            <div className="h-12 animate-pulse rounded bg-slate-100" aria-busy="true" />
+          )}
+
+          {/* Error */}
+          {error && (
+            <p role="alert" className="text-xs text-red-500">{error}</p>
+          )}
+
+          {/* ── Source passage excerpt ── */}
+          {detail && (
+            <div
+              className={cn(
+                "rounded border-l-2 px-3 py-3 mb-3",
+                isTool
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-slate-400 bg-slate-50"
+              )}
+            >
+              <p className="text-sm leading-relaxed text-slate-800 line-clamp-4">
+                {detail.passage_text}
+              </p>
+            </div>
+          )}
+
+          {/* ── Retrieval score + view source link ── */}
+          <div className="flex items-center justify-between gap-3">
+            {detail && !isTool && typeof detail.score === "number" && detail.score > 0 ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Retrieval score
+                </span>
+                <ScoreBar score={detail.score} />
+              </div>
+            ) : detail && isTool ? (
+              <span className="text-xs font-semibold text-blue-600">
+                Read-only operational tool
+              </span>
+            ) : (
+              <div />
+            )}
+
+            {/* CitationLink opens full inspection modal */}
+            <CitationLink
+              citation={citation}
+              jobId={jobId}
+              index={index}
+              compact
+            />
           </div>
-        )}
-        {detail && isTool && (
-          <span className="text-[10px] text-stone-700">
-            Read-only operational tool
-          </span>
-        )}
-
-        {/* CitationLink opens full inspection modal */}
-        <div className="ml-auto">
-          <CitationLink
-            citation={citation}
-            jobId={jobId}
-            index={index}
-            compact
-          />
         </div>
-      </div>
     </article>
-  );
-}
-
-// ─── Source trace (compact index) ────────────────────────────────────────────
-
-function SourceTrace({
-  citations,
-  jobId,
-}: {
-  citations: CitationRef[];
-  jobId: string;
-}) {
-  if (citations.length === 0) return null;
-  return (
-    <section className="mt-5 pt-5 border-t border-stone-800">
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-stone-500">
-        Source trace
-      </p>
-      <ol className="flex flex-col gap-1.5">
-        {citations.map((c, i) => (
-          <li key={c.chunk_id} className="flex items-baseline gap-2 text-[11px]">
-            <span className="w-5 shrink-0 font-mono text-stone-600 tabular-nums select-none">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className="flex-1 text-stone-400 truncate" title={c.title}>
-              {c.title}
-            </span>
-            <span className="shrink-0 font-mono text-stone-600 text-[10px]">
-              {c.locator}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -255,9 +212,9 @@ function SourceTrace({
 
 function EmptyState() {
   return (
-    <div className="rounded border border-dashed border-stone-800 px-5 py-6">
-      <p className="text-[13px] text-stone-600">No evidence sources cited.</p>
-      <p className="mt-1 text-[11px] text-stone-700 leading-relaxed">
+    <div className="rounded-lg border border-dashed border-slate-300 px-5 py-6">
+      <p className="text-sm font-medium text-slate-600">No evidence sources cited.</p>
+      <p className="mt-1 text-sm text-slate-500 leading-relaxed">
         Citations appear once the investigation retrieves and grounds its findings.
       </p>
     </div>
@@ -279,38 +236,25 @@ export function EvidencePanel({
   return (
     <div className="flex flex-col">
 
-      {/* ── HEADER ── */}
-      <div className="mb-3 flex items-baseline justify-between">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-stone-400">
+      {/* ── HEADER (method folded in — no separate tag box) ── */}
+      <div className="mb-4 flex items-baseline justify-between">
+        <p className="text-sm font-bold uppercase tracking-wide text-slate-900">
           Evidence
           {citations.length > 0 &&
             ` · ${citations.length} source${citations.length !== 1 ? "s" : ""}`}
+          <span className="ml-2 font-medium normal-case tracking-normal text-slate-500">
+            hybrid retrieval
+          </span>
         </p>
       </div>
 
-      {/* Hybrid retrieval tag */}
-      {citations.length > 0 && (
-        <div className="mb-4 flex flex-col gap-1 rounded-sm border border-stone-800 bg-stone-900/40 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-            Hybrid retrieval
-          </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-stone-600">
-            <span>Dense + sparse</span>
-            <span aria-hidden>·</span>
-            <span>Rank-fused</span>
-            <span aria-hidden>·</span>
-            <span>ACL-filtered</span>
-          </div>
-        </div>
-      )}
-
       {citations.length === 0 && <EmptyState />}
 
-      {/* ── DOCUMENT SOURCES ── */}
+      {/* ── DOCUMENT SOURCES (first open, rest collapsed) ── */}
       {retrievalCitations.length > 0 && (
         <section className="mb-2">
           {toolCitations.length > 0 && (
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-600">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">
               Document sources
             </p>
           )}
@@ -327,10 +271,10 @@ export function EvidencePanel({
         </section>
       )}
 
-      {/* ── TOOL RESULTS ── */}
+      {/* ── TOOL RESULTS (collapsed) ── */}
       {toolCitations.length > 0 && (
         <section className="mt-2">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-stone-600">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-900">
             Tool results
           </p>
           <div>
@@ -345,9 +289,6 @@ export function EvidencePanel({
           </div>
         </section>
       )}
-
-      {/* ── SOURCE TRACE ── */}
-      <SourceTrace citations={citations} jobId={jobId} />
     </div>
   );
 }

@@ -32,20 +32,14 @@ export function HealthIndicator() {
     };
   }, []);
 
-  const allUp =
-    !down &&
-    health !== null &&
-    health.status === "ok" &&
-    Object.values(health.services).every((s) => s === "up");
-
   const coreUp =
     !down &&
     health !== null &&
     health.services.postgres === "up" &&
     health.services.storage === "up";
 
-  const label = allUp || coreUp ? "Online" : "Degraded";
-  const isHealthy = allUp || coreUp;
+  const label = coreUp ? "Online" : "Degraded";
+  const isHealthy = coreUp;
 
   return (
     <span
@@ -57,16 +51,16 @@ export function HealthIndicator() {
             ? `postgres:${health.services.postgres} qdrant:${health.services.qdrant} model_gateway:${health.services.model_gateway} storage:${health.services.storage}`
             : "Checking services…"
       }
-      className="inline-flex items-center gap-1.5 text-xs"
+      className="inline-flex items-center gap-2 text-sm"
     >
       <span
         aria-hidden
         className={cn(
-          "size-1.5 rounded-full",
-          isHealthy ? "bg-[#c8f135]" : "animate-pulse bg-amber-500"
+          "size-2 rounded-full",
+          isHealthy ? "bg-[#B9FF52]" : "animate-pulse bg-amber-500"
         )}
       />
-      <span className={isHealthy ? "text-neutral-500" : "text-amber-500"}>
+      <span className={isHealthy ? "text-slate-600" : "text-amber-600"}>
         {label}
       </span>
     </span>

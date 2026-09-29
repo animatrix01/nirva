@@ -126,10 +126,10 @@ function activityLine(e: SseEvent): ActivityLine | null {
 // ─── Terminal display ────────────────────────────────────────────────────────
 
 const TERMINAL_STYLE: Record<TerminalEventType, string> = {
-  completed:         "border-emerald-700/60 bg-emerald-950/40 text-emerald-300",
-  failed:            "border-red-700/60     bg-red-950/40     text-red-300",
-  blocked_injection: "border-fuchsia-700/60 bg-fuchsia-950/40 text-fuchsia-300",
-  awaiting_approval: "border-amber-700/60   bg-amber-950/40   text-amber-300",
+  completed:         "border-emerald-200 bg-emerald-50 text-emerald-700",
+  failed:            "border-red-200     bg-red-50     text-red-700",
+  blocked_injection: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
+  awaiting_approval: "border-amber-200   bg-amber-50   text-amber-700",
 };
 
 const TERMINAL_LABEL: Record<TerminalEventType, string> = {
@@ -165,23 +165,23 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
         <div
           className={cn(
             "relative z-10 mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-            isDone    && "border-[#c8f135] bg-[#c8f135]/10",
-            isRunning && "border-stone-400 bg-stone-800",
-            isPending && "border-stone-700 bg-transparent",
+            isDone    && "border-[#B9FF52] bg-[#B9FF52]/20",
+            isRunning && "border-slate-400 bg-slate-100",
+            isPending && "border-slate-300 bg-transparent",
           )}
           aria-hidden
         >
           {isDone && (
-            <span className="text-[9px] font-bold text-[#c8f135]">✓</span>
+            <span className="text-[9px] font-bold text-[#B9FF52]">✓</span>
           )}
           {isRunning && (
             <span
-              className="size-1.5 rounded-full bg-stone-300"
+              className="size-1.5 rounded-full bg-slate-500"
               style={{ animation: "nirva-breathe 1.1s ease-in-out infinite" }}
             />
           )}
           {isPending && (
-            <span className="size-1 rounded-full bg-stone-700" />
+            <span className="size-1 rounded-full bg-slate-300" />
           )}
         </div>
         {/* Connector line to next node */}
@@ -189,7 +189,7 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           <div
             className={cn(
               "mt-1 w-px flex-1",
-              isDone   ? "bg-stone-700" : "bg-stone-800"
+              isDone   ? "bg-slate-300" : "bg-slate-200"
             )}
             aria-hidden
           />
@@ -204,18 +204,18 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           <span
             className={cn(
               "text-[13px] font-semibold leading-tight",
-              isDone    && "text-stone-300",
-              isRunning && "text-white",
-              isPending && "text-stone-700",
+              isDone    && "text-slate-700",
+              isRunning && "text-slate-900",
+              isPending && "text-slate-400",
             )}
           >
             {meta.label}
           </span>
 
           {isRunning && (
-            <span className="inline-flex items-center gap-1.5 rounded bg-stone-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-stone-300">
+            <span className="inline-flex items-center gap-1.5 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
               <span
-                className="size-1.5 rounded-full bg-stone-300"
+                className="size-1.5 rounded-full bg-slate-500"
                 style={{ animation: "nirva-breathe 1.4s ease-in-out infinite" }}
                 aria-hidden
               />
@@ -224,7 +224,7 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
           )}
 
           {isDone && !isTerminalEvent(row.events[row.events.length - 1]?.type ?? "node_started") && (
-            <span className="rounded bg-[#c8f135]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-[#c8f135]">
+            <span className="rounded bg-[#B9FF52]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-[#B9FF52]">
               Done
             </span>
           )}
@@ -234,7 +234,7 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
         {(isRunning || isPending) && (
           <p className={cn(
             "mt-1 text-[11px] leading-snug",
-            isRunning ? "text-stone-500" : "text-stone-700"
+            isRunning ? "text-slate-500" : "text-slate-400"
           )}>
             {meta.description}
           </p>
@@ -244,17 +244,17 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
         {isDone && (evidenceCount > 0 || toolCount > 0 || contraCount > 0) && (
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
             {evidenceCount > 0 && (
-              <span className="text-[11px] text-stone-500">
-                <span className="text-[#c8f135]">{evidenceCount}</span> evidence item{evidenceCount !== 1 ? "s" : ""}
+              <span className="text-[11px] text-slate-500">
+                <span className="text-[#B9FF52]">{evidenceCount}</span> evidence item{evidenceCount !== 1 ? "s" : ""}
               </span>
             )}
             {toolCount > 0 && (
-              <span className="text-[11px] text-stone-500">
-                <span className="text-stone-400">{toolCount}</span> tool result{toolCount !== 1 ? "s" : ""}
+              <span className="text-[11px] text-slate-500">
+                <span className="text-slate-600">{toolCount}</span> tool result{toolCount !== 1 ? "s" : ""}
               </span>
             )}
             {contraCount > 0 && (
-              <span className="text-[11px] text-amber-500">
+              <span className="text-[11px] text-amber-600">
                 ⚠ {contraCount} conflict{contraCount !== 1 ? "s" : ""} detected
               </span>
             )}
@@ -269,10 +269,10 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
                 <span
                   className={cn(
                     "mt-0.5 shrink-0",
-                    a.tone === "lime"    && "text-[#c8f135]",
-                    a.tone === "amber"   && "text-amber-400",
-                    a.tone === "red"     && "text-red-400",
-                    a.tone === "neutral" && "text-stone-500",
+                    a.tone === "lime"    && "text-emerald-500",
+                    a.tone === "amber"   && "text-amber-500",
+                    a.tone === "red"     && "text-red-500",
+                    a.tone === "neutral" && "text-slate-400",
                   )}
                   aria-hidden
                 >
@@ -280,10 +280,10 @@ function StageRow({ row, isLast }: { row: NodeTimelineRow; isLast: boolean }) {
                 </span>
                 <span
                   className={cn(
-                    a.tone === "lime"    && "text-stone-300",
-                    a.tone === "amber"   && "text-amber-300",
-                    a.tone === "red"     && "text-red-300",
-                    a.tone === "neutral" && "text-stone-400",
+                    a.tone === "lime"    && "text-slate-700",
+                    a.tone === "amber"   && "text-amber-700",
+                    a.tone === "red"     && "text-red-600",
+                    a.tone === "neutral" && "text-slate-500",
                   )}
                 >
                   {a.label}

@@ -80,6 +80,7 @@ export function ApprovalCard({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Decision rationale"
+              className="text-slate-800 placeholder:text-slate-400"
             />
             <div className="flex gap-2">
               <Button

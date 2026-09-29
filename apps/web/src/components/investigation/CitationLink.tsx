@@ -71,17 +71,19 @@ function buildSectionBreadcrumb(section: string | null | undefined): string[] {
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
   const barColor =
-    pct >= 80 ? "bg-emerald-600" : pct >= 60 ? "bg-stone-400" : "bg-stone-600";
+    pct >= 80 ? "bg-emerald-500" : pct >= 60 ? "bg-amber-400" : "bg-red-400";
+  const textColor =
+    pct >= 80 ? "text-slate-900" : pct >= 60 ? "text-amber-700" : "text-red-600";
   return (
     <div className="flex items-center gap-2.5">
-      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-800">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
         <div
           className={cn("h-full rounded-full", barColor)}
           style={{ width: `${pct}%` }}
           aria-hidden
         />
       </div>
-      <span className="text-[13px] font-semibold tabular-nums text-stone-200">
+      <span className={cn("text-sm font-bold tabular-nums", textColor)}>
         {pct}%
       </span>
     </div>
@@ -92,8 +94,8 @@ function ScoreBar({ score }: { score: number }) {
 
 function ModalSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-b border-stone-800 px-8 py-5 last:border-0">
-      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">
+    <div className="border-b border-slate-100 px-8 py-5 last:border-0">
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </p>
       {children}
@@ -120,11 +122,11 @@ function InspectionModalBody({
     <div className="flex flex-col">
 
       {/* ── DOCUMENT ── */}
-      <div className="border-b border-stone-800 px-8 pb-6 pt-3">
+      <div className="border-b border-slate-100 px-8 pb-6 pt-4">
         {/* Chips row */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {evidence.document_type && (
-            <span className="rounded bg-stone-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+            <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-600">
               {docTypeLabel(evidence.document_type)}
             </span>
           )}
@@ -132,31 +134,31 @@ function InspectionModalBody({
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
               tool
-                ? "bg-blue-950/60 text-blue-400"
-                : "bg-stone-800/60 text-stone-500"
+                ? "bg-blue-50 text-blue-600"
+                : "bg-slate-100 text-slate-500"
             )}
           >
             {tool ? "Tool result" : "Retrieval"}
           </span>
           {evidence.confidentiality_level && (
-            <span className="ml-auto rounded border border-stone-700 px-2 py-0.5 text-[10px] capitalize text-stone-600">
+            <span className="ml-auto rounded border border-slate-200 px-2 py-0.5 text-[10px] capitalize text-slate-500">
               {evidence.confidentiality_level}
             </span>
           )}
         </div>
 
         {/* Document title — dominant */}
-        <h2 className="text-[20px] font-bold leading-snug text-white break-words">
+        <h2 className="text-xl font-bold leading-snug text-slate-900 break-words">
           {evidence.document_title || citation.title}
         </h2>
 
         {/* Location line */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-stone-500">
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-400">
           {citation.revision && <span>{citation.revision}</span>}
           {evidence.page != null && (
             <>
               <span aria-hidden>·</span>
-              <span className="font-medium text-stone-400">
+              <span className="font-medium text-slate-600">
                 Page {evidence.page}
               </span>
             </>
@@ -171,15 +173,13 @@ function InspectionModalBody({
                 {sectionParts.map((part, i) => (
                   <li key={i} className="flex items-center gap-1">
                     {i > 0 && (
-                      <span className="text-stone-700" aria-hidden>
-                        ›
-                      </span>
+                      <span className="text-slate-300" aria-hidden>›</span>
                     )}
                     <span
                       className={
                         i === sectionParts.length - 1
-                          ? "font-medium text-stone-400"
-                          : "text-stone-600"
+                          ? "font-medium text-slate-600"
+                          : "text-slate-400"
                       }
                     >
                       {part}
@@ -192,7 +192,7 @@ function InspectionModalBody({
           {evidence.equipment_id && (
             <>
               <span aria-hidden>·</span>
-              <span className="font-semibold text-stone-300">
+              <span className="font-semibold text-slate-700">
                 {evidence.equipment_id}
               </span>
             </>
@@ -206,11 +206,11 @@ function InspectionModalBody({
           className={cn(
             "rounded-sm border-l-2 px-5 py-4",
             tool
-              ? "border-blue-700/50 bg-blue-950/15"
-              : "border-stone-600/50 bg-stone-900/40"
+              ? "border-blue-300 bg-blue-50"
+              : "border-slate-300 bg-slate-50"
           )}
         >
-          <p className="text-[14px] leading-[1.8] text-stone-100 whitespace-pre-wrap">
+          <p className="text-sm leading-[1.8] text-slate-800 whitespace-pre-wrap">
             {evidence.passage_text}
           </p>
         </div>
@@ -219,7 +219,7 @@ function InspectionModalBody({
       {/* ── WHY NIRVA RETRIEVED THIS ── */}
       {evidence.why_retrieved && (
         <ModalSection label="Why NIRVA retrieved this">
-          <p className="text-[13px] leading-relaxed text-stone-400">
+          <p className="text-sm leading-relaxed text-slate-600">
             {evidence.why_retrieved}
           </p>
         </ModalSection>
@@ -228,53 +228,53 @@ function InspectionModalBody({
       {/* ── RETRIEVAL TRACE ── */}
       <ModalSection label={tool ? "Source" : "Retrieval trace"}>
         {tool ? (
-          <div className="flex flex-col gap-2 text-[13px]">
+          <div className="flex flex-col gap-2 text-sm">
             <div className="flex gap-8">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                   Method
                 </p>
-                <p className="text-stone-300 font-medium">
+                <p className="font-medium text-slate-800">
                   Read-only operational tool
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                   Access
                 </p>
-                <p className="text-stone-400">
+                <p className="text-slate-600">
                   Asset history · inventory · episodic memory
                 </p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-x-8 gap-y-3">
+          <div className="flex flex-wrap gap-x-8 gap-y-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                 Method
               </p>
-              <p className="text-[13px] font-medium text-stone-300">
+              <p className="text-sm font-semibold text-slate-800">
                 Hybrid dense + sparse
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                 Fusion
               </p>
-              <p className="text-[13px] text-stone-400">
+              <p className="text-sm text-slate-600">
                 Reciprocal-rank · ACL-filtered
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                 Index
               </p>
-              <p className="text-[13px] text-stone-400">nirva_chunks · Qdrant</p>
+              <p className="text-sm text-slate-600">nirva_chunks · Qdrant</p>
             </div>
             {hasScore && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-600 mb-0.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                   Relevance score
                 </p>
                 <ScoreBar score={evidence.score!} />
@@ -289,7 +289,7 @@ function InspectionModalBody({
         <button
           type="button"
           onClick={() => setTechOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-700 transition hover:text-stone-500"
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition hover:text-slate-600"
           aria-expanded={techOpen}
         >
           {techOpen ? (
@@ -301,16 +301,16 @@ function InspectionModalBody({
         </button>
 
         {techOpen && (
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[11px]">
-            <dt className="text-stone-600">Chunk ID</dt>
-            <dd className="font-mono text-stone-500 break-all">
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
+            <dt className="font-semibold text-slate-500">Chunk ID</dt>
+            <dd className="font-mono text-slate-600 break-all">
               {evidence.chunk_id}
             </dd>
 
             {evidence.document_id && (
               <>
-                <dt className="text-stone-600">Document ID</dt>
-                <dd className="font-mono text-stone-500 break-all">
+                <dt className="font-semibold text-slate-500">Document ID</dt>
+                <dd className="font-mono text-slate-600 break-all">
                   {evidence.document_id}
                 </dd>
               </>
@@ -318,15 +318,15 @@ function InspectionModalBody({
 
             {evidence.content_hash && (
               <>
-                <dt className="text-stone-600">Content hash</dt>
-                <dd className="font-mono text-stone-500 break-all">
+                <dt className="font-semibold text-slate-500">Content hash</dt>
+                <dd className="font-mono text-slate-600 break-all">
                   {evidence.content_hash.slice(0, 24)}…
                 </dd>
               </>
             )}
 
-            <dt className="text-stone-600">Classification</dt>
-            <dd className="capitalize text-stone-400">
+            <dt className="font-semibold text-slate-500">Classification</dt>
+            <dd className="capitalize text-slate-600">
               {evidence.confidentiality_level}
             </dd>
           </dl>
@@ -388,7 +388,7 @@ export function CitationLink({
         <button
           type="button"
           onClick={() => void handleOpen()}
-          className="text-[11px] font-medium text-stone-500 transition hover:text-stone-300 whitespace-nowrap"
+          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400 whitespace-nowrap"
           aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
         >
           View source →
@@ -400,34 +400,34 @@ export function CitationLink({
           className={cn(
             "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-medium transition-colors",
             tool
-              ? "border-blue-800/60 bg-blue-950/30 text-blue-400 hover:border-blue-700 hover:bg-blue-950/50"
-              : "border-stone-700 bg-stone-900/60 text-stone-300 hover:border-stone-500 hover:bg-stone-800/60"
+              ? "border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100"
+              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
           )}
           title={`Open source: ${citation.title} ${citation.revision} ${citation.locator}`}
           aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
         >
           {index != null && (
-            <span className="flex size-4 items-center justify-center rounded bg-stone-800 text-[9px] font-bold text-stone-400">
+            <span className="flex size-4 items-center justify-center rounded bg-slate-200 text-[9px] font-bold text-slate-600">
               {index + 1}
             </span>
           )}
           <span className="max-w-[180px] truncate">{citation.title}</span>
-          <span className="shrink-0 text-stone-600">{citation.locator}</span>
+          <span className="shrink-0 text-slate-400">{citation.locator}</span>
         </button>
       )}
 
       {/* ── Evidence inspection modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="overflow-hidden flex flex-col p-0 !max-w-none"
+          className="overflow-hidden flex flex-col p-0 !max-w-none bg-white"
           style={{ width: "min(96vw, 860px)", maxHeight: "90vh" }}
         >
           {/* Modal header */}
-          <DialogHeader className="shrink-0 border-b border-stone-800 px-8 pt-5 pb-4">
-            <DialogTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-500">
+          <DialogHeader className="shrink-0 border-b border-slate-200 bg-slate-50 px-8 pt-5 pb-4">
+            <DialogTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
               Source inspection
             </DialogTitle>
-            <p className="mt-0.5 text-[11px] text-stone-600">
+            <p className="mt-0.5 text-xs text-slate-500">
               {citation.title}
               {citation.revision && ` · ${citation.revision}`}
               {citation.locator && ` · ${citation.locator}`}
@@ -435,18 +435,18 @@ export function CitationLink({
           </DialogHeader>
 
           {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto bg-white">
             {loading && (
               <div className="px-8 py-8 flex flex-col gap-4">
-                <div className="h-6 w-2/3 animate-pulse rounded bg-stone-800/60" />
-                <div className="h-32 w-full animate-pulse rounded bg-stone-800/40" />
-                <div className="h-4 w-1/2 animate-pulse rounded bg-stone-800/40" />
+                <div className="h-6 w-2/3 animate-pulse rounded bg-slate-200" />
+                <div className="h-32 w-full animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
               </div>
             )}
 
             {error && (
               <div className="px-8 py-6">
-                <p role="alert" className="text-sm text-red-400">
+                <p role="alert" className="text-sm text-red-600">
                   {error}
                 </p>
               </div>
