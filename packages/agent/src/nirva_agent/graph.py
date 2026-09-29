@@ -294,6 +294,8 @@ def retrieve_refine_node(
 
 def answer_node(state: NirvaState, gateway: GatewayLike) -> dict[str, object]:
     """Ask the local model over zoned messages; record citations verbatim."""
+    from nirva_agent.gateway import GatewayError
+
     evidence = list(state.get("retrieved_evidence", []))
     messages: list[ChatMessage] = [
         ChatMessage(role="system", content=SYSTEM_RULES),
@@ -302,9 +304,19 @@ def answer_node(state: NirvaState, gateway: GatewayLike) -> dict[str, object]:
     block = _evidence_block(evidence)
     if block:
         messages.append(ChatMessage(role="user", content=block))
-    response = gateway.chat(messages, temperature=0.0, max_tokens=1024)
+    try:
+        response = gateway.chat(messages, temperature=0.0, max_tokens=1024)
+        findings = response.content.strip()
+    except GatewayError:
+        # Ollama is unreachable (dev mode without models). Produce a placeholder
+        # report so the full UI flow — report view, approval, audit — is exercisable.
+        findings = (
+            "ABSTAIN — model gateway unreachable. No findings can be generated "
+            "without a local Ollama instance. This is a dev-mode placeholder.\n\n"
+            f"Objective received: {state.get('objective', '')}"
+        )
     report = FinalReport(
-        findings=response.content.strip(),
+        findings=findings,
         confidence=0.0,
         assumptions=[],
         gaps=[],

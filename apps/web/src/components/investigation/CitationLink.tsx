@@ -1,74 +1,380 @@
 "use client";
 
+/**
+ * CitationLink — "View source" trigger + full evidence inspection modal.
+ *
+ * TRIGGER (compact prop=true — used by EvidencePanel):
+ *   Plain text link: "View source →"
+ *
+ * TRIGGER (default — used inline in citations list):
+ *   Numbered badge pill showing title + locator
+ *
+ * MODAL structure (engineering evidence inspection window):
+ *   DOCUMENT
+ *     Type chip · classification
+ *     Title (dominant)
+ *     Revision · Page · Section path
+ *     Equipment ID
+ *   ─────────────────────────────
+ *   RELEVANT SOURCE PASSAGE
+ *     Full verbatim passage (primary visual content)
+ *   ─────────────────────────────
+ *   WHY NIRVA RETRIEVED THIS
+ *     why_retrieved explanation
+ *   ─────────────────────────────
+ *   RETRIEVAL TRACE
+ *     Method · Index · Fusion · Score bar
+ *   ─────────────────────────────
+ *   TECHNICAL DETAILS ▾ (collapsible)
+ *     Chunk ID · Content hash · Document ID
+ */
+
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { ApiError, getDocumentContent, getEvidence } from "@/lib/api";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ApiError, getEvidence } from "@/lib/api";
 import type { CitationRef } from "@/lib/types";
 import type { EvidenceReference } from "@/lib/artifacts";
 import { cn } from "@/lib/utils";
 
-interface CitationLinkProps {
-  citation: CitationRef;
-  jobId: string;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function isTool(chunk_id: string, title?: string): boolean {
+  return (
+    chunk_id.startsWith("tool-") ||
+    (title ?? "").toLowerCase().includes("(read-only tool)")
+  );
 }
 
-function MetaRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
+function docTypeLabel(t: string | undefined): string {
+  if (!t) return "";
+  const map: Record<string, string> = {
+    sop: "SOP",
+    manual: "Manual",
+    work_order: "Work Order",
+    incident: "Incident",
+    data: "Data",
+  };
+  return map[t] ?? t.replace(/_/g, " ");
+}
+
+function buildSectionBreadcrumb(section: string | null | undefined): string[] {
+  if (!section || section.startsWith("Dev mode")) return [];
+  return section
+    .split(" > ")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// ─── Score bar ────────────────────────────────────────────────────────────────
+
+function ScoreBar({ score }: { score: number }) {
+  const pct = Math.round(score * 100);
+  const barColor =
+    pct >= 80 ? "bg-emerald-500" : pct >= 60 ? "bg-amber-400" : "bg-red-400";
+  const textColor =
+    pct >= 80 ? "text-slate-900" : pct >= 60 ? "text-amber-700" : "text-red-600";
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-4 py-2.5 border-b border-border/50 last:border-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground self-start pt-0.5">{label}</dt>
-      <dd className={cn("text-sm text-foreground leading-relaxed", mono && "font-mono text-xs break-all bg-muted/40 rounded px-2.5 py-1.5")}>{value}</dd>
+    <div className="flex items-center gap-2.5">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
+        <div
+          className={cn("h-full rounded-full", barColor)}
+          style={{ width: `${pct}%` }}
+          aria-hidden
+        />
+      </div>
+      <span className={cn("text-sm font-bold tabular-nums", textColor)}>
+        {pct}%
+      </span>
     </div>
   );
 }
 
-export function CitationLink({ citation, jobId }: CitationLinkProps) {
+// ─── Modal section heading ────────────────────────────────────────────────────
+
+function ModalSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-slate-100 px-8 py-5 last:border-0">
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+// ─── Modal body ───────────────────────────────────────────────────────────────
+
+function InspectionModalBody({
+  citation,
+  evidence,
+}: {
+  citation: CitationRef;
+  evidence: EvidenceReference;
+}) {
+  const [techOpen, setTechOpen] = useState(false);
+
+  const tool = isTool(evidence.chunk_id, evidence.document_title);
+  const sectionParts = buildSectionBreadcrumb(evidence.section);
+  const hasScore = typeof evidence.score === "number" && evidence.score > 0;
+
+  return (
+    <div className="flex flex-col">
+
+      {/* ── DOCUMENT ── */}
+      <div className="border-b border-slate-100 px-8 pb-6 pt-4">
+        {/* Chips row */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {evidence.document_type && (
+            <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+              {docTypeLabel(evidence.document_type)}
+            </span>
+          )}
+          <span
+            className={cn(
+              "rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
+              tool
+                ? "bg-blue-50 text-blue-600"
+                : "bg-slate-100 text-slate-500"
+            )}
+          >
+            {tool ? "Tool result" : "Retrieval"}
+          </span>
+          {evidence.confidentiality_level && (
+            <span className="ml-auto rounded border border-slate-200 px-2 py-0.5 text-[10px] capitalize text-slate-500">
+              {evidence.confidentiality_level}
+            </span>
+          )}
+        </div>
+
+        {/* Document title — dominant */}
+        <h2 className="text-xl font-bold leading-snug text-slate-900 break-words">
+          {evidence.document_title || citation.title}
+        </h2>
+
+        {/* Location line */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-400">
+          {citation.revision && <span>{citation.revision}</span>}
+          {evidence.page != null && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="font-medium text-slate-600">
+                Page {evidence.page}
+              </span>
+            </>
+          )}
+          {sectionParts.length > 0 && (
+            <>
+              <span aria-hidden>·</span>
+              <ol
+                className="flex flex-wrap items-center gap-1"
+                aria-label="Section path"
+              >
+                {sectionParts.map((part, i) => (
+                  <li key={i} className="flex items-center gap-1">
+                    {i > 0 && (
+                      <span className="text-slate-300" aria-hidden>›</span>
+                    )}
+                    <span
+                      className={
+                        i === sectionParts.length - 1
+                          ? "font-medium text-slate-600"
+                          : "text-slate-400"
+                      }
+                    >
+                      {part}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+          {evidence.equipment_id && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="font-semibold text-slate-700">
+                {evidence.equipment_id}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── RELEVANT SOURCE PASSAGE ── */}
+      <ModalSection label="Relevant source passage">
+        <div
+          className={cn(
+            "rounded-sm border-l-2 px-5 py-4",
+            tool
+              ? "border-blue-300 bg-blue-50"
+              : "border-slate-300 bg-slate-50"
+          )}
+        >
+          <p className="text-sm leading-[1.8] text-slate-800 whitespace-pre-wrap">
+            {evidence.passage_text}
+          </p>
+        </div>
+      </ModalSection>
+
+      {/* ── WHY NIRVA RETRIEVED THIS ── */}
+      {evidence.why_retrieved && (
+        <ModalSection label="Why NIRVA retrieved this">
+          <p className="text-sm leading-relaxed text-slate-600">
+            {evidence.why_retrieved}
+          </p>
+        </ModalSection>
+      )}
+
+      {/* ── RETRIEVAL TRACE ── */}
+      <ModalSection label={tool ? "Source" : "Retrieval trace"}>
+        {tool ? (
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex gap-8">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                  Method
+                </p>
+                <p className="font-medium text-slate-800">
+                  Read-only operational tool
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                  Access
+                </p>
+                <p className="text-slate-600">
+                  Asset history · inventory · episodic memory
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-x-8 gap-y-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                Method
+              </p>
+              <p className="text-sm font-semibold text-slate-800">
+                Hybrid dense + sparse
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                Fusion
+              </p>
+              <p className="text-sm text-slate-600">
+                Reciprocal-rank · ACL-filtered
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                Index
+              </p>
+              <p className="text-sm text-slate-600">nirva_chunks · Qdrant</p>
+            </div>
+            {hasScore && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                  Relevance score
+                </p>
+                <ScoreBar score={evidence.score!} />
+              </div>
+            )}
+          </div>
+        )}
+      </ModalSection>
+
+      {/* ── TECHNICAL DETAILS (collapsible) ── */}
+      <div className="px-8 py-4">
+        <button
+          type="button"
+          onClick={() => setTechOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition hover:text-slate-600"
+          aria-expanded={techOpen}
+        >
+          {techOpen ? (
+            <ChevronDown className="size-3" aria-hidden />
+          ) : (
+            <ChevronRight className="size-3" aria-hidden />
+          )}
+          Technical details
+        </button>
+
+        {techOpen && (
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
+            <dt className="font-semibold text-slate-500">Chunk ID</dt>
+            <dd className="font-mono text-slate-600 break-all">
+              {evidence.chunk_id}
+            </dd>
+
+            {evidence.document_id && (
+              <>
+                <dt className="font-semibold text-slate-500">Document ID</dt>
+                <dd className="font-mono text-slate-600 break-all">
+                  {evidence.document_id}
+                </dd>
+              </>
+            )}
+
+            {evidence.content_hash && (
+              <>
+                <dt className="font-semibold text-slate-500">Content hash</dt>
+                <dd className="font-mono text-slate-600 break-all">
+                  {evidence.content_hash.slice(0, 24)}…
+                </dd>
+              </>
+            )}
+
+            <dt className="font-semibold text-slate-500">Classification</dt>
+            <dd className="capitalize text-slate-600">
+              {evidence.confidentiality_level}
+            </dd>
+          </dl>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// ─── Main export ─────────────────────────────────────────────────────────────
+
+export interface CitationLinkProps {
+  citation: CitationRef;
+  jobId: string;
+  /** Index in the citations array — shown in the badge. */
+  index?: number;
+  /**
+   * compact=true: renders as a plain "View source →" text link.
+   * compact=false (default): renders as a numbered badge pill.
+   */
+  compact?: boolean;
+}
+
+export function CitationLink({
+  citation,
+  jobId,
+  index,
+  compact = false,
+}: CitationLinkProps) {
   const [open, setOpen] = useState(false);
   const [evidence, setEvidence] = useState<EvidenceReference | null>(null);
-  const [docChunks, setDocChunks] = useState<
-    Array<{ chunk_id: string; page: number | null; section: string | null; text: string }>
-  >([]);
   const [error, setError] = useState<string | null>(null);
-  const [docUnavailable, setDocUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const isToolSource =
-    citation.chunk_id.startsWith("tool-") ||
-    citation.title.toLowerCase().includes("(read-only tool)");
+  const tool = isTool(citation.chunk_id, citation.title);
 
   async function handleOpen() {
     setOpen(true);
+    if (evidence) return;
     setLoading(true);
     setError(null);
-    setDocUnavailable(false);
-    setEvidence(null);
     try {
-      const chunk = await getEvidence(jobId, citation.chunk_id);
-      setEvidence(chunk);
-      try {
-        const doc = await getDocumentContent(chunk.document_id);
-        setDocChunks(doc.chunks);
-      } catch {
-        setDocUnavailable(true);
-      }
+      const ev = await getEvidence(jobId, citation.chunk_id);
+      setEvidence(ev);
     } catch (e: unknown) {
       setError(
-        e instanceof ApiError ? e.body.detail : "Failed to load source passage"
+        e instanceof ApiError ? e.body.detail : "Failed to load source"
       );
     } finally {
       setLoading(false);
@@ -77,127 +383,77 @@ export function CitationLink({ citation, jobId }: CitationLinkProps) {
 
   return (
     <>
-      <Button
-        variant="link"
-        size="sm"
-        className="h-auto p-0 font-mono text-xs underline underline-offset-2"
-        onClick={() => void handleOpen()}
-      >
-        [{citation.title}, {citation.revision}, {citation.locator}]
-      </Button>
+      {/* ── Trigger ── */}
+      {compact ? (
+        <button
+          type="button"
+          onClick={() => void handleOpen()}
+          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400 whitespace-nowrap"
+          aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
+        >
+          View source →
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void handleOpen()}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-medium transition-colors",
+            tool
+              ? "border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100"
+              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
+          )}
+          title={`Open source: ${citation.title} ${citation.revision} ${citation.locator}`}
+          aria-label={`View source: ${citation.title}, ${citation.revision}, ${citation.locator}`}
+        >
+          {index != null && (
+            <span className="flex size-4 items-center justify-center rounded bg-slate-200 text-[9px] font-bold text-slate-600">
+              {index + 1}
+            </span>
+          )}
+          <span className="max-w-[180px] truncate">{citation.title}</span>
+          <span className="shrink-0 text-slate-400">{citation.locator}</span>
+        </button>
+      )}
 
+      {/* ── Evidence inspection modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="p-0 overflow-hidden flex flex-col !max-w-none"
-          style={{ width: "min(95vw, 860px)", maxHeight: "88vh" }}
+          className="overflow-hidden flex flex-col p-0 !max-w-none bg-white"
+          style={{ width: "min(96vw, 860px)", maxHeight: "90vh" }}
         >
-          {/* Header */}
-          <DialogHeader className="px-8 pt-6 pb-4 border-b border-border shrink-0">
-            <DialogTitle className="text-base font-semibold">{citation.title}</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-              Source inspector — revision {citation.revision}
-            </DialogDescription>
+          {/* Modal header */}
+          <DialogHeader className="shrink-0 border-b border-slate-200 bg-slate-50 px-8 pt-5 pb-4">
+            <DialogTitle className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              Source inspection
+            </DialogTitle>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {citation.title}
+              {citation.revision && ` · ${citation.revision}`}
+              {citation.locator && ` · ${citation.locator}`}
+            </p>
           </DialogHeader>
 
           {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
-
+          <div className="flex-1 overflow-y-auto bg-white">
             {loading && (
-              <div className="h-32 animate-pulse rounded bg-muted/50" aria-busy="true" />
+              <div className="px-8 py-8 flex flex-col gap-4">
+                <div className="h-6 w-2/3 animate-pulse rounded bg-slate-200" />
+                <div className="h-32 w-full animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+              </div>
             )}
+
             {error && (
-              <p role="alert" className="text-destructive text-sm">{error}</p>
+              <div className="px-8 py-6">
+                <p role="alert" className="text-sm text-red-600">
+                  {error}
+                </p>
+              </div>
             )}
 
-            {evidence && (
-              <>
-                {/* ── Source Passage ── */}
-                <section>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                    Source Passage
-                  </p>
-                  <div className="rounded-lg border border-amber-700/30 bg-amber-950/20 px-5 py-4">
-                    <p className="text-sm leading-relaxed text-amber-100/90 whitespace-pre-wrap">
-                      {evidence.passage_text}
-                    </p>
-                  </div>
-                </section>
-
-                <Separator />
-
-                {/* ── Metadata table ── */}
-                <section>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-                    Chunk Metadata
-                  </p>
-                  <dl className="flex flex-col">
-                    <MetaRow label="Source" value={isToolSource ? "tool (read-only result)" : "retrieval"} />
-                    <MetaRow
-                      label="Page / Section"
-                      value={
-                        <>
-                          {evidence.page !== null ? `Page ${evidence.page}` : "—"}
-                          {evidence.section ? ` · §${evidence.section}` : ""}
-                        </>
-                      }
-                    />
-                    <MetaRow label="Classification" value={<span className="capitalize">{evidence.confidentiality_level}</span>} />
-                    <MetaRow
-                      label="Why Retrieved"
-                      value={
-                        <>
-                          {evidence.why_retrieved}
-                          {typeof evidence.score === "number" && (
-                            <span className="text-muted-foreground text-xs block mt-1">
-                              Score {evidence.score.toFixed(2)} · hybrid dense+sparse · rank-fused
-                            </span>
-                          )}
-                        </>
-                      }
-                    />
-                    <MetaRow label="Chunk ID" value={evidence.chunk_id} mono />
-                    <MetaRow label="Content Hash" value={evidence.content_hash} mono />
-                  </dl>
-                </section>
-
-                {/* ── Document context chunks ── */}
-                {(docChunks.length > 0 || docUnavailable) && (
-                  <>
-                    <Separator />
-                    <section>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                        {docUnavailable
-                          ? "Document Context"
-                          : `Document Context (${docChunks.length} chunks)`}
-                      </p>
-                      {docUnavailable ? (
-                        <p className="text-muted-foreground text-sm">
-                          Full document view is not available for this source — tool results are shown as passage only.
-                        </p>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {docChunks.map((c) => (
-                            <div
-                              key={c.chunk_id}
-                              className={cn(
-                                "rounded-lg border px-4 py-3 text-sm leading-relaxed",
-                                c.chunk_id === evidence.chunk_id
-                                  ? "border-amber-600/50 bg-amber-950/30"
-                                  : "border-border bg-muted/20"
-                              )}
-                            >
-                              <span className="text-[10px] font-mono text-muted-foreground block mb-1">
-                                p.{c.page ?? "?"}{c.section ? ` · §${c.section}` : ""}
-                              </span>
-                              {c.text}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </section>
-                  </>
-                )}
-              </>
+            {evidence && !loading && (
+              <InspectionModalBody citation={citation} evidence={evidence} />
             )}
           </div>
         </DialogContent>

@@ -306,16 +306,17 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
     handler: ({ token }) => {
       const username = requireAuth(token);
       const caller = MOCK_USERS.find((u) => u.username === username)!;
-      // ACL-filtered list: supervisor/safety_officer see only ops-visible docs.
+      // Mirrors the demo corpus seeded by scripts/seed-p204-documents.py so the
+      // fixture and the running app show the same evidence library.
       const all = [
         {
           document_id: "doc-seed-1",
-          title: "P-204 OEM Maintenance Manual",
+          title: "Centrifugal Pump CP-300 Series — Maintenance Manual",
           document_type: "manual",
-          revision: "B",
-          effective_date: "2026-01-01",
-          department: "Maintenance",
-          equipment_id: "P-204",
+          revision: "7",
+          effective_date: "2023-03-14",
+          department: "Mechanical",
+          equipment_id: "PUMP-204",
           confidentiality_level: "internal",
           content_hash: "a".repeat(64),
           status: "indexed",
@@ -323,18 +324,58 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         },
         {
           document_id: "doc-seed-2",
-          title: "Confidential Vendor Bulletin",
-          document_type: "incident",
-          revision: "1",
-          effective_date: "2026-02-01",
-          department: "Reliability",
-          equipment_id: null,
-          confidentiality_level: "restricted",
+          title: "SOP-217 — Mechanical Seal Replacement, Cooling Water Pumps",
+          document_type: "sop",
+          revision: "C",
+          effective_date: "2024-08-01",
+          department: "Maintenance",
+          equipment_id: "PUMP-204",
+          confidentiality_level: "internal",
           content_hash: "b".repeat(64),
           status: "indexed",
           uploaded_at: "2026-08-02T00:00:00Z",
         },
+        {
+          document_id: "doc-seed-3",
+          title: "WO-8821 — PUMP-204 Mechanical Seal Replacement",
+          document_type: "work_order",
+          revision: "2",
+          effective_date: "2026-06-18",
+          department: "Maintenance",
+          equipment_id: "PUMP-204",
+          confidentiality_level: "internal",
+          content_hash: "c".repeat(64),
+          status: "indexed",
+          uploaded_at: "2026-08-03T00:00:00Z",
+        },
+        {
+          document_id: "doc-seed-4",
+          title: "IR-0331 — Cooling Water Loss of Flow Near-Miss, Unit 2",
+          document_type: "incident",
+          revision: "Final",
+          effective_date: "2026-07-30",
+          department: "Reliability",
+          equipment_id: "PUMP-204",
+          confidentiality_level: "restricted",
+          content_hash: "d".repeat(64),
+          status: "indexed",
+          uploaded_at: "2026-08-04T00:00:00Z",
+        },
+        {
+          document_id: "doc-seed-5",
+          title: "PUMP-204 Vibration and Seal Leakage Trend — 18 Months",
+          document_type: "data",
+          revision: "1",
+          effective_date: "2026-08-25",
+          department: "Reliability",
+          equipment_id: "PUMP-204",
+          confidentiality_level: "internal",
+          content_hash: "e".repeat(64),
+          status: "indexed",
+          uploaded_at: "2026-08-05T00:00:00Z",
+        },
       ];
+      // ACL-filtered list: restricted sources never reach engineer callers.
       const allowed =
         caller.role === "supervisor" || caller.role === "safety_officer"
           ? all.filter((d) => d.confidentiality_level === "internal")

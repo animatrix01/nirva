@@ -456,9 +456,9 @@ function formatTimeAgo(isoString: string): string {
 }
 
 const RISK_STYLES = {
-  high: "bg-red-950/50 text-red-300 border-red-800",
-  medium: "bg-amber-950/50 text-amber-300 border-amber-800",
-  low: "bg-emerald-950/50 text-emerald-300 border-emerald-800",
+  high:   "bg-red-100 text-red-800 border-red-300",
+  medium: "bg-amber-100 text-amber-800 border-amber-300",
+  low:    "bg-emerald-100 text-emerald-800 border-emerald-300",
 };
 
 const RISK_LABELS = {
@@ -551,11 +551,11 @@ export default function ApprovalsPage() {
   const isSupervisor = role === "supervisor";
 
   return (
-    <AppShell title="Approvals">
+    <AppShell title="">
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-white">APPROVALS</h1>
-          <p className="mt-2 text-sm text-neutral-400">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Approvals</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Review proposed actions before they can execute.
           </p>
         </div>
@@ -567,10 +567,10 @@ export default function ApprovalsPage() {
         ) : loading ? (
           <div className="h-[600px] grid grid-cols-1 gap-6 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <div className="h-full animate-pulse rounded bg-neutral-800/50" />
+              <div className="h-full animate-pulse rounded bg-slate-50" />
             </div>
             <div className="lg:col-span-8">
-              <div className="h-full animate-pulse rounded bg-neutral-800/50" />
+              <div className="h-full animate-pulse rounded bg-slate-50" />
             </div>
           </div>
         ) : error ? (
@@ -578,7 +578,7 @@ export default function ApprovalsPage() {
             {error}
           </p>
         ) : pending.length === 0 ? (
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-slate-600">
             No approval requests. Work orders awaiting human decision will appear here.
           </p>
         ) : (
@@ -586,10 +586,10 @@ export default function ApprovalsPage() {
             {/* Master-Detail Grid - Fixed Height */}
             <div className="h-[650px] grid grid-cols-1 gap-6 lg:grid-cols-12 mb-8">
               {/* Left Column: Queue */}
-              <div className="lg:col-span-4 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-thumb]:rounded-full">
-                <div className="mb-4 sticky top-0 bg-background pb-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-300">
-                    PENDING APPROVALS ({pending.length})
+              <div className="lg:col-span-4 h-full overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="mb-4 sticky top-0 bg-[#f1f5f9] pb-2">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-900">
+                    Pending Approvals <span className="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">{pending.length}</span>
                   </h2>
                 </div>
                 <div className="space-y-3 pr-2">
@@ -600,29 +600,29 @@ export default function ApprovalsPage() {
                         key={approval.approval_id}
                         onClick={() => setSelectedId(approval.approval_id)}
                         className={cn(
-                          "w-full rounded-md p-3 text-left transition-all",
+                          "w-full rounded-lg p-3 text-left transition-all",
                           isActive
-                            ? "bg-neutral-800 border-l-4 border-[#C4F135] border-t-0 border-r-0 border-b-0"
-                            : "border border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800/70"
+                            ? "bg-white border border-slate-300 border-l-4 border-l-[#B9FF52] shadow-sm"
+                            : "border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
                         )}
                       >
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <span
                             className={cn(
-                              "inline-block rounded border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide truncate",
+                              "inline-block rounded border px-2 py-0.5 text-xs font-bold uppercase tracking-wide truncate",
                               RISK_STYLES[approval.risk_level]
                             )}
                           >
                             {RISK_LABELS[approval.risk_level]}
                           </span>
-                          <span className="font-mono text-xs text-neutral-400 flex-shrink-0">
+                          <span className="font-mono text-xs text-slate-500 flex-shrink-0">
                             {formatTimeAgo(approval.requested_at)}
                           </span>
                         </div>
-                        <div className="mb-1 font-mono text-sm text-neutral-300 truncate">
+                        <div className="mb-1 font-mono text-sm font-semibold text-slate-800 truncate">
                           {approval.equipment_id || "N/A"}
                         </div>
-                        <p className="text-sm text-neutral-400 truncate">
+                        <p className="text-sm text-slate-600 truncate">
                           {approval.action}
                         </p>
                       </button>
@@ -634,29 +634,29 @@ export default function ApprovalsPage() {
               {/* Right Column: Detail View */}
               <div className="lg:col-span-8 h-full overflow-y-auto">
                 {selected ? (
-                  <div className="flex flex-col gap-6 rounded-md border border-neutral-800 bg-neutral-900/40 p-6">
+                  <div className="flex flex-col gap-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                     {/* Top Section */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h2 className="text-2xl font-semibold text-white">
+                        <h2 className="text-2xl font-semibold text-slate-900">
                           {selected.action}
                         </h2>
                         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
                           <div>
-                            <span className="text-neutral-500">Asset:</span>{" "}
-                            <span className="font-mono text-neutral-300">
+                            <span className="text-slate-500">Asset:</span>{" "}
+                            <span className="font-mono text-slate-600">
                               {selected.equipment_id || "N/A"}
                             </span>
                           </div>
                           <div>
-                            <span className="text-neutral-500">Requested by:</span>{" "}
-                            <span className="font-mono text-neutral-300">
+                            <span className="text-slate-500">Requested by:</span>{" "}
+                            <span className="font-mono text-slate-600">
                               {selected.requested_by || "agent"}
                             </span>
                           </div>
                           <div>
-                            <span className="text-neutral-500">Requested at:</span>{" "}
-                            <span className="text-neutral-300">
+                            <span className="text-slate-500">Requested at:</span>{" "}
+                            <span className="text-slate-600">
                               {new Date(selected.requested_at).toLocaleString()}
                             </span>
                           </div>
@@ -676,26 +676,27 @@ export default function ApprovalsPage() {
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       {/* Left: Rationale */}
                       <div>
-                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                          WHY THIS ACTION
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
+                          Why this action
                         </h3>
-                        <p className="text-sm leading-relaxed text-neutral-300">
+                        <p className="text-sm font-medium leading-relaxed text-slate-800">
                           {selected.arguments_summary}
                         </p>
                       </div>
 
                       {/* Right: Evidence */}
                       <div>
-                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                          EVIDENCE SUMMARY
+                        <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-900">
+                          Evidence summary
                         </h3>
-                        <div className="rounded border border-neutral-800 bg-neutral-950/50 p-3">
+                        <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50 p-3">
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="font-semibold text-neutral-300">
-                              {selected.evidence_refs.length} sources
+                            <span className="text-2xl font-bold text-emerald-700">
+                              {selected.evidence_refs.length}
                             </span>
+                            <span className="font-semibold text-emerald-800">sources</span>
                           </div>
-                          <p className="mt-2 text-xs text-neutral-500">
+                          <p className="mt-1 text-xs font-medium text-slate-600">
                             Maintenance history of {selected.equipment_id || "asset"}
                           </p>
                         </div>
@@ -703,34 +704,34 @@ export default function ApprovalsPage() {
                     </div>
 
                     {/* Additional Details: AI Trace Context */}
-                    <div className="rounded border border-neutral-800 bg-neutral-950/30 p-4">
-                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                        AI TRACE CONTEXT
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-900">
+                        AI Trace Context
                       </h3>
-                      <div className="space-y-2 text-xs text-neutral-400">
+                      <div className="space-y-2 text-xs text-slate-700">
                         <div>
-                          <span className="text-neutral-500">Proposed action ID:</span>{" "}
-                          <span className="font-mono">{selected.proposal_id}</span>
+                          <span className="font-semibold text-slate-500">Proposed action ID:</span>{" "}
+                          <span className="font-mono font-semibold text-slate-800">{selected.proposal_id}</span>
                         </div>
                         <div>
-                          <span className="text-neutral-500">Tool used:</span>{" "}
-                          <span className="font-mono">workbench.analysis.v1</span>
+                          <span className="font-semibold text-slate-500">Tool used:</span>{" "}
+                          <span className="font-mono font-semibold text-slate-800">workbench.analysis.v1</span>
                         </div>
                         <div>
-                          <span className="text-neutral-500">Investigation ID:</span>{" "}
-                          <span className="font-mono">{selected.job_id || "N/A"}</span>
+                          <span className="font-semibold text-slate-500">Investigation ID:</span>{" "}
+                          <span className="font-mono font-semibold text-slate-800">{selected.job_id || "N/A"}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Action Footer - Natural Flow */}
-                    <div className="border-t border-neutral-800 pt-6">
+                    <div className="border-t border-slate-200 pt-6">
                       {selected.status === "pending" && isSupervisor ? (
                         <>
                           <div className="mb-4">
                             <label
                               htmlFor="decision-comment"
-                              className="mb-2 block text-sm font-medium text-neutral-400"
+                              className="mb-2 block text-sm font-medium text-slate-600"
                             >
                               Decision rationale (optional)
                             </label>
@@ -740,7 +741,7 @@ export default function ApprovalsPage() {
                               onChange={(e) => setComment(e.target.value)}
                               placeholder="Enter your decision rationale..."
                               rows={3}
-                              className="w-full resize-none rounded-md border border-neutral-800 bg-neutral-950/50 px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-[#C4F135]"
+                              className="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#B9FF52]"
                             />
                           </div>
                           <div className="flex justify-end gap-3">
@@ -753,7 +754,7 @@ export default function ApprovalsPage() {
                                   comment.trim() || null
                                 )
                               }
-                              className="border-red-800 text-red-400 hover:bg-red-950/50 hover:text-red-300"
+                              className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800"
                             >
                               Reject
                             </Button>
@@ -765,51 +766,40 @@ export default function ApprovalsPage() {
                                   comment.trim() || null
                                 )
                               }
-                              className="bg-[#C4F135] text-black hover:bg-[#B4E125]"
+                              className="bg-[#B9FF52] text-black hover:bg-[#A8EF47]"
                             >
                               Approve
                             </Button>
                           </div>
                         </>
                       ) : selected.status === "pending" ? (
-                        <p className="rounded border border-amber-800 bg-amber-950/50 p-3 text-sm text-amber-300">
+                        <p className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
                           Waiting for supervisor approval. Only a supervisor can decide this
                           action — engineers cannot self-approve.
                         </p>
                       ) : (
-                        <div className="rounded border border-neutral-800 bg-neutral-950/30 p-4">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                           <div className="space-y-2 text-sm">
                             <div className="flex gap-4">
-                              <span className="w-32 text-neutral-500">Decision:</span>
-                              <span
-                                className={cn(
-                                  "font-semibold",
-                                  selected.status === "approved"
-                                    ? "text-emerald-400"
-                                    : "text-red-400"
-                                )}
-                              >
+                              <span className="w-32 font-semibold text-slate-600">Decision:</span>
+                              <span className={cn("font-bold", selected.status === "approved" ? "text-emerald-700" : "text-red-700")}>
                                 {selected.status.toUpperCase()}
                               </span>
                             </div>
                             <div className="flex gap-4">
-                              <span className="w-32 text-neutral-500">Decided by:</span>
-                              <span className="font-mono text-neutral-300">
-                                {selected.decided_by || "N/A"}
-                              </span>
+                              <span className="w-32 font-semibold text-slate-600">Decided by:</span>
+                              <span className="font-mono font-semibold text-slate-800">{selected.decided_by || "N/A"}</span>
                             </div>
                             {selected.decided_at && (
                               <div className="flex gap-4">
-                                <span className="w-32 text-neutral-500">Decided at:</span>
-                                <span className="text-neutral-300">
-                                  {new Date(selected.decided_at).toLocaleString()}
-                                </span>
+                                <span className="w-32 font-semibold text-slate-600">Decided at:</span>
+                                <span className="text-slate-800">{new Date(selected.decided_at).toLocaleString()}</span>
                               </div>
                             )}
                             {selected.comment && (
                               <div className="flex gap-4">
-                                <span className="w-32 text-neutral-500">Comment:</span>
-                                <span className="text-neutral-300">{selected.comment}</span>
+                                <span className="w-32 font-semibold text-slate-600">Comment:</span>
+                                <span className="text-slate-800">{selected.comment}</span>
                               </div>
                             )}
                           </div>
@@ -818,8 +808,8 @@ export default function ApprovalsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-full items-center justify-center rounded-md border border-neutral-800 bg-neutral-900/40">
-                    <p className="text-neutral-500">Select an approval to view details</p>
+                  <div className="flex h-full items-center justify-center rounded-md border border-slate-200 bg-white/40">
+                    <p className="text-slate-500">Select an approval to view details</p>
                   </div>
                 )}
               </div>
@@ -828,62 +818,45 @@ export default function ApprovalsPage() {
             {/* Historical Decided Table */}
             {decided.length > 0 && (
               <section className="mt-8">
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-300">
-                  DECIDED ({decided.length})
+                <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-slate-900">
+                  Decided <span className="ml-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700">{decided.length}</span>
                 </h2>
-                <div className="overflow-x-auto rounded-md border border-neutral-800">
+                <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-neutral-800 bg-neutral-900/60">
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Decision</th>
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Asset</th>
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Action</th>
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Risk</th>
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Decided by</th>
-                        <th className="px-4 py-3 text-left font-medium text-neutral-400">Decided at</th>
+                      <tr className="border-b border-slate-200 bg-slate-50">
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Decision</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Asset</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Risk</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Decided by</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-600">Decided at</th>
                       </tr>
                     </thead>
                     <tbody>
                       {decided.map((approval) => (
-                        <tr
-                          key={approval.approval_id}
-                          className="border-b border-neutral-800 hover:bg-neutral-900/40"
-                        >
+                        <tr key={approval.approval_id} className="border-b border-slate-100 bg-white hover:bg-slate-50 last:border-0">
                           <td className="px-4 py-3">
-                            <span
-                              className={cn(
-                                "font-semibold",
-                                approval.status === "approved"
-                                  ? "text-emerald-400"
-                                  : "text-red-400"
-                              )}
-                            >
+                            <span className={cn("font-bold", approval.status === "approved" ? "text-emerald-700" : "text-red-700")}>
                               {approval.status === "approved" ? "Approved" : "Rejected"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-mono text-neutral-300">
+                          <td className="px-4 py-3 font-mono font-semibold text-slate-800">
                             {approval.equipment_id || "N/A"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-300 max-w-md truncate">
+                          <td className="px-4 py-3 font-medium text-slate-800 max-w-md truncate">
                             {approval.action}
                           </td>
                           <td className="px-4 py-3">
-                            <span
-                              className={cn(
-                                "inline-block rounded border px-2 py-0.5 text-xs font-semibold uppercase",
-                                RISK_STYLES[approval.risk_level]
-                              )}
-                            >
+                            <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-bold uppercase", RISK_STYLES[approval.risk_level])}>
                               {approval.risk_level}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-mono text-neutral-300">
+                          <td className="px-4 py-3 font-mono text-sm text-slate-700">
                             {approval.decided_by || "N/A"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-400">
-                            {approval.decided_at
-                              ? new Date(approval.decided_at).toLocaleString()
-                              : "N/A"}
+                          <td className="px-4 py-3 text-sm text-slate-700">
+                            {approval.decided_at ? new Date(approval.decided_at).toLocaleString() : "N/A"}
                           </td>
                         </tr>
                       ))}

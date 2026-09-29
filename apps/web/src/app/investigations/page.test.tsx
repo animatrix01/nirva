@@ -25,15 +25,30 @@ describe("InvestigationsPage", () => {
     setAuth("engineer");
   });
 
-  it("renders stats and all four sections", async () => {
+  it("renders stats plus the recently-completed and all-investigations sections", async () => {
     render(<InvestigationsPage />);
     expect(
       screen.getByRole("heading", { level: 1, name: /investigations/i })
     ).toBeInTheDocument();
-    await screen.findByText(/Needs attention/i);
-    expect(screen.getByText(/Active/i)).toBeInTheDocument();
-    expect(screen.getByText(/Recently completed/i)).toBeInTheDocument();
+    await screen.findByText(/Recently completed/i);
     expect(screen.getByText(/All investigations/i)).toBeInTheDocument();
+  });
+
+  it("omits the approval queue when nothing is awaiting a decision", async () => {
+    render(<InvestigationsPage />);
+    await screen.findByText(/Recently completed/i);
+    // Conditional section — must not leave an empty box on the page.
+    expect(screen.queryByText(/Needs attention/i)).toBeNull();
+    expect(screen.queryByText(/Nothing awaiting approval right now/i)).toBeNull();
+  });
+
+  it("gives the completed cards sources and confidence", async () => {
+    render(<InvestigationsPage />);
+    await screen.findAllByText(
+      /Investigate why Pump P-204 has failed repeatedly/i
+    );
+    expect(screen.getAllByText(/sources/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/% confidence/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows the seeded completed job under Recently completed", async () => {
@@ -61,9 +76,25 @@ describe("InvestigationsPage", () => {
     expect(screen.getAllByText(/Supervisor approval required/i).length).toBeGreaterThanOrEqual(1);
   });
 
+  it("hides the filter selects until Filters is pressed, then reveals them", async () => {
+    render(<InvestigationsPage />);
+    await screen.findAllByText(/Investigate why Pump P-204 has failed repeatedly/i);
+
+    const toggle = screen.getByRole("button", { name: /Filters/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText(/filter by status/i)).toBeNull();
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText(/filter by status/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/filter by asset/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/filter by time/i)).toBeInTheDocument();
+  });
+
   it("status filter narrows the All investigations table", async () => {
     render(<InvestigationsPage />);
     await screen.findAllByText(/Investigate why Pump P-204 has failed repeatedly/i);
+    await userEvent.click(screen.getByRole("button", { name: /Filters/i }));
     const statusSelect = screen.getByLabelText(/filter by status/i);
     await userEvent.selectOptions(statusSelect, "failed");
     expect(

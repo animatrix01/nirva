@@ -8,6 +8,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn(), back: vi.fn() }),
 }));
 
+// Mirrors HC_PRINCIPLES in ./page — the Human Control principles strip.
+const HC_PRINCIPLE_COPY = [
+  "One investigation, four controlled views",
+  "Least privilege by default",
+  "One approval authority",
+  "Every consequential action is auditable",
+];
+
 function setAuth(role: string | null) {
   if (role === null) {
     window.localStorage.removeItem("nirva.auth");
@@ -79,45 +87,90 @@ describe("LandingPage", () => {
     expect(screen.getByText(/has failed repeatedly/i)).toBeInTheDocument();
     expect(screen.getByText(/Read maintenance history/i)).toBeInTheDocument();
     expect(screen.getByText(/Cross-reference OEM manual rev C/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Contradiction detected/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/NIRVA caught a conflict/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("87%")).toBeInTheDocument();
-    expect(screen.getByText(/Awaiting supervisor decision/i)).toBeInTheDocument();
+    expect(screen.getByText(/Paused for sign-off/i)).toBeInTheDocument();
     expect(screen.getByText(/OEM Manual, rev C, p\.41/i)).toBeInTheDocument();
   });
 
-  it("renders the journey workflow with branches and honest abstention", () => {
+  it("renders the hero proof row and the plant source list", () => {
     render(<LandingPage />);
-    expect(screen.getByText(/signed-off action/i)).toBeInTheDocument();
-    expect(screen.getByText("Engineer asks")).toBeInTheDocument();
-    expect(screen.getByText("Records")).toBeInTheDocument();
-    expect(screen.getByText("Conflicting records")).toBeInTheDocument();
-    expect(screen.getAllByText(/abstains honestly/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Cited recommendation")).toBeInTheDocument();
-    expect(screen.getByText("Work-order draft")).toBeInTheDocument();
-    expect(screen.getByText(/Supervisor approval gate/i)).toBeInTheDocument();
+
+    // Proof row — three product principles, not feature cards.
+    const principles = [
+      ["On-premise", "Your data stays inside"],
+      ["Source-traceable", "Every claim linked"],
+      ["Human-approved", "Actions under control"],
+    ] as const;
+    for (const [k, v] of principles) {
+      expect(screen.getByText(k, { selector: "dt" })).toBeInTheDocument();
+      expect(screen.getByText(v, { selector: "dd" })).toBeInTheDocument();
+    }
+
+    // Source list — an editorial row, not a diagram.
+    expect(
+      screen.getByText(/One question\. Multiple plant sources\./i, { selector: "p" })
+    ).toBeInTheDocument();
+    for (const label of ["Manuals", "Logs", "Drawings", "Images", "Work orders"]) {
+      expect(screen.getByText(label, { selector: "div" })).toBeInTheDocument();
+    }
   });
 
-  it("renders role cards, principles and metrics", () => {
+  it("renders the role section, sovereignty principles and runtime panel", () => {
     render(<LandingPage />);
+    const h2 = (re: RegExp) =>
+      screen.getByText((_, el) => el?.tagName === "H2" && re.test(el.textContent ?? ""));
+
+    // Human control
+    expect(h2(/The right view for every role on the investigation\./)).toBeInTheDocument();
     expect(
-      screen.getByText((_, el) => el?.tagName === "H2" && /Four roles, least privilege/.test(el.textContent ?? ""))
+      screen.getByText(/One investigation, four purpose-built responsibilities/i, {
+        selector: "p",
+      })
     ).toBeInTheDocument();
-    expect(screen.getByText(/Runs inside your walls/i)).toBeInTheDocument();
-    expect(screen.getByText(/From evidence to action — inside your walls/i)).toBeInTheDocument();
-    expect(screen.getByText(/cloud calls eliminated/i)).toBeInTheDocument();
-    expect(screen.getByText(/approval bypasses recorded/i)).toBeInTheDocument();
+    for (const role of ["Engineer", "Supervisor", "Safety Officer", "Admin"]) {
+      expect(screen.getByText(role, { selector: "h3" })).toBeInTheDocument();
+    }
+    for (const tag of ["Investigates", "Approves", "Audits", "Manages"]) {
+      expect(screen.getByText(tag, { selector: "span" })).toBeInTheDocument();
+    }
+    for (const p of HC_PRINCIPLE_COPY) {
+      expect(screen.getByText(p)).toBeInTheDocument();
+    }
+
+    // Sovereignty
+    expect(screen.getByText(/Sovereign by Design/i, { selector: "p" })).toBeInTheDocument();
+    expect(h2(/Plant data stays inside the facility/)).toBeInTheDocument();
+    expect(screen.getByText("On-premise deployment", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText("Local AI models", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText("Air-gapped capable", { selector: "p" })).toBeInTheDocument();
+
+    // Runtime panel
+    expect(screen.getByText("Network Status", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText(/zero external calls/i, { selector: "p" })).toBeInTheDocument();
+    for (const [label, value] of [
+      ["External network", "Disconnected"],
+      ["Local vector store", "Active"],
+      ["On-device inference", "Running"],
+      ["Investigation engine", "Operational"],
+    ] as const) {
+      expect(screen.getByText(label, { selector: "span" })).toBeInTheDocument();
+      expect(screen.getAllByText(value, { selector: "span" }).length).toBeGreaterThanOrEqual(1);
+    }
     expect(
-      screen.getByText(/Zero cloud calls — verified with network disconnected/i)
+      screen.getByText(/Verified operational with zero external dependencies/i, {
+        selector: "p",
+      })
     ).toBeInTheDocument();
   });
 
   it("renders the FAQ and the synthetic-data footer", () => {
     render(<LandingPage />);
-    expect(screen.getByText(/Frequently Asked Questions/i)).toBeInTheDocument();
-    expect(screen.getByText(/What is NIRVA\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Common questions/i, { selector: "h2" })).toBeInTheDocument();
+    expect(screen.getByText(/What is NIRVA\?/i, { selector: "span" })).toBeInTheDocument();
     expect(
-      screen.getByText(/NIRVA — SIH26117 · All demo data is synthetic/i)
+      screen.getByText(/SIH26117 · PSC26117 · MRPL/, { selector: "span" })
     ).toBeInTheDocument();
-    expect(screen.getByText("PSC26117 · MRPL")).toBeInTheDocument();
+    expect(screen.getByText(/All demo data synthetic/, { selector: "span" })).toBeInTheDocument();
   });
 });

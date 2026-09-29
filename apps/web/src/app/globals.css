@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -86,6 +86,7 @@
   --sidebar-ring: #c8f135;
 }
 
+/* ─── DARK theme ─────────────────────────────────────────────────────────── */
 .dark {
   --background: #1a1917;
   --foreground: #e7e5e4;
@@ -110,6 +111,7 @@
   --chart-3: #d97706;
   --chart-4: #57534e;
   --chart-5: #44403c;
+  --radius: 0.625rem;
   --sidebar: #1c1917;
   --sidebar-foreground: #e7e5e4;
   --sidebar-primary: #c8f135;
@@ -130,21 +132,74 @@
   html {
     @apply font-sans;
   }
+  /* Default arrow cursor everywhere — suppress browser text cursor on non-editable elements */
+  body {
+    cursor: default;
+  }
+  p, h1, h2, h3, h4, h5, h6, span, div, li, label {
+    cursor: default;
+  }
   /* Consistent lime focus ring across the app (keyboard a11y) */
   :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
     outline: 2px solid #c8f135;
     outline-offset: 2px;
   }
+  /* Restore text cursor only where it makes sense */
+  input, textarea, [contenteditable] {
+    cursor: text;
+  }
+  a, button, [role="button"], select {
+    cursor: pointer;
+  }
 }
 
-/* ─── Global box-grid background ───────────────────────────────────────────
-   Visible on left/right edges, fades to near-invisible in the center.
-   Sits behind all content via z-index: 0 on ::before + position: relative
-   on body. pointer-events: none ensures it never blocks interaction.     */
+/* ─── Global box-grid background ─────────────────────────────────────────── */
 body {
   position: relative;
 }
 
+/* ─── NIRVA logo breathing animation ─────────────────────────────────────── */
+@keyframes nirva-breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.80; }
+  50%       { transform: scale(1.06); opacity: 1;    }
+}
+
+.animate-nirva-breathe {
+  animation: nirva-breathe 3.2s ease-in-out infinite;
+}
+
+/* ─── Scan ring ───────────────────────────────────────────────────────────── */
+@keyframes nirva-scan {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-nirva-scan {
+  animation: nirva-scan 4s linear infinite;
+}
+
+/* ─── Stage row entrance ──────────────────────────────────────────────────── */
+@keyframes nirva-stage-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-stage-in {
+  animation: nirva-stage-in 0.35s ease-out forwards;
+  opacity: 0;
+}
+
+/* ─── Result panel fade-in ────────────────────────────────────────────────── */
+@keyframes nirva-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.animate-fade-up {
+  animation: nirva-fade-up 0.4s ease-out forwards;
+}
+
+/* Landing page grid — 0.05 (very subtle, decorative) */
 body::before {
   content: "";
   position: fixed;
@@ -152,28 +207,14 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(168, 162, 158, 0.13) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(168, 162, 158, 0.13) 1px, transparent 1px);
+    linear-gradient(to right, rgba(168, 162, 158, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 162, 158, 0.015) 1px, transparent 1px);
   background-size: 40px 40px;
-  /* Mask: visible on sides (~20%), fades to near-zero in center (~60–100%) */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.8) 12%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.02) 50%,
-    rgba(0,0,0,0.08) 72%,
-    rgba(0,0,0,0.8) 88%,
-    rgba(0,0,0,1.0) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.0)  0%,
-    rgba(0,0,0,0.8) 12%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.02) 50%,
-    rgba(0,0,0,0.08) 72%,
-    rgba(0,0,0,0.8) 88%,
-    rgba(0,0,0,1.0) 100%
-  );
+}
+
+/* Internal app pages — slightly more visible for dense content */
+body.nirva-app::before {
+  background-image:
+    linear-gradient(to right, rgba(168, 162, 158, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 162, 158, 0.02) 1px, transparent 1px);
 }

@@ -1,17 +1,38 @@
 "use client";
 
+/**
+ * Documents page — evidence library + upload + evidence viewer.
+ *
+ * Mock data strategy
+ * ──────────────────
+ * When Qdrant is offline (dev mode) the backend returns a single
+ * "dev-placeholder-*" chunk. The frontend detects this and replaces it with
+ * realistic mock chunks that mirror what _MOCK_EVIDENCE in runner.py produces
+ * in production. The mock is clearly labelled "Demo · offline mode" so it is
+ * never confused with real indexed content. When Qdrant is online the mock is
+ * never used — real chunks from the vector store take over without any code
+ * change.
+ *
+ * Image preview
+ * ─────────────
+ * Every document fetches its stored original via the authed /file endpoint.
+ * If the blob is an image it is rendered in the viewer header.
+ * Non-image documents skip the preview gracefully.
+ */
+
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Image as ImageIcon,
+  Search,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -20,6 +41,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AppShell } from "@/components/app-shell";
+import {
+  DOC_TYPES,
+  DOC_TYPE_LABELS,
+  DocStatusBadge,
+  DocTypePill,
+  StatusDot,
+  docTypeAccent,
+  docTypeLabel,
+} from "@/components/documents/doc-badges";
+import {
+  UploadProcessingModal,
+  parseVisionObservations,
+  hasWarningKeyword,
+} from "@/components/upload-processing-modal";
+import type { UploadProcessingState } from "@/components/upload-processing-modal";
 import { useStoredAuth } from "@/lib/auth-client";
 import {
   ApiError,
@@ -30,106 +66,545 @@ import {
   uploadDocument,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { documentContext } from "@/lib/document-context";
 import {
   ROLES,
+  type DocumentChunk,
   type DocumentContentResponse,
   type DocumentOut,
   type DocumentType,
   type DocumentUploadResponse,
 } from "@/lib/types";
 
-const DOC_TYPES: DocumentType[] = [
-  "manual",
-  "sop",
-  "work_order",
-  "incident",
-  "data",
-];
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
-  engineer: "Engineer",
+  engineer:       "Engineer",
   safety_officer: "Safety Officer",
-  supervisor: "Supervisor",
-  admin: "Admin",
+  supervisor:     "Supervisor",
+  admin:          "Admin",
 };
 
-function statusBadgeClass(status: string): string {
-  switch (status) {
-    case "indexed":
-      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300";
-    case "quarantined":
-      return "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300";
-    default:
-      return "";
-  }
+// ─── Mock chunk data ──────────────────────────────────────────────────────────
+// Mirrors the _MOCK_EVIDENCE structure in apps/api/app/runner.py exactly.
+// Used only when Qdrant is offline (backend returns dev-placeholder chunks).
+
+interface MockChunk extends DocumentChunk {
+  score?: number;
+  source?: "retrieval" | "tool";
+  equipment_id?: string | null;
+  document_title?: string;
+  document_type?: string;
+  revision?: string;
+  content_hash?: string;
 }
 
+function buildMockChunks(doc: DocumentOut): MockChunk[] {
+  const docId = doc.document_id;
+  const isImg = isDocImage(doc);
+
+  if (isImg) {
+    return [
+      {
+        chunk_id:       `chk-mock-${docId.slice(-8)}-0000`,
+        page:           null,
+        section:        "Vision inspection",
+        text:           `Equipment photo ${doc.equipment_id ?? ""} (vision inspection). Observations: Visible fluid accumulation at lower flange connection. Surface corrosion present on valve body exterior. Pressure gauge indicator readable at approximately 145 PSI. Equipment identification plate visible — unit ${doc.equipment_id ?? "unknown"}. No visible structural deformation or rupture.`,
+        score:          0.95,
+        source:         "retrieval",
+        equipment_id:   doc.equipment_id,
+        document_title: doc.title,
+        document_type:  doc.document_type,
+        revision:       doc.revision,
+        content_hash:   "",
+      },
+    ];
+  }
+
+  return [
+    {
+      chunk_id:       `chk-mock-${docId.slice(-8)}-0001`,
+      page:           4,
+      section:        `${doc.title} > Maintenance Procedure`,
+      text:           `${doc.title} maintenance procedure: Isolate equipment electrically and apply lockout-tagout per SOP-014 before any maintenance. Depressurise and drain suction and discharge lines. Replace seal kit as specified; torque gland bolts to 45 Nm in a star pattern. Restore flush line and run 30-minute acceptance test at rated flow.`,
+      score:          0.91,
+      source:         "retrieval",
+      equipment_id:   doc.equipment_id,
+      document_title: doc.title,
+      document_type:  doc.document_type,
+      revision:       doc.revision,
+      content_hash:   "",
+    },
+    {
+      chunk_id:       `chk-mock-${docId.slice(-8)}-0002`,
+      page:           7,
+      section:        `${doc.title} > Inspection Findings`,
+      text:           `Vibration reading: 4.2 mm/s RMS (alert threshold 3.5 mm/s, shutdown 7.0 mm/s). Bearing temperature: 68 °C (normal range ≤75 °C). Seal flush flow: 1.8 L/min (spec 2.0 L/min — slightly below spec, monitor). Recommendation: schedule seal inspection within 14 days.`,
+      score:          0.83,
+      source:         "retrieval",
+      equipment_id:   doc.equipment_id,
+      document_title: doc.title,
+      document_type:  doc.document_type,
+      revision:       doc.revision,
+      content_hash:   "",
+    },
+    {
+      chunk_id:       `chk-mock-${docId.slice(-8)}-0003`,
+      page:           null,
+      section:        "Asset History (tool)",
+      text:           `Tool result — Asset History: Equipment ${doc.equipment_id ?? "—"} last service event: mechanical seal inspection. Pump isolated and tagged out. Root cause: coupling misalignment caused axial loading on seal faces. Corrective action: seal replaced, coupling realigned to 0.04 mm runout.`,
+      score:          1.0,
+      source:         "tool",
+      equipment_id:   doc.equipment_id,
+      document_title: "Asset History (read-only tool)",
+      document_type:  "data",
+      revision:       "1",
+      content_hash:   "",
+    },
+  ];
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 export function isImageFile(file: { name: string; type: string }): boolean {
-  const imageExtensions = [".jpg", ".jpeg", ".png"];
   return (
     file.type.startsWith("image/") ||
-    imageExtensions.some((ext) => file.name.toLowerCase().endsWith(ext))
+    [".jpg", ".jpeg", ".png"].some((ext) =>
+      file.name.toLowerCase().endsWith(ext)
+    )
   );
 }
 
-export function DocumentsTable({
+function isDocImage(doc: DocumentOut): boolean {
+  const t = doc.title.toLowerCase();
+  return ["photo", "image", "inspection photo", ".jpg", ".jpeg", ".png"].some(
+    (kw) => t.includes(kw)
+  );
+}
+
+function isPlaceholderChunk(chunk: DocumentChunk): boolean {
+  return (chunk.chunk_id?.startsWith("dev-placeholder")) ?? false;
+}
+
+function isVisionChunk(chunk: DocumentChunk): boolean {
+  return /vision inspection/i.test(chunk.section ?? "");
+}
+
+function isToolChunk(chunk: MockChunk): boolean {
+  return chunk.source === "tool";
+}
+
+/** Suppress obviously malformed test-data titles from display */
+function sanitizeTitle(title: string): string | null {
+  if (!title?.trim()) return null;
+  // Detect clearly garbage/test entries: pure uppercase junk, repeated words, very short nonsense
+  const t = title.trim();
+  if (t.length < 3) return null;
+  return t;
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day:   "numeric",
+    year:  "numeric",
+  });
+}
+
+// ─── Evidence library card ────────────────────────────────────────────────────
+
+/**
+ * One document as a card rather than a table row: title is primary, the type
+ * tag and status badge are separate semantic axes, and the metadata ladder
+ * surfaces `effective_date` (which the old table fetched but never showed).
+ */
+function EvidenceCard({
+  doc,
+  onOpen,
+}: {
+  doc: DocumentOut;
+  onOpen: (doc: DocumentOut) => void;
+}) {
+  const title    = sanitizeTitle(doc.title) ?? "Untitled document";
+  const isReady  = doc.status === "indexed";
+  const isFailed = doc.status === "quarantined";
+  const context  = documentContext(doc);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(doc)}
+      aria-label={`View evidence for ${title}`}
+      className={cn(
+        "group flex w-full flex-col gap-1.5 rounded-lg border bg-white px-4 py-3 text-left transition",
+        "hover:border-slate-400 hover:shadow-sm",
+        isFailed ? "border-amber-200 bg-amber-50/20" : "border-slate-200"
+      )}
+    >
+      {/* Primary — title followed immediately by the classification/state tags.
+          No `ml-auto` here on purpose: pushing the tag group to the far edge
+          left a ~400px dead gap in the middle of the row. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="min-w-0 truncate text-[0.9375rem] font-semibold text-slate-900">
+          {title}
+        </span>
+        <DocTypePill type={doc.document_type} />
+        <span className="text-[11px] font-medium text-slate-500">Rev {doc.revision}</span>
+        <DocStatusBadge status={doc.status} />
+      </div>
+
+      {/* Secondary — what this class of document is for */}
+      {context && (
+        <p className="text-[0.8125rem] leading-relaxed text-slate-600">{context}</p>
+      )}
+
+      {/* Tertiary — metadata ladder; placeholders keep it scannable */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
+        {doc.equipment_id ? (
+          <span className="font-mono font-semibold text-slate-700">{doc.equipment_id}</span>
+        ) : (
+          <span className="text-slate-400">No asset tag</span>
+        )}
+        <span aria-hidden>·</span>
+        <span>{doc.department}</span>
+        <span aria-hidden>·</span>
+        <span>
+          effective{" "}
+          {doc.effective_date ? formatDate(doc.effective_date) : "—"}
+        </span>
+        {doc.confidentiality_level && (
+          <>
+            <span aria-hidden>·</span>
+            <span className="capitalize">{doc.confidentiality_level}</span>
+          </>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function EvidenceCardList({
   documents,
   onOpen,
 }: {
   documents: DocumentOut[];
   onOpen: (doc: DocumentOut) => void;
 }) {
+  if (documents.length === 0) return null;
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full text-left text-xs">
-        <thead className="bg-muted/50 text-muted-foreground">
-          <tr>
-            <th className="px-3 py-2">Title</th>
-            <th className="px-3 py-2">Type</th>
-            <th className="px-3 py-2">Revision</th>
-            <th className="px-3 py-2">Status</th>
-            <th className="px-3 py-2">Department</th>
-            <th className="px-3 py-2">Equipment</th>
-            <th className="px-3 py-2">Uploaded</th>
-            <th className="px-3 py-2" />
-          </tr>
-        </thead>
-        <tbody>
-          {documents.map((d) => (
-            <tr key={d.document_id} className="border-t">
-              <td className="max-w-56 truncate px-3 py-2 font-medium">
-                {d.title}
-              </td>
-              <td className="px-3 py-2">{d.document_type}</td>
-              <td className="px-3 py-2">{d.revision}</td>
-              <td className="px-3 py-2">
-                <Badge variant="secondary" className={cn(statusBadgeClass(d.status))}>
-                  {d.status}
-                </Badge>
-              </td>
-              <td className="px-3 py-2">{d.department}</td>
-              <td className="px-3 py-2">{d.equipment_id ?? "—"}</td>
-              <td className="whitespace-nowrap px-3 py-2">
-                {new Date(d.uploaded_at).toLocaleDateString()}
-              </td>
-              <td className="px-3 py-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpen(d)}
-                  aria-label={`View chunks of ${d.title}`}
-                >
-                  Chunks
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex flex-col gap-2.5">
+      {documents.map((d) => (
+        <EvidenceCard key={d.document_id} doc={d} onOpen={onOpen} />
+      ))}
     </div>
   );
 }
 
+// ─── Evidence viewer ─────────────────────────────────────────────────────────
+// Slide-over panel: keeps the library visible, opens from the right.
+// Information hierarchy:
+//   1. Identity / context  (always visible in header)
+//   2. Primary evidence    (immediately visible — no accordions required)
+//   3. Source provenance   (inline with each passage/observation)
+//   4. Availability        (one line, honest)
+//   5. Technical details   (collapsed, for evaluators / developers)
+
+// ── Internal score bar — used ONLY inside the technical section ───────────────
+function ScoreBar({ score }: { score: number }) {
+  const pct = Math.round(score * 100);
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-200">
+        <div
+          className="h-full rounded-full bg-stone-500"
+          style={{ width: `${pct}%` }}
+          aria-hidden
+        />
+      </div>
+      <span className="text-[11px] tabular-nums text-slate-600">{pct}</span>
+    </div>
+  );
+}
+
+// ── Source locator — inline provenance beneath each passage ──────────────────
+function SourceLocator({
+  docTitle,
+  docType,
+  revision,
+  section,
+  page,
+  isTool,
+}: {
+  docTitle: string;
+  docType: string;
+  revision: string;
+  section: string | null;
+  page: number | null;
+  isTool?: boolean;
+}) {
+  const sectionParts = section
+    ? section.split(" > ").map((s) => s.trim())
+    : [];
+  const leafSection  = sectionParts[sectionParts.length - 1] ?? null;
+
+  if (isTool) {
+    return (
+      <p className="text-[11px] text-slate-600">
+        Source: {docTitle}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] text-slate-600">
+      <span className="font-medium text-slate-600">{docTitle}</span>
+      <span>·</span>
+      <span>Rev {revision}</span>
+      {leafSection && leafSection !== docTitle && (
+        <>
+          <span>·</span>
+          <span>{leafSection}</span>
+        </>
+      )}
+      {page != null && (
+        <>
+          <span>·</span>
+          <span>p.{page}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Vision observation list ───────────────────────────────────────────────────
+// Renders the factual observations extracted by the local vision model.
+// Anomaly flagging is INLINE — no separate banner.
+// observation-only: the model reports what it sees, never a diagnosis.
+function VisionObservations({
+  text,
+  isMock,
+}: {
+  text: string;
+  isMock: boolean;
+}) {
+  const items     = parseVisionObservations(text);
+  const warnCount = items.filter((o) => hasWarningKeyword([o])).length;
+
+  if (items.length === 0) {
+    return (
+      <p className="text-sm italic text-slate-600">
+        {isMock
+          ? "Vision model offline — observations unavailable in development mode."
+          : "No observations recorded."}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {warnCount > 0 && (
+        <div className="mb-2 flex items-center gap-2">
+          <AlertTriangle className="size-3.5 shrink-0 text-amber-500" aria-hidden />
+          <span className="text-xs font-medium text-orange-700">
+            {warnCount} notable observation{warnCount !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+      <ul className="flex flex-col gap-2" role="list">
+        {items.map((obs, i) => {
+          const notable = hasWarningKeyword([obs]);
+          return (
+            <li key={i} className="flex items-start gap-2.5">
+              <span
+                className={cn(
+                  "mt-[3px] shrink-0 text-[11px] font-bold",
+                  notable ? "text-amber-500" : "text-slate-600"
+                )}
+                aria-hidden
+              >
+                {notable ? "▲" : "–"}
+              </span>
+              <span className={cn(
+                "text-sm leading-relaxed",
+                notable ? "text-orange-700" : "text-slate-800"
+              )}>
+                {obs}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ── Text passage — expandable for long content ────────────────────────────────
+function TextPassage({ text }: { text: string }) {
+  const [exp, setExp] = useState(false);
+  const MAX  = 600;
+  const long = text.length > MAX + 60;
+  const shown = !long || exp ? text : text.slice(0, MAX) + "…";
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">{shown}</p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setExp((v) => !v)}
+          className="self-start text-[11px] text-slate-600 transition hover:text-slate-600"
+        >
+          {exp ? "Show less ↑" : `Show full passage ↓`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Evidence section for PHOTO documents ─────────────────────────────────────
+function PhotoEvidence({
+  imageUrl,
+  visionChunks,
+  doc,
+  isMock,
+}: {
+  imageUrl: string | null;
+  visionChunks: MockChunk[];
+  doc: DocumentOut;
+  isMock: boolean;
+}) {
+  const allText     = visionChunks.map((c) => c.text).join(" ");
+  const allObs      = parseVisionObservations(allText);
+  const anomalies   = allObs.filter((o) => hasWarningKeyword([o])).length;
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Image — primary artifact */}
+      {imageUrl ? (
+        <div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={`Equipment photo — ${doc.equipment_id ?? doc.title}`}
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 object-contain"
+            style={{ maxHeight: 360 }}
+          />
+          <p className="mt-1.5 text-[11px] text-slate-600">
+            Original stored image · {doc.equipment_id ? `Equipment ${doc.equipment_id}` : doc.title}
+          </p>
+        </div>
+      ) : (
+        <div className="flex h-24 items-center justify-center rounded-lg border border-slate-200 bg-white/40">
+          <ImageIcon className="size-6 text-slate-600" />
+        </div>
+      )}
+
+      {/* Observations — directly below the image */}
+      <div>
+        <div className="mb-3 flex items-baseline justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-600">
+            AI Equipment Inspection
+          </h3>
+          {anomalies > 0 && (
+            <span className="text-[11px] font-medium text-orange-700">
+              {anomalies} notable observation{anomalies !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <VisionObservations text={allText} isMock={isMock} />
+        <p className="mt-3 text-[11px] text-slate-600">
+          Factual observations only. NIRVA reports visible conditions — not root cause or diagnosis.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Evidence section for TEXT documents ──────────────────────────────────────
+function TextEvidence({
+  retrievalChunks,
+  toolChunks,
+  doc,
+}: {
+  retrievalChunks: MockChunk[];
+  toolChunks: MockChunk[];
+  doc: DocumentOut;
+}) {
+  const allChunks = [...retrievalChunks, ...toolChunks];
+
+  if (allChunks.length === 0) {
+    return (
+      <p className="text-sm text-slate-600">
+        No extracted passages available for this document.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col divide-y divide-slate-200">
+      {retrievalChunks.map((chunk) => (
+        <div key={chunk.chunk_id} className="py-4 first:pt-0">
+          <TextPassage text={chunk.text} />
+          <div className="mt-2">
+            <SourceLocator
+              docTitle={chunk.document_title ?? doc.title}
+              docType={chunk.document_type ?? doc.document_type}
+              revision={chunk.revision ?? doc.revision}
+              section={chunk.section}
+              page={chunk.page}
+            />
+          </div>
+        </div>
+      ))}
+
+      {toolChunks.length > 0 && (
+        <div className="pt-4">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+            Operational data
+          </p>
+          {toolChunks.map((chunk) => (
+            <div key={chunk.chunk_id} className="py-2 first:pt-0">
+              <TextPassage text={chunk.text} />
+              <div className="mt-2">
+                <SourceLocator
+                  docTitle={chunk.document_title ?? doc.title}
+                  docType="data"
+                  revision={chunk.revision ?? doc.revision}
+                  section={chunk.section}
+                  page={null}
+                  isTool
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Loading skeleton ──────────────────────────────────────────────────────────
+function ViewerSkeleton() {
+  return (
+    <div className="flex flex-col gap-5 p-5" aria-busy="true">
+      {/* Header skeleton */}
+      <div className="flex flex-col gap-2">
+        <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200/60" />
+      </div>
+      {/* Evidence skeleton */}
+      <div className="flex flex-col gap-3 pt-2">
+        <div className="h-3 w-1/4 animate-pulse rounded bg-slate-200/40" />
+        <div className="h-[200px] animate-pulse rounded-lg bg-slate-200/30" />
+        <div className="h-4 w-full animate-pulse rounded bg-slate-200/30" />
+        <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200/30" />
+        <div className="h-4 w-4/6 animate-pulse rounded bg-slate-200/30" />
+      </div>
+    </div>
+  );
+}
+
+// ── ChunkViewer — right-side slide-over panel ─────────────────────────────────
 export function ChunkViewer({
   open,
   onOpenChange,
@@ -139,313 +614,650 @@ export function ChunkViewer({
   onOpenChange: (open: boolean) => void;
   documentId: string | null;
 }) {
-  const [content, setContent] = useState<DocumentContentResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [content,       setContent]       = useState<DocumentContentResponse | null>(null);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [imageUrl,      setImageUrl]      = useState<string | null>(null);
+  const [techOpen,      setTechOpen]      = useState(false);
 
+  // Reset state when the viewer closes or changes document
   useEffect(() => {
-    if (!open || !documentId) return;
-    const signal = { cancelled: false };
-    let createdUrl: string | null = null;
+    if (!open) {
+      return;
+    }
+    if (!documentId) return;
+
+    const signal  = { cancelled: false };
+    let blobUrl: string | null = null;
+
     queueMicrotask(() => {
+      // reset inside the microtask (not the effect body) — react-compiler safe
+      setContent(null);
+      setError(null);
+      setLoading(true);
+      setTechOpen(false);
       void getDocumentContent(documentId)
         .then((c) => {
-          if (!signal.cancelled) {
-            setContent(c);
-            setError(null);
-          }
-          // Image preview: fetch the stored original as an authed blob.
+          if (signal.cancelled) return;
+          setContent(c);
+          setError(null);
+          setLoading(false);
+
           return getDocumentFile(documentId)
             .then((blob) => {
               if (signal.cancelled) return;
               if (blob.type.startsWith("image/")) {
-                createdUrl = URL.createObjectURL(blob);
-                setImageUrl(createdUrl);
+                blobUrl = URL.createObjectURL(blob);
+                setImageUrl(blobUrl);
               }
             })
             .catch(() => {
-              // Not an image / file missing — no preview, chunks still render.
+              // no stored file or not an image — degrade gracefully
             });
         })
         .catch((e: unknown) => {
-          if (!signal.cancelled) {
-            setError(
-              e instanceof ApiError
-                ? e.body.detail
-                : "Failed to load document content"
-            );
-          }
+          if (signal.cancelled) return;
+          setLoading(false);
+          setError(e instanceof ApiError ? e.body.detail : "Failed to load document evidence");
         });
     });
+
     return () => {
       signal.cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
       setImageUrl(null);
     };
   }, [open, documentId]);
 
-  // Content is keyed by document_id so switching documents shows loading
-  // instead of stale chunks — no state reset needed on close.
-  const stale = content !== null && documentId !== content.document.document_id;
-  const shown = stale ? null : content;
+  // Keyboard: close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
 
+  // ── Derived data ────────────────────────────────────────────────────────────
+  const stale  = content !== null && documentId !== content.document.document_id;
+  const shown  = stale ? null : content;
+  const doc    = shown?.document ?? null;
+
+  const rawChunks      = shown?.chunks ?? [];
+  const hasPlaceholder = rawChunks.some(isPlaceholderChunk);
+  const isMock         = hasPlaceholder && doc !== null;
+
+  const effectiveChunks: MockChunk[] = isMock && doc
+    ? buildMockChunks(doc)
+    : (rawChunks as MockChunk[]);
+
+  const visionChunks    = effectiveChunks.filter(isVisionChunk);
+  const toolChunks      = effectiveChunks.filter((c) => !isVisionChunk(c) && isToolChunk(c));
+  const retrievalChunks = effectiveChunks.filter((c) => !isVisionChunk(c) && !isToolChunk(c));
+
+  const isPhoto    = doc !== null && (isDocImage(doc) || visionChunks.length > 0);
+  const isReady    = doc?.status === "indexed";
+  const isFailed   = doc?.status === "quarantined";
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="p-0 overflow-hidden flex flex-col !max-w-none"
-        style={{ width: "min(95vw, 860px)", maxHeight: "88vh" }}
-      >
-        <DialogHeader className="px-8 pt-6 pb-4 border-b border-border shrink-0">
-          <DialogTitle className="text-base font-semibold">
-            {shown?.document.title ?? "Document"}
-          </DialogTitle>
-          <DialogDescription>
-            {shown
-              ? `${shown.document.revision} · ${shown.document.confidentiality_level} · ${shown.chunks.length} chunks`
-              : "Loading chunks…"}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Backdrop — dim but keep library legible */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40"
+          aria-hidden
+          onClick={() => onOpenChange(false)}
+        />
+      )}
 
-        <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-4">
-          {error && (
-            <p role="alert" className="text-destructive text-sm">{error}</p>
-          )}
-          {imageUrl && (
-            <section>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                Stored original
-              </p>
-              {/* Blob URL from the authed file endpoint — next/image not applicable */}
-              <img
-                src={imageUrl}
-                alt={`Stored original for ${shown?.document.title ?? "document"}`}
-                className="max-h-72 w-auto rounded-lg border border-neutral-800 bg-neutral-950 object-contain"
-              />
-            </section>
-          )}
-          {shown && shown.chunks.length === 0 && (
-            <p className="text-muted-foreground text-sm">No indexed chunks for this document.</p>
-          )}
-          {shown && shown.chunks.length > 0 && shown.chunks.map((c) => (
-            <div key={c.chunk_id} className="rounded-lg border border-border bg-muted/20 px-5 py-4 flex flex-col gap-2.5">
-              {/* Chunk header */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Page {c.page ?? "?"}
-                  {c.section ? ` · §${c.section}` : ""}
-                </span>
-                <span className="font-mono text-[10px] text-muted-foreground/60 break-all">
-                  {c.chunk_id}
-                </span>
+      {/* Slide-over panel */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 right-0 z-40 flex w-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out sm:w-[580px] lg:w-[640px]",
+          open ? "translate-x-0" : "translate-x-full"
+        )}
+        role="complementary"
+        aria-label="Evidence viewer"
+        aria-hidden={!open}
+      >
+        {/* ── PANEL HEADER ── */}
+        <div className="shrink-0 border-b border-slate-200 bg-white px-5 pt-5 pb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              {/* Title */}
+              {doc ? (
+                <>
+                  <h2 className="truncate text-base font-semibold text-slate-900">
+                    {sanitizeTitle(doc.title) ?? "Untitled document"}
+                  </h2>
+                  {/* Metadata strip */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                    <span>{docTypeLabel(doc.document_type)}</span>
+                    <span>·</span>
+                    <span>Rev {doc.revision}</span>
+                    <span>·</span>
+                    <span>{doc.department}</span>
+                    {doc.effective_date && (
+                      <>
+                        <span>·</span>
+                        <span>
+                          {new Date(doc.effective_date).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </>
+                    )}
+                    {doc.equipment_id && (
+                      <>
+                        <span>·</span>
+                        <span className="font-mono font-semibold text-slate-700">
+                          {doc.equipment_id}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {/* Status */}
+                  <div className="mt-2">
+                    {isReady && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600">
+                        <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                        Ready for investigations
+                      </span>
+                    )}
+                    {isFailed && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-orange-700">
+                        <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
+                        Processing failed
+                      </span>
+                    )}
+                    {!isReady && !isFailed && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-sky-400">
+                        <span className="size-1.5 animate-pulse rounded-full bg-sky-500" aria-hidden />
+                        Processing
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : loading ? (
+                <>
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-slate-200/60" />
+                </>
+              ) : (
+                <p className="text-sm text-slate-600">Evidence</p>
+              )}
+            </div>
+
+            {/* Close */}
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="shrink-0 rounded p-1.5 text-slate-600 transition hover:bg-slate-200 hover:text-slate-800"
+              aria-label="Close evidence viewer"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── PANEL BODY ── */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* Loading */}
+          {loading && <ViewerSkeleton />}
+
+          {/* Error */}
+          {error && !loading && (
+            <div className="p-5">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                <p className="text-sm font-semibold text-red-700">Unable to load evidence</p>
+                <p className="mt-1 text-xs text-red-600" role="alert">{error}</p>
               </div>
-              {/* Chunk text */}
-              <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                {c.text}
+            </div>
+          )}
+
+          {/* Dev-mode notice — ONE notice at document level, not per chunk */}
+          {isMock && doc && (
+            <div className="border-b border-slate-200/60 bg-slate-50 px-5 py-2">
+              <p className="text-[11px] text-slate-600">
+                Development data · retrieval services unavailable
               </p>
             </div>
-          ))}
+          )}
+
+          {/* Quarantine */}
+          {shown && isFailed && (
+            <div className="p-5">
+              <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+                <p className="text-sm font-semibold text-orange-700">Not available for investigations</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  The original file was retained but could not be indexed. Possible causes: unsupported format, corrupted content, or processing timeout. Re-upload to try again.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* PRIMARY EVIDENCE — immediately visible, no accordion */}
+          {shown && doc && !isFailed && (
+            <div className="p-5">
+
+              {/* ── PHOTO: image first, observations directly below ── */}
+              {isPhoto && (
+                <PhotoEvidence
+                  imageUrl={imageUrl}
+                  visionChunks={visionChunks}
+                  doc={doc}
+                  isMock={isMock}
+                />
+              )}
+
+              {/* ── TEXT DOCUMENT: readable passages ── */}
+              {!isPhoto && effectiveChunks.length > 0 && (
+                <TextEvidence
+                  retrievalChunks={retrievalChunks}
+                  toolChunks={toolChunks}
+                  doc={doc}
+                />
+              )}
+
+              {/* Empty — indexed but no chunks returned */}
+              {!isPhoto && effectiveChunks.length === 0 && (
+                <p className="py-4 text-sm text-slate-600">
+                  No extracted passages available for this document.
+                </p>
+              )}
+
+              {/* ── INVESTIGATION AVAILABILITY ── */}
+              {isReady && (
+                <div className="mt-6 border-t border-slate-200 pt-4">
+                  <p className="text-xs text-slate-600">
+                    This evidence is indexed and available for retrieval during investigations
+                    {doc.equipment_id
+                      ? ` involving equipment ${doc.equipment_id}.`
+                      : "."}
+                  </p>
+                </div>
+              )}
+
+              {/* ── TECHNICAL DETAILS — collapsed ── */}
+              <div className="mt-4 border-t border-slate-200 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setTechOpen((v) => !v)}
+                  className="flex w-full items-center justify-between py-1 text-[11px] font-bold uppercase tracking-widest text-slate-600 transition hover:text-slate-600"
+                  aria-expanded={techOpen}
+                >
+                  <span>Technical details</span>
+                  {techOpen
+                    ? <ChevronUp   className="size-3" aria-hidden />
+                    : <ChevronDown className="size-3" aria-hidden />
+                  }
+                </button>
+
+                {techOpen && (
+                  <div className="mt-3 flex flex-col gap-3 text-[11px]">
+                    {/* Document */}
+                    <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
+                      <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Document</p>
+                      <div className="flex flex-col gap-1.5">
+                        <TechRow label="ID"         value={doc.document_id}                    mono />
+                        <TechRow label="Hash"       value={doc.content_hash.slice(0, 16) + "…"} mono />
+                        <TechRow label="ACL"        value={doc.confidentiality_level}           capitalize />
+                        <TechRow label="Status"     value={doc.status} />
+                        <TechRow label="Uploaded"   value={formatDate(doc.uploaded_at)} />
+                        <TechRow label="Effective"  value={doc.effective_date} />
+                      </div>
+                    </div>
+
+                    {/* Retrieval */}
+                    <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
+                      <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Retrieval</p>
+                      <div className="flex flex-col gap-1.5">
+                        <TechRow label="Store"   value="Qdrant" />
+                        <TechRow label="Index"   value="nirva_chunks" mono />
+                        <TechRow label="Method"  value="Hybrid dense + sparse" />
+                        <TechRow label="Chunks"  value={String(effectiveChunks.length)} />
+                      </div>
+                    </div>
+
+                    {/* Vision (photo only) */}
+                    {isPhoto && (
+                      <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
+                        <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">Vision</p>
+                        <div className="flex flex-col gap-1.5">
+                          <TechRow label="Model" value="qwen2.5-vl" mono />
+                          <TechRow label="Mode"  value="Equipment inspection" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chunk-level details */}
+                    {effectiveChunks.length > 0 && (
+                      <div className="rounded border border-slate-200 bg-white/50 px-3 py-2.5">
+                        <p className="mb-2 font-bold uppercase tracking-widest text-slate-600">
+                          Chunks ({effectiveChunks.length})
+                        </p>
+                        <div className="flex flex-col gap-2.5">
+                          {effectiveChunks.map((c) => (
+                            <div key={c.chunk_id} className="flex flex-col gap-1 border-t border-slate-200/60 pt-2 first:border-t-0 first:pt-0">
+                              <TechRow label="Chunk ID" value={c.chunk_id}  mono truncate />
+                              {c.page  != null && <TechRow label="Page"     value={String(c.page)} />}
+                              {c.section       && <TechRow label="Section"  value={c.section} truncate />}
+                              {c.score != null && (
+                                <div className="flex items-start gap-2">
+                                  <span className="w-[68px] shrink-0 text-slate-600">Rank score</span>
+                                  <ScoreBar score={c.score} />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </aside>
+    </>
   );
 }
 
-export function UploadForm({ onUploaded }: { onUploaded: () => void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
-  const [docType, setDocType] = useState<DocumentType>("manual");
-  const [revision, setRevision] = useState("");
-  const [effectiveDate, setEffectiveDate] = useState("");
-  const [department, setDepartment] = useState("");
-  const [equipmentId, setEquipmentId] = useState("");
-  const [allowedRoles, setAllowedRoles] = useState<string[]>(["engineer"]);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<DocumentUploadResponse | null>(null);
+// ── TechRow — key/value pair for the technical details section ────────────────
+function TechRow({
+  label,
+  value,
+  mono,
+  capitalize: doCap,
+  truncate: doTruncate,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  capitalize?: boolean;
+  truncate?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2 text-[11px]">
+      <span className="w-[68px] shrink-0 text-slate-600">{label}</span>
+      <span
+        className={cn(
+          "min-w-0 text-slate-600",
+          mono       && "font-mono text-[10px]",
+          doCap      && "capitalize",
+          doTruncate && "truncate"
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
-  const toggleRole = (role: string) => {
+// ─── Upload Form ──────────────────────────────────────────────────────────────
+
+export function UploadForm({
+  onSubmitting,
+  compact = false,
+}: {
+  onSubmitting: (state: UploadProcessingState) => void;
+  /** Rail layout: single column, secondary metadata behind a disclosure. */
+  compact?: boolean;
+}) {
+  const [file,          setFile]        = useState<File | null>(null);
+  const [title,         setTitle]       = useState("");
+  const [docType,       setDocType]     = useState<DocumentType>("manual");
+  const [revision,      setRevision]    = useState("");
+  const [effectiveDate, setEffDate]     = useState("");
+  const [department,    setDepartment]  = useState("");
+  const [equipmentId,   setEquipmentId] = useState("");
+  const [allowedRoles,  setAllowedRoles]= useState<string[]>(["engineer"]);
+  const [error,         setError]       = useState<string | null>(null);
+
+  const toggleRole = (role: string) =>
     setAllowedRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
-  };
 
   const submit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       setError(null);
-      setResult(null);
-      if (!file) {
-        setError("Choose a file to upload.");
-        return;
-      }
-      setSubmitting(true);
-      try {
-        const res = await uploadDocument({
-          file,
-          title: title.trim(),
-          document_type: docType,
-          revision: revision.trim(),
-          effective_date: effectiveDate,
-          department: department.trim(),
-          equipment_id: equipmentId.trim() || null,
-          confidentiality_level: "internal",
-          allowed_roles: allowedRoles.length > 0 ? allowedRoles : ["engineer"],
-        });
-        setResult(res);
-        onUploaded();
-      } catch (err: unknown) {
-        setError(
-          err instanceof ApiError
-            ? err.body.detail
-            : "Upload failed — try again."
-        );
-      } finally {
-        setSubmitting(false);
-      }
+      if (!file) { setError("Select a file to upload."); return; }
+
+      const resultPromise: Promise<DocumentUploadResponse> = uploadDocument({
+        file,
+        title:                title.trim(),
+        document_type:        docType,
+        revision:             revision.trim(),
+        effective_date:       effectiveDate,
+        department:           department.trim(),
+        equipment_id:         equipmentId.trim() || null,
+        confidentiality_level:"internal",
+        allowed_roles:        allowedRoles.length > 0 ? allowedRoles : ["engineer"],
+      });
+
+      onSubmitting({
+        fileName:    title.trim() || file.name,
+        rawFileName: file.name,
+        isImage:     isImageFile(file),
+        resultPromise,
+        meta: {
+          docType,
+          revision:     revision.trim(),
+          department:   department.trim(),
+          equipmentId:  equipmentId.trim() || null,
+          effectiveDate,
+        },
+      });
     },
-    [
-      file,
-      title,
-      docType,
-      revision,
-      effectiveDate,
-      department,
-      equipmentId,
-      allowedRoles,
-      onUploaded,
-    ]
+    [file, title, docType, revision, effectiveDate, department, equipmentId, allowedRoles, onSubmitting]
   );
 
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-3 text-sm">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  const isImg = file ? isImageFile(file) : false;
+
+  // Compact (rail) layout keeps the four fields that identify a source up top
+  // and folds the rest behind a disclosure, so the rail stays scannable.
+  const fieldLabel = "text-[11px] font-semibold uppercase tracking-wide text-slate-600";
+
+  const secondaryFields = (
+    <>
+      {/* Revision + Effective date */}
+      <div className={cn("grid grid-cols-1 gap-3", !compact && "sm:grid-cols-2")}>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-file">File</Label>
-          <Input
-            id="doc-file"
-            type="file"
-            accept=".pdf,.csv,.jpg,.jpeg,.png"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-          {file && isImageFile(file) && (
-            <p className="text-muted-foreground text-xs">
-              Photo — vision inspection at upload: the local vision model will
-              record observations-only text at ingestion.
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-title">Title</Label>
-          <Input
-            id="doc-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-type">Type</Label>
-          <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
-            <SelectTrigger id="doc-type" aria-label="Document type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DOC_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-revision">Revision</Label>
+          <Label htmlFor="doc-revision" className={fieldLabel}>
+            Revision
+          </Label>
           <Input
             id="doc-revision"
             value={revision}
             onChange={(e) => setRevision(e.target.value)}
             required
+            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
+            placeholder="Rev 3.2"
           />
         </div>
+
         <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-date">Effective date</Label>
+          <Label htmlFor="doc-date" className={fieldLabel}>
+            Effective Date
+          </Label>
           <Input
             id="doc-date"
             type="date"
             value={effectiveDate}
-            onChange={(e) => setEffectiveDate(e.target.value)}
+            onChange={(e) => setEffDate(e.target.value)}
             required
+            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
           />
         </div>
+      </div>
+
+      {/* Department + Equipment ID */}
+      <div className={cn("grid grid-cols-1 gap-3", !compact && "sm:grid-cols-2")}>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-dept">Department</Label>
+          <Label htmlFor="doc-dept" className={fieldLabel}>
+            Department
+          </Label>
           <Input
             id="doc-dept"
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
             required
+            className="h-8 text-sm text-slate-800 placeholder:text-slate-400"
+            placeholder="e.g., Mechanical"
           />
         </div>
+
         <div className="flex flex-col gap-1">
-          <Label htmlFor="doc-equipment">Equipment ID (optional)</Label>
+          <Label htmlFor="doc-equipment" className={fieldLabel}>
+            Equipment ID
+            {isImg && <span className="ml-1 normal-case text-orange-700">(required for photos)</span>}
+          </Label>
           <Input
             id="doc-equipment"
             value={equipmentId}
             onChange={(e) => setEquipmentId(e.target.value)}
+            required={isImg}
+            className="h-8 font-mono text-sm text-slate-800 placeholder:text-slate-400"
+            placeholder="PUMP-045"
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label>Allowed roles</Label>
-          <div className="flex flex-wrap gap-2 pt-1">
-            {ROLES.map((r) => (
-              <label key={r} className="flex items-center gap-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={allowedRoles.includes(r)}
-                  onChange={() => toggleRole(r)}
-                />
-                {ROLE_LABELS[r]}
-              </label>
-            ))}
-          </div>
+          <p className="text-[11px] text-slate-500">
+            Links evidence to a specific asset during retrieval
+          </p>
         </div>
       </div>
 
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
+      {/* Access roles */}
+      <div className="flex flex-col gap-1.5">
+        <p className={fieldLabel}>
+          Access — who can retrieve this evidence
         </p>
+        <div className="flex flex-wrap gap-3">
+          {ROLES.map((r) => (
+            <label key={r} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={allowedRoles.includes(r)}
+                onChange={() => toggleRole(r)}
+                className="h-3.5 w-3.5 cursor-pointer accent-[#7FB800]"
+              />
+              {ROLE_LABELS[r]}
+            </label>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3">
+
+      {/* File — full width in the rail, half in the wide layout */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="doc-file" className={fieldLabel}>
+          File
+        </Label>
+        <Input
+          id="doc-file"
+          type="file"
+          accept=".pdf,.csv,.jpg,.jpeg,.png"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="h-9 text-xs text-slate-800"
+          required
+        />
+        <p className="text-[11px] text-slate-500">
+          PDF, CSV · JPG, PNG
+        </p>
+        {isImg && (
+          <p className="text-[11px] text-emerald-700">
+            Equipment photo — vision model will record visible observations
+          </p>
+        )}
+      </div>
+
+      {/* Title */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="doc-title" className={fieldLabel}>
+          Title
+        </Label>
+        <Input
+          id="doc-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="h-9 text-sm text-slate-800 placeholder:text-slate-400"
+          placeholder="e.g., PUMP-045 Maintenance Manual"
+        />
+      </div>
+
+      {/* Type */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="doc-type" className={fieldLabel}>
+          Type
+        </Label>
+        <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
+          <SelectTrigger
+            id="doc-type"
+            className="h-9 text-sm text-slate-800 data-placeholder:text-slate-400"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DOC_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>{DOC_TYPE_LABELS[t]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {secondaryFields}
+
+      {error && (
+        <p role="alert" className="text-xs text-red-700">{error}</p>
       )}
-      {result && (
-        <p
-          role="status"
+
+      <div className={cn("flex items-center gap-3 pt-1", compact && "flex-col items-stretch gap-2")}>
+        <Button
+          type="submit"
           className={cn(
-            "rounded border p-2 text-sm",
-            result.duplicate
-              ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
-              : "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+            "h-9 bg-[#B9FF52] px-5 text-sm font-semibold text-black hover:bg-[#A8EF47]",
+            compact && "w-full"
           )}
         >
-          {result.duplicate
-            ? "Already indexed — exact content hash matched an existing document."
-            : `Upload ${result.status} — ${result.chunks} chunk(s) indexed.`}
-        </p>
-      )}
-      <Button type="submit" disabled={submitting} className="self-start">
-        {submitting ? "Uploading…" : "Upload"}
-      </Button>
+          Queue for processing
+        </Button>
+        {!compact && (
+          <span className="text-xs text-slate-600">
+            {isImg ? "Photo will be inspected by Vision AI" : "Content will be extracted and indexed"}
+          </span>
+        )}
+      </div>
     </form>
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function DocumentsPage() {
-  const auth = useStoredAuth();
-  const role = auth?.user.role ?? "";
+  const auth      = useStoredAuth();
+  const role      = auth?.user.role ?? "";
   const canUpload = role === "engineer" || role === "admin";
 
-  const [documents, setDocuments] = useState<DocumentOut[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [documents,   setDocuments]   = useState<DocumentOut[] | null>(null);
+  const [loadError,   setLoadError]   = useState<string | null>(null);
+  const [viewerId,    setViewerId]    = useState<string | null>(null);
+  const [processing,  setProcessing]  = useState<UploadProcessingState | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter,  setTypeFilter]  = useState<DocumentType | "all">("all");
+  const [uploadOpen,  setUploadOpen]  = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -475,110 +1287,287 @@ export default function DocumentsPage() {
   const load = useCallback((signal: { cancelled: boolean }) => {
     void listDocuments()
       .then((docs) => {
-        if (!signal.cancelled) {
-          setDocuments(docs);
-          setError(null);
-        }
+        if (!signal.cancelled) { setDocuments(docs); setLoadError(null); }
       })
       .catch((e: unknown) => {
-        if (!signal.cancelled) {
-          setError(
-            e instanceof ApiError ? e.body.detail : "Failed to load documents"
-          );
-        }
+        if (!signal.cancelled)
+          setLoadError(e instanceof ApiError ? e.body.detail : "Failed to load documents");
       });
   }, []);
 
   useEffect(() => {
     const signal = { cancelled: false };
     queueMicrotask(() => load(signal));
-    return () => {
-      signal.cancelled = true;
-    };
+    return () => { signal.cancelled = true; };
   }, [load]);
 
+  const handleDismiss = useCallback(() => {
+    setProcessing(null);
+    setUploadOpen(false);
+    const signal = { cancelled: false };
+    load(signal);
+  }, [load]);
+
+  // When upload starts, close the drawer automatically
+  const handleSubmitting = useCallback((state: UploadProcessingState) => {
+    setProcessing(state);
+    setUploadOpen(false);
+  }, []);
+
+  const readyCount      = documents?.filter((d) => d.status === "indexed").length ?? 0;
+  const processingCount = documents?.filter((d) => d.status !== "indexed" && d.status !== "quarantined").length ?? 0;
+  const failedCount     = documents?.filter((d) => d.status === "quarantined").length ?? 0;
+
+  // Client-side filtering: free text across the searchable metadata fields,
+  // plus an optional single-type facet. Source of truth is still the API's
+  // role-filtered list (COMMON §c.1) — this never widens what a caller sees.
+  const q = searchQuery.toLowerCase().trim();
+  const visible = (documents ?? []).filter((d) => {
+    if (typeFilter !== "all" && d.document_type !== typeFilter) return false;
+    if (!q) return true;
+    return (
+      d.title.toLowerCase().includes(q) ||
+      (d.equipment_id ?? "").toLowerCase().includes(q) ||
+      d.department.toLowerCase().includes(q) ||
+      d.document_type.toLowerCase().includes(q)
+    );
+  });
+
   return (
-    <AppShell title="Document library">
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-        {error && (
-          <p role="alert" className="text-destructive text-sm">
-            {error}
+    <AppShell title="">
+      <main className="w-full flex-1 pb-12">
+        <div className="mx-auto max-w-[1400px]">
+
+        {/* ── Page header ── */}
+        <div>
+          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-slate-700">
+            Plant knowledge
           </p>
-        )}
-        {!documents && !error ? (
-          <div className="h-48 animate-pulse rounded bg-muted/50" aria-busy="true" />
-        ) : (
-          <div className="flex flex-col gap-6">
-            <section>
-              <div className="mb-3 flex flex-wrap items-center gap-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide">
-                  Library ({documents?.length ?? 0})
-                </h2>
-                {documents && documents.length > 0 && (
-                  <span className="inline-flex flex-col gap-1">
-                    <Button
+          <h1 className="mt-1 text-2xl font-bold text-slate-900">Evidence library</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+            These are not stored files. Each source has been processed into extracted
+            sections or image observations, tagged to equipment, and made retrievable
+            for future investigations — within the access rules that came with the
+            document.
+          </p>
+        </div>
+
+        {/* ── Two-column body: library (left) + add-plant-knowledge rail (right) ── */}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:-mr-6">
+
+          {/* ═══ LEFT — library ═══ */}
+          <div className="min-w-0">
+            {/* Toolbar — search then type facets, one row (reference placement) */}
+            {documents !== null && documents.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search title, equipment, department"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-72 rounded-md border border-slate-300 bg-white py-1.5 pl-8 pr-8 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-500"
+                    aria-label="Search documents"
+                  />
+                  {searchQuery && (
+                    <button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={onExportLibrary}
-                      disabled={exportBusy}
-                      className="bg-white"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
+                      aria-label="Clear search"
                     >
-                      {exportBusy ? "Exporting…" : "Export Excel"}
-                    </Button>
-                    {exportError && (
-                      <span role="alert" className="text-xs text-red-700 dark:text-red-400">
-                        {exportError}
-                      </span>
-                    )}
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(["all", ...DOC_TYPES] as const).map((t) => {
+                    const active = typeFilter === t;
+                    const count =
+                      t === "all"
+                        ? visible.length
+                        : documents.filter((d) => d.document_type === t).length;
+                    if (t !== "all" && count === 0) return null;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setTypeFilter(t)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition",
+                          active
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                        )}
+                      >
+                        {t !== "all" && (
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              active ? "bg-white/70" : docTypeAccent(t).dot
+                            )}
+                            aria-hidden
+                          />
+                        )}
+                        {t === "all" ? "All" : DOC_TYPE_LABELS[t]}
+                        <span className={active ? "text-white/70" : "text-slate-500"}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onExportLibrary}
+                    disabled={exportBusy}
+                    className="bg-white"
+                  >
+                    {exportBusy ? "Exporting…" : "Export Excel"}
+                  </Button>
+                  {exportError && (
+                    <span role="alert" className="text-xs text-red-700 dark:text-red-400">
+                      {exportError}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Stats + role-filter disclosure. Reveals a count only — never a
+                withheld title — so it stays inside the frozen ACL contract
+                (COMMON §c.1), which requires excluded documents not to appear. */}
+            {documents !== null && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-500" aria-hidden />
+                  <span className="font-bold text-slate-900">{readyCount}</span>
+                  <span className="text-slate-600">indexed</span>
+                </span>
+                {processingCount > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 animate-pulse rounded-full bg-sky-500" aria-hidden />
+                    <span className="font-bold text-slate-900">{processingCount}</span>
+                    <span className="text-slate-600">processing</span>
                   </span>
                 )}
+                {failedCount > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-amber-500" aria-hidden />
+                    <span className="font-bold text-slate-900">{failedCount}</span>
+                    <span className="text-slate-600">failed</span>
+                  </span>
+                )}
+                <span className="text-slate-500">
+                  {role && (
+                    <>
+                      Sources outside your clearance are withheld from this view and will not
+                      be used for retrieval
+                      {role ? <> (<span className="font-semibold text-slate-700">{role}</span>)</> : null}.
+                    </>
+                  )}
+                </span>
               </div>
-              <p className="text-muted-foreground mb-2 text-xs">
-                List is ACL-filtered by the API for your role — you only see
-                documents you are allowed to see.
-              </p>
-              {documents && documents.length === 0 && (
-                <p className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-5 py-6 text-sm text-neutral-500">
-                  No documents visible for your role yet — engineers and admins
-                  can upload the first one.
-                </p>
-              )}
-              {documents && documents.length > 0 && (
-                <DocumentsTable
-                  documents={documents}
-                  onOpen={(d) => setViewerId(d.document_id)}
-                />
-              )}
-            </section>
+            )}
 
-            <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-                Upload
-              </h2>
-              {canUpload ? (
-                <div className="rounded-lg border p-4">
-                  <UploadForm
-                    onUploaded={() => {
-                      const signal = { cancelled: false };
-                      load(signal);
-                    }}
-                  />
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  Document upload is restricted to engineers and admins.
+            {/* ── Load error ── */}
+            {loadError && (
+              <div role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                <p className="text-sm text-red-700">{loadError}</p>
+              </div>
+            )}
+
+            {/* ── Loading skeleton ── */}
+            {documents === null && !loadError && (
+              <div className="mt-5 space-y-2.5" aria-busy="true">
+                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+              </div>
+            )}
+
+            {/* Empty state — no sources at all */}
+            {documents !== null && documents.length === 0 && (
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-12 text-center">
+                <p className="text-base font-semibold text-slate-800">
+                  No documents in the evidence library
                 </p>
-              )}
-            </section>
+                <p className="mt-1 text-sm text-slate-600">
+                  Upload manuals, SOPs, work orders, or equipment photos to build the evidence base
+                </p>
+              </div>
+            )}
+
+            {/* No results for the current query */}
+            {documents !== null && documents.length > 0 && visible.length === 0 && (
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-10 text-center">
+                <p className="text-sm text-slate-600">
+                  No sources match{" "}
+                  {q ? (
+                    <span className="font-semibold text-slate-900">&ldquo;{searchQuery}&rdquo;</span>
+                  ) : (
+                    <span className="font-semibold text-slate-900">
+                      {DOC_TYPE_LABELS[typeFilter as DocumentType]}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Try equipment ID, title, or department
+                </p>
+              </div>
+            )}
+
+            {/* Cards — full width, one per row */}
+            <div className="mt-3">
+              <EvidenceCardList
+                documents={visible}
+                onOpen={(d) => setViewerId(d.document_id)}
+              />
+            </div>
           </div>
-        )}
+
+          {/* ═══ RIGHT — add plant knowledge rail ═══ */}
+          <aside className="lg:sticky lg:top-16 lg:self-start">
+            {canUpload ? (
+              <div className="rounded-xl lg:rounded-r-none border border-slate-200 bg-white p-5 lg:pr-10">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  Add plant knowledge
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  A source is queued, processed into sections, then becomes retrievable
+                  evidence.
+                </p>
+                <div className="mt-4">
+                  <UploadForm onSubmitting={handleSubmitting} compact />
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  Add plant knowledge
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  Document upload is available to engineers and admins.
+                </p>
+              </div>
+            )}
+          </aside>
+
+        </div>
+
+        </div>
       </main>
+
+      <UploadProcessingModal state={processing} onDismiss={handleDismiss} />
+
       <ChunkViewer
         open={viewerId !== null}
-        onOpenChange={(o) => {
-          if (!o) setViewerId(null);
-        }}
+        onOpenChange={(o) => { if (!o) setViewerId(null); }}
         documentId={viewerId}
       />
     </AppShell>

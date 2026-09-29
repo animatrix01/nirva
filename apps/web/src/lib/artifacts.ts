@@ -20,6 +20,8 @@ export interface EvidenceReference {
   passage_text: string;
   why_retrieved: string;
   score?: number;
+  /** "retrieval" for vector-search chunks, "tool" for operational tool results. */
+  source?: "retrieval" | "tool";
 }
 
 // {kind:"tool", tool:{...}} per real artifacts router (tool_name, ok, summary).

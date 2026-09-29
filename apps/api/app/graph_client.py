@@ -156,7 +156,12 @@ def get_graph(
     *,
     database_url: str | None = None,
 ) -> InvestigationGraph:
-    config = load_gateway_config(model=DEFAULT_MODEL)
+    from app.config import get_settings
+    settings = get_settings()
+    config = load_gateway_config(
+        env={"MODEL_BASE_URL": settings.model_base_url},
+        model=DEFAULT_MODEL,
+    )
     gateway = GatewayClient(
         GatewayConfig(
             base_url=config.base_url,

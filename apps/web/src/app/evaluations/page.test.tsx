@@ -28,18 +28,24 @@ describe("EvaluationsPage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders six metric cards, gates banner and the per-case table", async () => {
+  it("renders grouped metrics, gates status strip and the per-case table", async () => {
     setAuth("admin");
     render(<EvaluationsPage />);
     await waitFor(() =>
-      expect(screen.getByText(/Offline evaluation results/i)).toBeInTheDocument()
+      expect(screen.getByText(/Offline Evaluation Results/i)).toBeInTheDocument()
     );
 
-    // Header meta
-    expect(screen.getByText(/105 cases executed/i)).toBeInTheDocument();
-    expect(screen.getByText(/6ba15d6892c5/)).toBeInTheDocument();
+    // Run metadata now lives in the status strip, not the subtitle.
+    expect(screen.getByText("6ba15d6892c5")).toBeInTheDocument();
+    expect(screen.getByText("105")).toBeInTheDocument();
+    expect(screen.getByText("75")).toBeInTheDocument();
 
-    // Six metric cards (Recall@5 also appears as a table header)
+    // The six standalone KPI cards are replaced by three grouped sections.
+    expect(screen.getByText("Retrieval Quality")).toBeInTheDocument();
+    expect(screen.getByText("Answer Reliability")).toBeInTheDocument();
+    expect(screen.getByText("Safety & Access")).toBeInTheDocument();
+
+    // Every metric label survives the regrouping.
     expect(screen.getAllByText("Recall@5").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Citation validity")).toBeInTheDocument();
     expect(screen.getByText("Grounded answer rate")).toBeInTheDocument();
@@ -47,13 +53,19 @@ describe("EvaluationsPage", () => {
     expect(screen.getByText("Unauthorized retrievals")).toBeInTheDocument();
     expect(screen.getByText("Injection block rate")).toBeInTheDocument();
 
-    // Gates banner
+    // Gates status
     expect(screen.getByText(/All gates passed/i)).toBeInTheDocument();
 
-    // Per-case table: real values + "—" for nulls (non-retrieval case)
+    // Pagination replaces the old scroll box. The stubbed /api/evals fixture
+    // carries 2 cases (summary.cases_executed is 105, cases[] is not padded to
+    // match) — pagination is asserted on the real rendered count, not 105.
+    expect(screen.getByText(/Showing 1–2 of 2 cases/i)).toBeInTheDocument();
+    // One page of results → no pager controls.
+    expect(screen.queryByLabelText("Next")).toBeNull();
+
+    // Per-case table: real values, "—" for nulls (non-retrieval case)
     expect(screen.getByText("factual-000")).toBeInTheDocument();
-    expect(screen.getByText("approval-flow-001")).toBeInTheDocument();
-    const table = screen.getByText("approval-flow-001").closest("tr");
+    const table = screen.getByText("factual-000").closest("tr");
     expect(table).toHaveTextContent("—");
   });
 

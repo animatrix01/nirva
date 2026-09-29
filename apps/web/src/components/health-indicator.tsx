@@ -5,7 +5,7 @@ import { getHealth } from "@/lib/api";
 import type { HealthResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Local/Offline system-status indicator backed by real GET /api/health data.
+// Simple system-status indicator (Online / Degraded)
 export function HealthIndicator() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [down, setDown] = useState(false);
@@ -32,11 +32,14 @@ export function HealthIndicator() {
     };
   }, []);
 
-  const allUp =
+  const coreUp =
     !down &&
     health !== null &&
-    health.status === "ok" &&
-    Object.values(health.services).every((s) => s === "up");
+    health.services.postgres === "up" &&
+    health.services.storage === "up";
+
+  const label = coreUp ? "Online" : "Degraded";
+  const isHealthy = coreUp;
 
   return (
     <span
@@ -46,23 +49,20 @@ export function HealthIndicator() {
           ? "Health endpoint unreachable"
           : health
             ? `postgres:${health.services.postgres} qdrant:${health.services.qdrant} model_gateway:${health.services.model_gateway} storage:${health.services.storage}`
-            : "Checking local services…"
+            : "Checking services…"
       }
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium",
-        allUp
-          ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-          : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
-      )}
+      className="inline-flex items-center gap-2 text-sm"
     >
       <span
         aria-hidden
         className={cn(
           "size-2 rounded-full",
-          allUp ? "bg-emerald-600 dark:bg-emerald-400" : "animate-pulse bg-amber-600 dark:bg-amber-400"
+          isHealthy ? "bg-[#B9FF52]" : "animate-pulse bg-amber-500"
         )}
       />
-      {allUp ? "Local / Offline" : down ? "Health unreachable" : "Degraded"}
+      <span className={isHealthy ? "text-slate-600" : "text-amber-600"}>
+        {label}
+      </span>
     </span>
   );
 }

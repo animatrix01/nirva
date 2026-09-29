@@ -60,32 +60,76 @@ def _parse_and_index(path: Path, base: dict[str, Any], role_hint: str) -> int:
     from qdrant_client import QdrantClient, models
 
     settings = get_settings()
+
+    # DEV MODE: when DEMO_MODE=1 and Qdrant/Ollama are unreachable, skip the
+    # embedding + upsert steps so document upload works for frontend dev.
+    # The document is stored on disk and its DB row created; it just won't be
+    # retrievable via vector search until a real Qdrant+Ollama stack is present.
+    if settings.demo_mode:
+        import httpx as _httpx
+        try:
+            _httpx.get(settings.qdrant_url.rstrip("/") + "/healthz", timeout=1.0)
+        except (_httpx.HTTPError, OSError):
+            # Qdrant is down — store file but skip indexing entirely
+            return 0
+
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        parsed = parse_pdf(path, base)
+        try:
+            parsed = parse_pdf(path, base)
+        except Exception:
+            if settings.demo_mode:
+                # docling not installed or parse failed in dev — treat as stored-only
+                return 0
+            raise
     elif suffix == ".csv":
         parsed = parse_csv(path, base)
     elif suffix in (".jpg", ".jpeg", ".png"):
-        observation = describe_image(
-            base_url=settings.model_base_url,
-            model="qwen2.5vl:3b",
-            prompt=VLM_OBSERVATIONS_PROMPT,
-            image_bytes=path.read_bytes(),
-            image_format="png" if suffix == ".png" else "jpeg",
-        )
-        # Context prefix gives the short VLM text searchable tokens (equipment
-        # id, "photo", "inspection") so retrieval can match photo questions.
-        observation_text = (
-            f"Equipment photo {base['equipment_id'] or ''} (vision inspection). "
-            f"Observations: {observation}"
-        )
-        parsed = ParsedDocument(
-            root=SectionNode(
-                title=str(base["document_title"]),
-                children=[SectionNode(title="Vision inspection", text=observation_text)],
-            ),
-            **base,  # type: ignore[arg-type]
-        )
+        # Skip VLM call if Ollama is unreachable in demo mode
+        if settings.demo_mode:
+            import httpx as _httpx
+            try:
+                _httpx.get(settings.model_base_url.rstrip("/") + "/models", timeout=1.0)
+                _ollama_up = True
+            except (_httpx.HTTPError, OSError):
+                _ollama_up = False
+        else:
+            _ollama_up = True
+
+        if not _ollama_up:
+            parsed = ParsedDocument(
+                root=SectionNode(
+                    title=str(base["document_title"]),
+                    children=[
+                        SectionNode(
+                            title="Vision inspection",
+                            text="[Image stored — vision model unavailable in dev mode]",
+                        )
+                    ],
+                ),
+                **base,  # type: ignore[arg-type]
+            )
+        else:
+            observation = describe_image(
+                base_url=settings.model_base_url,
+                model="qwen2.5vl:3b",
+                prompt=VLM_OBSERVATIONS_PROMPT,
+                image_bytes=path.read_bytes(),
+                image_format="png" if suffix == ".png" else "jpeg",
+            )
+            # Context prefix gives the short VLM text searchable tokens (equipment
+            # id, "photo", "inspection") so retrieval can match photo questions.
+            observation_text = (
+                f"Equipment photo {base['equipment_id'] or ''} (vision inspection). "
+                f"Observations: {observation}"
+            )
+            parsed = ParsedDocument(
+                root=SectionNode(
+                    title=str(base["document_title"]),
+                    children=[SectionNode(title="Vision inspection", text=observation_text)],
+                ),
+                **base,  # type: ignore[arg-type]
+            )
     else:
         msg = f"unsupported document type: {suffix}"
         raise ValueError(msg)
@@ -214,6 +258,37 @@ def document_content(
     from app.config import get_settings as _settings
 
     settings = _settings()
+
+    # DEV MODE: when Qdrant is unreachable, return a placeholder chunk so the
+    # UI renders the document viewer instead of hanging on "Loading chunks…".
+    # In production this path is never taken (Qdrant is always up).
+    if settings.demo_mode:
+        import httpx as _httpx
+        try:
+            _httpx.get(settings.qdrant_url.rstrip("/") + "/healthz", timeout=1.0)
+        except (_httpx.HTTPError, OSError):
+            suffix = Path(doc.file_path).suffix.lower() if doc.file_path else ""
+            is_image = suffix in (".jpg", ".jpeg", ".png")
+            placeholder_text = (
+                "[Vision model observations unavailable — Ollama not running in dev mode. "
+                "In production, this chunk contains the vision model's inspection notes: "
+                "equipment condition, visible wear, corrosion, gauge readings, etc.]"
+                if is_image else
+                "[Document not indexed — Qdrant vector store not running in dev mode. "
+                "In production, this shows the parsed text chunks used for evidence retrieval.]"
+            )
+            return {
+                "document": _document_out(doc).model_dump(mode="json"),
+                "chunks": [
+                    {
+                        "chunk_id": f"dev-placeholder-{document_id[:8]}",
+                        "page": 1,
+                        "section": "Dev mode — no vector store",
+                        "text": placeholder_text,
+                    }
+                ],
+            }
+
     client = QdrantClient(url=settings.qdrant_url, timeout=30, check_compatibility=False)
     result = client.scroll(
         collection_name="nirva_chunks",

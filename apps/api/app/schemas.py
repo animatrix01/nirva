@@ -63,6 +63,7 @@ class FinalReportOut(BaseModel):
     assumptions: list[str]
     gaps: list[str]
     citations: list[CitationOut]
+    contradictions: list[dict[str, Any]] = []
 
 
 class JobDetailResponse(BaseModel):
@@ -70,6 +71,8 @@ class JobDetailResponse(BaseModel):
     objective: str
     status: str
     current_node: str | None
+    equipment_id: str | None = None
+    context_image_path: str | None = None
     created_by: str
     created_at: datetime
     updated_at: datetime

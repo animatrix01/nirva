@@ -117,6 +117,49 @@ export function createJob(
   });
 }
 
+/**
+ * Upload an optional context image for an investigation case.
+ * Called immediately after job creation (before navigating to the job page).
+ * The image is NOT indexed as a document — it is investigation context only.
+ */
+export async function uploadJobImage(
+  jobId: string,
+  file: File
+): Promise<{ context_image_path: string }> {
+  const auth = loadStoredAuth();
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/image`, {
+    method: "POST",
+    headers: auth ? { Authorization: `Bearer ${auth.token}` } : {},
+    body: form,
+  });
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try { body = (await response.json()) as TypedErrorBody; } catch { /* keep default */ }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return (await response.json()) as { context_image_path: string };
+}
+
+/**
+ * Returns the authenticated URL for a job's context image blob.
+ * Use getJobImageBlob() to actually fetch the bytes — img tags cannot
+ * send Authorization headers directly.
+ */
+export async function getJobImageBlob(jobId: string): Promise<Blob> {
+  const auth = loadStoredAuth();
+  const response = await fetch(`${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/image`, {
+    headers: auth ? { Authorization: `Bearer ${auth.token}` } : {},
+  });
+  if (!response.ok) {
+    let body: TypedErrorBody = { detail: response.statusText, field: null };
+    try { body = (await response.json()) as TypedErrorBody; } catch { /* keep default */ }
+    throw new ApiError(response.status, body.detail, body.field);
+  }
+  return response.blob();
+}
+
 export function listJobs(query: JobListQuery = {}): Promise<JobSummary[]> {
   const params = new URLSearchParams();
   if (query.status) params.set("status", query.status);

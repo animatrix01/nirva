@@ -1,14 +1,17 @@
 import json
+import os
 import time
+import uuid
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit_event
+from app.config import get_settings
 from app.db import SessionLocal, get_db
 from app.deps import CurrentUser
 from app.events import STREAM_STOP_EVENT_TYPES, fetch_events_after, render_envelope
@@ -25,6 +28,16 @@ from app.schemas import (
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 POLL_INTERVAL_SECONDS = 0.1
+
+# Allowed MIME types for investigation context images
+_ALLOWED_IMAGE_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+}
+_MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def _can_view(user: CurrentUser, job: Job) -> bool:
@@ -130,11 +143,96 @@ def get_job(
         objective=job.objective,
         status=job.status,
         current_node=job.current_node,
+        equipment_id=job.equipment_id,
+        context_image_path=job.context_image_path,
         created_by=job.created_by,
         created_at=job.created_at,
         updated_at=job.updated_at,
         final_report=report,
     )
+
+
+@router.post("/{job_id}/image", status_code=status.HTTP_200_OK)
+async def upload_job_image(
+    job_id: str,
+    file: UploadFile,
+    user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict[str, str]:
+    """Attach an optional context image to an investigation case.
+
+    This is NOT part of the document ingestion pipeline — the image is
+    investigation context only and is never indexed or searched.
+    Only the job owner (or admin/supervisor) may upload.
+    """
+    job = db.get(Job, job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    if job.created_by != user.id and user.role not in ("supervisor", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    # Validate content type
+    content_type = (file.content_type or "").lower()
+    if content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image type '{content_type}'. Allowed: jpeg, png, webp, gif.",
+        )
+
+    # Read and enforce size limit
+    data = await file.read()
+    if len(data) > _MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image too large. Maximum size is 10 MB.",
+        )
+
+    # Determine storage directory
+    settings = get_settings()
+    image_dir = os.path.join(settings.storage_path, "job_images")
+    os.makedirs(image_dir, exist_ok=True)
+
+    # Generate a collision-resistant filename
+    ext = os.path.splitext(file.filename or "image")[1].lower() or ".bin"
+    filename = f"{uuid.uuid4().hex}{ext}"
+    dest = os.path.join(image_dir, filename)
+
+    with open(dest, "wb") as fh:
+        fh.write(data)
+
+    # Persist relative path on the job row
+    rel_path = os.path.join("job_images", filename)
+    job.context_image_path = rel_path
+    db.commit()
+
+    return {"context_image_path": rel_path}
+
+
+@router.get("/{job_id}/image")
+def get_job_image(
+    job_id: str,
+    user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> FileResponse:
+    """Serve the investigation context image (binary).
+
+    Returns 404 if no image is attached.
+    The caller must send an Authorization header — no anonymous access.
+    """
+    job = db.get(Job, job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    if not _can_view(user, job):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if not job.context_image_path:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No image attached")
+
+    settings = get_settings()
+    full_path = os.path.join(settings.storage_path, job.context_image_path)
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image file not found")
+
+    return FileResponse(full_path)
 
 
 def _sse_format(data: dict[str, object]) -> str:

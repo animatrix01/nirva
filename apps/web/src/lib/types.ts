@@ -68,6 +68,14 @@ export interface FinalReport {
   assumptions: string[];
   gaps: string[];
   citations: CitationRef[];
+  /** Cross-source conflicts detected by the agent. Populated when contradiction_found event fires. */
+  contradictions?: Array<{
+    topic: string;
+    claim_a: string;
+    claim_b: string;
+    source_a: { title: string; revision: string; locator: string; chunk_id: string };
+    source_b: { title: string; revision: string; locator: string; chunk_id: string };
+  }>;
 }
 
 export interface DocumentOut {
@@ -160,6 +168,14 @@ export interface JobDetail {
   objective: string;
   status: JobStatus;
   current_node: string | null;
+  /** Equipment / asset ID — present on the detail response (added 0007). */
+  equipment_id: string | null;
+  /**
+   * Relative path to the optional investigation context image.
+   * Served via GET /api/jobs/{id}/image (authenticated).
+   * Null when no image was attached at creation.
+   */
+  context_image_path: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
