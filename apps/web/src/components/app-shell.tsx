@@ -15,11 +15,13 @@ import {
   X,
 } from "lucide-react";
 import { RoleBadge } from "@/components/role-badge";
+import { EgressBadge } from "@/components/egress-badge";
 import { HealthIndicator } from "@/components/health-indicator";
 import { clearAuth } from "@/lib/api";
 import { useStoredAuth } from "@/lib/auth-client";
 import type { Role } from "@/lib/types";
 
+// Subscription function for useSyncExternalStore that never triggers updates
 const subscribeNever = () => () => {};
 
 interface NavItem {
@@ -99,20 +101,20 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
     if (item.roles && (!role || !item.roles.includes(role))) return null;
     const active = item.match(effectivePath);
     return (
-      <Link
-        key={item.href}
-        href={item.href}
-        onClick={onNavigate}
-        aria-current={active ? "page" : undefined}
-        className={`flex items-center gap-3 border-l-2 px-3 py-2 text-sm transition-colors ${
-          active
-            ? "border-[#C4F135] bg-neutral-800/60 font-medium text-white"
-            : "border-transparent text-neutral-400 hover:bg-neutral-800/40 hover:text-neutral-200"
-        }`}
-      >
-        <item.icon className="size-4 shrink-0" />
-        {item.label}
-      </Link>
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-3 border-l-2 px-3 py-2 text-sm font-semibold transition-colors ${
+              active
+                ? "border-[#B9FF52] bg-[#f0fdf4] text-slate-900"
+                : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            }`}
+          >
+            <item.icon className="size-4 shrink-0" />
+            {item.label}
+          </Link>
     );
   };
 
@@ -127,7 +129,7 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
       {hasAdminItems && (
         <>
           <div className="px-3 pt-4 pb-2">
-            <p className="text-[10px] uppercase tracking-widest text-neutral-600">
+            <p className="text-[10px] uppercase tracking-widest text-slate-400">
               {role === "safety_officer" ? "Compliance" : "Administration"}
             </p>
           </div>
@@ -170,14 +172,14 @@ export function AppShell({ title, children }: { title: string; children: React.R
   return (
     <div className="min-h-screen bg-background font-sans">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-neutral-800 bg-neutral-900 lg:flex">
-        <div className="flex h-16 items-center gap-2.5 border-b border-neutral-800 px-5">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-card lg:flex">
+        <div className="flex h-14 items-center gap-2.5 border-b border-border px-5">
           <img
             src="/nirva_logo_-removebg-preview.png"
             alt="NIRVA"
-            className="size-10 object-contain"
+            className="size-12 object-contain"
           />
-          <span className="text-base font-bold tracking-tight text-white">NIRVA</span>
+          <span className="text-lg font-bold tracking-tight text-foreground">NIRVA</span>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           <SidebarNav pathname={pathname} />
@@ -192,14 +194,14 @@ export function AppShell({ title, children }: { title: string; children: React.R
             onClick={() => setDrawerOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-y-0 left-0 flex w-60 flex-col border-r border-neutral-800 bg-neutral-900">
-            <div className="flex h-16 items-center justify-between border-b border-neutral-800 px-4">
-              <span className="text-base font-bold tracking-tight text-white">NIRVA</span>
+          <div className="absolute inset-y-0 left-0 flex w-60 flex-col border-r border-border bg-card">
+            <div className="flex h-16 items-center justify-between border-b border-border px-4">
+              <span className="text-base font-bold tracking-tight text-foreground">NIRVA</span>
               <button
                 type="button"
                 aria-label="Close navigation"
                 onClick={() => setDrawerOpen(false)}
-                className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X className="size-5" />
               </button>
@@ -212,20 +214,21 @@ export function AppShell({ title, children }: { title: string; children: React.R
       )}
 
       {/* Content column */}
-      <div className="lg:pl-60">
+      <div className="flex min-h-screen flex-col lg:pl-60 bg-background">
         {/* Slim topbar */}
-        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-border bg-card backdrop-blur">
           <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
             <button
               type="button"
               aria-label="Open navigation"
               onClick={() => setDrawerOpen(true)}
-              className="rounded-md p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white lg:hidden"
+              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
             >
               <Menu className="size-5" />
             </button>
-            <p className="text-sm font-semibold text-neutral-200">{title}</p>
-            <div className="ml-auto flex items-center gap-4">
+            <p className="text-base font-semibold text-foreground">{title}</p>
+            <div className="ml-auto flex items-center gap-3">
+              <EgressBadge />
               <HealthIndicator />
               <RoleBadge role={auth.user.role} />
               <button
@@ -234,15 +237,18 @@ export function AppShell({ title, children }: { title: string; children: React.R
                   clearAuth();
                   router.push("/");
                 }}
-                className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs text-neutral-200 transition hover:bg-neutral-800 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
               >
                 Sign out
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h6M6 3l3 3-3 3"/>
+                </svg>
               </button>
             </div>
           </div>
         </header>
 
-        <main className="w-full px-4 py-4 lg:px-6">{children}</main>
+        <main className="w-full flex-1 px-4 py-4 lg:px-6">{children}</main>
       </div>
     </div>
   );
